@@ -1,0 +1,527 @@
+
+#region Private classes
+
+        class BorderCell
+        {
+            public ushort X;
+            public ushort Y;
+            public byte Borders;
+
+            public int Mark
+            {
+                get { return Y << 16 | X; }
+            }
+
+            public static void Populate(TraceCell traceCell, TraceCell prevTraceCell, Common.Classes.Map.Map map, 
+                ClosedBorder owner, HashSet<int> uniqueBorderCells)
+            {
+                int mark;
+                if (prevTraceCell != null && prevTraceCell.Direction == Direction.S && traceCell.Direction == Direction.W)
+                {
+                    BorderCell prevBorderCell = new BorderCell(traceCell, Direction.S, map);
+                    mark = prevBorderCell.Mark;
+                    if (prevBorderCell.Borders != 0 && !uniqueBorderCells.Contains(mark))
+                    {
+                        owner.Add(prevBorderCell);
+                        uniqueBorderCells.Add(mark);
+                    }
+                }
+                BorderCell borderCell = new BorderCell(traceCell, traceCell.Direction, map);
+                mark = borderCell.Mark;
+                if (borderCell.Borders != 0 && !uniqueBorderCells.Contains(mark))
+                {
+                    owner.Add(borderCell);
+                    uniqueBorderCells.Add(mark);
+                }
+            }
+
+            public BorderCell(int x, int y)
+            {
+                X = (ushort) x;
+                Y = (ushort) y;
+            }
+
+            private BorderCell(TraceCell cell, Direction direction, Common.Classes.Map.Map map)
+            {
+                Borders = GetBorders(cell.X, cell.Y, direction, map);
+            }
+
+            private byte GetBorders(int x, int y, Direction direction, Common.Classes.Map.Map map)
+            {
+                ushort w = map.Width;
+                ushort h = map.Height;
+                
+                if (IsNotWall(x, y, w, h, map))
+                {
+                    switch (direction)
+                    {
+                        case Direction.W:
+                            y += 1;
+                            break;
+                        case Direction.E:
+                        case Direction.S:
+                            x += 1;
+                            break;
+                    }
+                }
+
+                return GetBorders(X = (ushort)x, Y = (ushort)y, w, h, map);
+            }
+
+            private byte GetBorders(int x, int y, ushort w, ushort h, Common.Classes.Map.Map map)
+            {
+                if (IsNotWall(x, y, w, h, map))
+                {
+                    return 0;
+                }
+
+                byte flag = 0;
+
+                if (IsNotWall(x - 1, y, w, h, map)) flag |= 1;
+                if (IsNotWall(x + 1, y, w, h, map)) flag |= 2;
+                if (IsNotWall(x, y - 1, w, h, map)) flag |= 4;
+                if (IsNotWall(x, y + 1, w, h, map)) flag |= 8;
+
+                return flag;
+            }
+
+            private bool IsNotWall(int x, int y, ushort w, ushort h, Common.Classes.Map.Map map)
+            {
+                return x < 0 || x >= w || y < 0 || y >= h || (*map[(ushort)x, (ushort)y]).Type != TileType.Wall;
+            }
+
+            public void UpdateBorders(Common.Classes.Map.Map map)
+            {
+                Borders = GetBorders(X, Y, map.Width, map.Height, map);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0} x {1} | {2}", X, Y, Borders);
+            }
+        }
+
+        class ClosedBorder : List<BorderCell>
+        {
+            public int CellsCount;
+
+            private void AcceptCornerValue(Dictionary<ushort, List<ushort>> dict,
+                ushort coord, ushort value)
+            {
+                List<ushort> list;
+                if (!dict.TryGetValue(coord, out list))
+                {
+                    list = new List<ushort>();
+                    dict.Add(coord, list);
+                }
+                if (!list.Contains(value))
+                {
+                    list.Add(value);
+                }
+            }
+
+            private int CalculateCornerValues(Dictionary<ushort, List<ushort>> scrDict,
+                Dictionary<ushort, List<ushort>> pairDict)
+            {
+                int totalCount = 0;
+                foreach (ushort coord in scrDict.Keys)
+                {
+                    List<ushort> list = scrDict[coord];
+                    list.Sort();
+                    int crnCount = 0, max = list.Count - 1;
+                    for (int i = max == 0 ? 0 : 1; i <= max; i++)
+                    {
+                        ushort val = list[i];
+                        if (i == max || val - list[i - 1] > 1)
+                        {
+                            List<ushort> pairList;
+                            if (pairDict != null && pairDict.TryGetValue(val, out pairList) &&
+                                pairList.Contains(coord))
+                            {
+                                continue;
+                            }
+                            crnCount++;
+                            if (max > 0)
+                            {
+                                list[crnCount] = val;
+                            }
+                        }
+                    }
+                    if (pairDict == null && max > 0)
+                    {
+                        list.RemoveRange(crnCount + 1, list.Count - crnCount - 1);
+                    }
+                    totalCount += crnCount;
+                }
+                return totalCount;
+            }
+
+            private void CalculateCellsCount()
+            {
+                var cvDict = new Dictionary<ushort, List<ushort>>[2];
+                cvDict[0] = new Dictionary<ushort, List<ushort>>();
+                cvDict[1] = new Dictionary<ushort, List<ushort>>();
+
+                int max = Count - 1, sum = 0;
+                for (int i = 0; i < max; i++)
+                {
+                    sum += (this[i].X + this[i + 1].X)*(this[i + 1].Y - this[i].Y);
+                    AcceptCornerValue(cvDict[0], this[i].Y, this[i].X);
+                    AcceptCornerValue(cvDict[1], this[i].X, this[i].Y);
+                }
+                sum += (this[max].X + this[0].X)*(this[0].Y - this[max].Y);
+                AcceptCornerValue(cvDict[0], this[max].Y, this[max].X);
+                AcceptCornerValue(cvDict[1], this[max].X, this[max].Y);
+
+                int cornerValues = CalculateCornerValues(cvDict[0], null) +
+                                   CalculateCornerValues(cvDict[1], cvDict[0]);
+
+                CellsCount = Math.Max(Math.Abs(sum) / 2 + cornerValues, Count);
+            }
+
+            public ClosedBorder(ClosedTrace item, Common.Classes.Map.Map map)
+                : base(item.Count)
+            {
+                TraceCell prevTraceCell = null;
+                HashSet<int> uniqueBorderCells = new HashSet<int>();
+                foreach (TraceCell traceCell in item)
+                {
+                    BorderCell.Populate(traceCell, prevTraceCell, map, this, uniqueBorderCells);
+                    prevTraceCell = traceCell;
+                }
+
+                CalculateCellsCount();
+            }
+        }
+
+        class ClosedBorders : List<ClosedBorder>
+        {
+            private Common.Classes.Map.Map _map;
+            private Dictionary<int, Dictionary<int, BorderCell>> _borderCells;
+
+            public BorderCell this[int x, int y]
+            {
+                get
+                {
+                    BorderCell borderCell;
+                    Dictionary<int, BorderCell> dy;
+                    if (_borderCells.TryGetValue(x, out dy) && dy.TryGetValue(y, out borderCell))
+                    {
+                        return borderCell;
+                    }
+                    return null;
+                }
+            }
+
+            public ClosedBorders(Common.Classes.Map.Map map)
+            {
+                _map = map;
+                _borderCells = new Dictionary<int, Dictionary<int, BorderCell>>();
+            }
+
+            public void Add(ClosedTrace item)
+            {
+                ClosedBorder closedBorder = new ClosedBorder(item, _map);
+                foreach (BorderCell borderCell in closedBorder)
+                {
+                    Dictionary<int, BorderCell> dy;
+                    if (!_borderCells.TryGetValue(borderCell.X, out dy))
+                    {
+                        dy = new Dictionary<int, BorderCell>();
+                        _borderCells.Add(borderCell.X, dy);
+                    }
+                    if (!dy.ContainsKey(borderCell.Y))
+                    {
+                        dy.Add(borderCell.Y, borderCell);
+                    }
+                }
+                Add(closedBorder);
+            }
+
+            private BorderCell AddNewBorderCell(ushort x, ushort y)
+            {
+                Dictionary<int, BorderCell> dy;
+                if (!_borderCells.TryGetValue(x, out dy))
+                {
+                    dy = new Dictionary<int, BorderCell>();
+                    _borderCells.Add(x, dy);
+                }
+                if (!dy.ContainsKey(y))
+                {
+                    BorderCell borderCell = new BorderCell(x, y);
+                    dy.Add(y, borderCell);
+                    return borderCell;
+                }
+                return null;
+            }
+
+            public void AddCell(ushort x, ushort y)
+            {
+                AddNewBorderCell(x, y);
+                RecreateBorders(x, y);
+            }
+
+            public void RemoveCell(ushort x, ushort y)
+            {
+                Dictionary<int, BorderCell> dy;
+                if (_borderCells.TryGetValue(x, out dy) && dy.ContainsKey(y))
+                {
+                    dy.Remove(y);
+                }
+                RecreateBorders(x, y);
+            }
+
+            private void RemoveCell(BorderCell borderCell)
+            {
+                Dictionary<int, BorderCell> dy;
+                if (_borderCells.TryGetValue(borderCell.X, out dy) && 
+                    dy.ContainsKey(borderCell.Y))
+                {
+                    dy.Remove(borderCell.Y);
+                }
+            }
+
+            private void RecreateBorder(int x, int y, BorderCell borderCell)
+            {
+                if (x >= 0 && x < _map.Width && y >= 0 && y < _map.Width)
+                {
+                    if (borderCell == null)
+                    {
+                        Tile tile = *_map[(ushort) x, (ushort) y];
+                        if (tile.Type == TileType.Wall)
+                        {
+                            borderCell = AddNewBorderCell((ushort) x, (ushort) y);
+                        }
+                    }
+                    if (borderCell != null)
+                    {
+                        borderCell.UpdateBorders(_map);
+                        if (borderCell.Borders == 0)
+                        {
+                            RemoveCell(borderCell);
+                        }
+                    }
+                }
+            }
+
+            private void RecreateBorders(ushort x, ushort y)
+            {
+                RecreateBorder(x, y, this[x, y]);
+                for (int i = -1; i <= 1; i += 2)
+                {
+                    RecreateBorder(x + i, y, this[x + i, y]);
+                    RecreateBorder(x, y + i, this[x, y + i]);
+                }
+            }
+        }
+
+        class TraceCell
+        {
+            public int X;
+            public int Y;
+            public Direction Direction;
+
+            public TraceCell(int x, int y, Direction direction)
+            {
+                X = x;
+                Y = y;
+                Direction = direction;
+            }
+
+            public int ScreenX
+            {
+                get
+                {
+                    switch (Direction)
+                    {
+                        case Direction.E:
+                            return 1;
+                        case Direction.W:
+                            return -1;
+                        default:
+                            return 0;
+                    }
+                }
+            }
+
+            public int ScreenY
+            {
+                get
+                {
+                    switch (Direction)
+                    {
+                        case Direction.S:
+                            return 1;
+                        case Direction.N:
+                            return -1;
+                        default:
+                            return 0;
+                    }
+                }
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0} x {1} -> {2}", X, Y, Direction);
+            }
+
+            public static int DirectionValue(int x, int y, int w, int h, Common.Classes.Map.Map map)
+            {
+                int flag = 0;
+                if (IsWall(x, y, w, h, map)) flag |= 1;
+                if (IsWall(x + 1, y, w, h, map)) flag |= 2;
+                if (IsWall(x, y + 1, w, h, map)) flag |= 4;
+                if (IsWall(x + 1, y + 1, w, h, map)) flag |= 8;
+                return flag;
+            }
+
+            private static bool IsWall(int x, int y, int w, int h, Common.Classes.Map.Map map)
+            {
+                return x >= 0 && x < w && y >= 0 && y < h && (*map[(ushort) x, (ushort) y]).Type == TileType.Wall;
+            }
+        }
+
+        class ClosedTrace : List<TraceCell> { }
+
+        enum Direction : byte
+        {
+            S, N, W, E
+        }
+
+#endregion
+
+        private void IdentifyPerimeter(ushort startX, ushort startY, Common.Classes.Map.Map map, 
+            HashSet<int> visitedTiles)
+        {
+            ushort w = map.Width, h = map.Height;
+            int initialValue = TraceCell.DirectionValue(startX, startY, w, h, map);
+            if (initialValue == 0 || initialValue == 15)
+            {
+                return;
+            }
+
+            ClosedTrace closedTrace = new ClosedTrace();
+
+            TraceCell prevCell = null;
+            int x = startX, y = startY;
+            do
+            {
+                TraceCell cell = null;
+                int directionValue = TraceCell.DirectionValue(x, y, w, h, map);
+                switch (directionValue)
+                {
+                    case 1:
+                        cell = new TraceCell(x, y, Direction.N);
+                        break;
+                    case 2:
+                        cell = new TraceCell(x, y, Direction.E);
+                        break;
+                    case 3:
+                        cell = new TraceCell(x, y, Direction.E);
+                        break;
+                    case 4:
+                        cell = new TraceCell(x, y, Direction.W);
+                        break;
+                    case 5:
+                        cell = new TraceCell(x, y, Direction.N);
+                        break;
+                    case 6:
+                        cell = prevCell != null && prevCell.Direction == Direction.N
+                            ? new TraceCell(x, y, Direction.W)
+                            : new TraceCell(x, y, Direction.E);
+                        break;
+                    case 7:
+                        cell = new TraceCell(x, y, Direction.E);
+                        break;
+                    case 8:
+                        cell = new TraceCell(x, y, Direction.S);
+                        break;
+                    case 9:
+                        cell = prevCell != null && prevCell.Direction == Direction.E
+                            ? new TraceCell(x, y, Direction.N)
+                            : new TraceCell(x, y, Direction.S);
+                        break;
+                    case 10:
+                        cell = new TraceCell(x, y, Direction.S);
+                        break;
+                    case 11:
+                        cell = new TraceCell(x, y, Direction.S);
+                        break;
+                    case 12:
+                        cell = new TraceCell(x, y, Direction.W);
+                        break;
+                    case 13:
+                        cell = new TraceCell(x, y, Direction.N);
+                        break;
+                    case 14:
+                        cell = new TraceCell(x, y, Direction.W);
+                        break;
+                }
+
+                if (cell != null)
+                {
+                    closedTrace.Add(cell);
+                    visitedTiles.Add(y << 16 | x);
+
+                    x += cell.ScreenX;
+                    y += cell.ScreenY;
+
+                    prevCell = cell;
+                }
+
+            } while (x != startX || y != startY);
+
+            _closedBorders.Add(closedTrace);
+        }
+
+        private void Initialize(Common.Classes.Map.Map map)
+        {
+            if (map == null)
+            {
+                return;
+            }
+
+            _closedBorders = new ClosedBorders(map);
+
+            HashSet<int> visitedTiles = new HashSet<int>();
+            for (ushort y = 0; y < map.Height; y++)
+            {
+                for (ushort x = 0; x < map.Width; x++)
+                {
+                    if (visitedTiles.Contains(y << 16 | x))
+                    {
+                        continue;
+                    }
+
+                    if ((*map[x, y]).Type == TileType.Wall)
+                    {
+                        //Optimization to protect from extra work and unify identification results
+                        while (x + 1 < map.Width && (*map[(ushort) (x + 1), y]).Type == TileType.Wall)
+                        {
+                            x++;
+                        }
+                        if (visitedTiles.Contains(y << 16 | x))
+                        {
+                            continue;
+                        }
+                        IdentifyPerimeter(x, y, map, visitedTiles);
+                    }
+                }
+            }
+        }
+
+        public void UpdateTile(MapControl mapCtrl, ushort x, ushort y, Tile tile)
+        {
+            if (_closedBorders != null)
+            {
+                BorderCell borderCell = _closedBorders[x, y];
+                if (tile.Type == TileType.Nothing)
+                {
+                    _closedBorders.RemoveCell(x, y);
+                }
+                else if (borderCell == null && tile.Type == TileType.Wall)
+                {
+                    _closedBorders.AddCell(x, y);
+                }
+            }
+        }

@@ -1,0 +1,38 @@
+                //long s, res = 0, sq = 0;
+                //int n = Count;
+
+                    //if (i == 0)
+                    //{
+                    //    s = this[i].X * (this[n - 1].Y - this[i + 1].Y); //если i == 0, то y[i-1] заменяем на y[n-1]
+                    //    res += s;
+                    //}
+                    //else
+                    //    if (i == n - 1)
+                    //    {
+                    //        s = this[i].X * (this[i - 1].Y - this[0].Y); // если i == n-1, то y[i+1] заменяем на y[0]
+                    //        res += s;
+                    //    }
+                    //    else
+                    //    {
+                    //        s = this[i].X * (this[i - 1].Y - this[i + 1].Y);
+                    //        res += s;
+                    //    }
+
+                sq = (res / 2);
+
+
+
+                int xSum = 0, ySum = 0;
+                
+                for (int i = 0; i < Count - 1; i++)
+                {
+                    xSum += Math.Max(this[i].X, 0)*Math.Max(this[i + 1].Y, 0);
+                    ySum += Math.Max(this[i].Y, 0)*Math.Max(this[i + 1].X, 0);
+                }
+                
+                Area = Math.Abs(ySum - xSum) / 2;
+                Area = Area == 1
+                    ? Count
+                    : Area + (Area != Count ? Count : 0); 
+//                If area is presented by single horz line, then area = count.
+//                If area value is not equals to tiles count, the count needs to be added
