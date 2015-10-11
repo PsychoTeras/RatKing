@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RK.Common.Classes.Common;
 
 namespace RK.Common.Classes.Map
@@ -16,7 +15,7 @@ namespace RK.Common.Classes.Map
 
 #region Ctor
 
-        internal MapArea(List<TraceCell> closedTrace, TileType areaType, Map map)
+        internal MapArea(List<TraceCell> closedTrace, TileType areaType, GameMap map)
             : base(closedTrace.Count)
         {
             TraceCell prevTraceCell = null;
@@ -34,7 +33,7 @@ namespace RK.Common.Classes.Map
 #region Area parsing
 
         private void ParseArea(TraceCell traceCell, TraceCell prevTraceCell, TileType areaType, 
-            Map map, HashSet<int> unique)
+            GameMap map, HashSet<int> unique)
         {
             bool invalid;
             ShortPoint borderPoint;
@@ -47,7 +46,7 @@ namespace RK.Common.Classes.Map
             AcceptBorders(borderPoint, invalid, map, unique);
         }
 
-        private void AcceptBorders(ShortPoint borderPoint, bool invalid, Map map, HashSet<int> unique)
+        private void AcceptBorders(ShortPoint borderPoint, bool invalid, GameMap map, HashSet<int> unique)
         {
             if (!invalid && !unique.Contains(borderPoint.Mark))
             {
@@ -57,7 +56,7 @@ namespace RK.Common.Classes.Map
         }
 
         private ShortPoint GetBorders(int x, int y, Direction direction, TileType areaType, 
-            Map map, out bool invalid)
+            GameMap map, out bool invalid)
         {
             invalid = true;
 
@@ -173,14 +172,14 @@ namespace RK.Common.Classes.Map
 
 #region Private fields
 
-        private Map _map;
+        private GameMap _map;
         private TileType _areaType;
 
 #endregion
 
 #region Ctor
 
-        public MapAreas(Map map, TileType areaType)
+        public MapAreas(GameMap map, TileType areaType)
         {
             _map = map;
             _areaType = areaType;
@@ -424,7 +423,7 @@ namespace RK.Common.Classes.Map
             }
         }
 
-        public static int DirectionValue(int x, int y, TileType areaType, Map map)
+        public static int DirectionValue(int x, int y, TileType areaType, GameMap map)
         {
             int flag = 0;
             ushort w = map.Width, h = map.Height;
@@ -435,7 +434,7 @@ namespace RK.Common.Classes.Map
             return flag;
         }
 
-        private static bool IsValidTile(int x, int y, ushort w, ushort h, TileType areaType, Map map)
+        private static bool IsValidTile(int x, int y, ushort w, ushort h, TileType areaType, GameMap map)
         {
             return x >= 0 && x < w && y >= 0 && y < h && (*map[(ushort)x, (ushort)y]).Type == areaType;
         }

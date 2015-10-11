@@ -42,7 +42,7 @@ namespace RK.Win.Classes.Map.Renderers
 
             float scale = mapCtrl.ScaleFactor;
             float pixelSize = PIXEL_SIZE * scale;
-            Common.Classes.Map.Map map = mapCtrl.Map;
+            GameMap map = mapCtrl.Map;
 
             ushort mapX1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosX / pixelSize - 1), 0);
             ushort mapY1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosY / pixelSize - 1), 0);

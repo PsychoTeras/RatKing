@@ -4,7 +4,7 @@ namespace RK.Common.Classes.Map
 {
     public static unsafe class TileBorders
     {
-        public static void ScanAndSetBorders(MapAreas areas, TileType areaType, Map map)
+        public static void ScanAndSetBorders(MapAreas areas, TileType areaType, GameMap map)
         {
             ushort w = map.Width, h = map.Height;
             Parallel.For(0, h, y => Parallel.For(0, w, x =>
@@ -23,14 +23,14 @@ namespace RK.Common.Classes.Map
             }));
         }
 
-        public static void ScanAndSetBorders(ushort x, ushort y, TileType areaType, Map map)
+        public static void ScanAndSetBorders(ushort x, ushort y, TileType areaType, GameMap map)
         {
             ushort w = map.Width, h = map.Height;
             byte borders = GetBorders(x, y, w, h, areaType, map);
             (*map[x, y]).FlagSetBorders(borders);
         }
 
-        public static byte GetBorders(int x, int y, ushort w, ushort h, TileType areaType, Map map)
+        public static byte GetBorders(int x, int y, ushort w, ushort h, TileType areaType, GameMap map)
         {
             if (IsNotValidTile(x, y, w, h, areaType, map))
             {
@@ -47,7 +47,7 @@ namespace RK.Common.Classes.Map
             return flag;
         }
 
-        public static bool IsNotValidTile(int x, int y, ushort w, ushort h, TileType areaType, Map map)
+        public static bool IsNotValidTile(int x, int y, ushort w, ushort h, TileType areaType, GameMap map)
         {
             return x < 0 || x >= w || y < 0 || y >= h || (*map[(ushort)x, (ushort)y]).Type != areaType;
         }

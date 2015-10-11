@@ -40,7 +40,7 @@ namespace RK.Console
             Memory.Free(pTiles);
 #endif
 
-            using (Map map = new Map(width, height, 0))
+            using (GameMap map = new GameMap(width, height, 0))
             {
                 timer = HRTimer.CreateAndStart();
 

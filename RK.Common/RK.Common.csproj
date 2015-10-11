@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -51,7 +51,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -62,15 +62,29 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Classes\Common\DBObject.cs" />
+    <Compile Include="Classes\Common\DbObject.cs" />
     <Compile Include="Classes\Common\ShortPoint.cs" />
     <Compile Include="Classes\Common\TinySize.cs" />
-    <Compile Include="Classes\Map\Map.cs" />
+    <Compile Include="Host\GameHost.cs" />
+    <Compile Include="Classes\Map\GameMap.cs" />
     <Compile Include="Classes\Map\MapAreas.cs" />
     <Compile Include="Classes\Map\Tile.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
     <Compile Include="Classes\Units\Player.cs" />
+    <Compile Include="Classes\Users\User.cs" />
+    <Compile Include="Classes\Users\UserLogged.cs" />
+    <Compile Include="Classes\World\GameWorld.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Proto\BasePacket.cs" />
+    <Compile Include="Proto\BaseResponse.cs" />
+    <Compile Include="Proto\ErrorCodes\ECGeneral.cs" />
+    <Compile Include="Proto\ErrorCodes\ECLogin.cs" />
+    <Compile Include="Proto\ErrorCodes\ECLogout.cs" />
+    <Compile Include="Proto\ErrorCodes\ECRegistration.cs" />
+    <Compile Include="Proto\PacketType.cs" />
+    <Compile Include="Proto\Player\PPlayerMove.cs" />
+    <Compile Include="Proto\User\PUserLogin.cs" />
+    <Compile Include="Proto\User\RUserLogin.cs" />
     <Compile Include="Win32\HRTimer.cs" />
     <Compile Include="Win32\Memory.cs" />
   </ItemGroup>

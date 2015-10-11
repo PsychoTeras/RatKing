@@ -33,7 +33,7 @@ namespace RK.Win.Controls
 
 #region Private fields
 
-        private Map _map;
+        private GameMap _map;
 
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
@@ -156,7 +156,7 @@ namespace RK.Win.Controls
         }
 
         [Browsable(false)]
-        public Map Map
+        public GameMap Map
         {
             get { return _map; }
             set
@@ -230,12 +230,8 @@ namespace RK.Win.Controls
 
 #region Class methods
 
-        public void LoadMap(Map map)
+        public void LoadMap(GameMap map)
         {
-            if (_map != null)
-            {
-                _map.Dispose();
-            }
             Map = map;
             if (MapLoaded != null)
             {

@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using RK.Common.Classes.Common;
 using RK.Common.Win32;
 
 namespace RK.Common.Classes.Map
 {
-    public unsafe sealed class Map : IDisposable
+    public unsafe sealed class GameMap : DbObject, IDisposable
     {
 
 #region Constants
@@ -74,18 +75,20 @@ namespace RK.Common.Classes.Map
 
 #region Ctor
 
-        private Map()
+        private GameMap()
         {
             InitializeGeneric();
             InitializeSections();
         }
 
-        public Map(ushort width, ushort height, short level)
+        public GameMap(ushort width, ushort height, short level)
             : this(width, height, level, null) { }
 
-        public Map(ushort width, ushort height, short level, byte* pRoughMap) 
+        public GameMap(ushort width, ushort height, short level, byte* pRoughMap) 
             : this()
         {
+            SetNewId();
+
             _level = level;
 
             ReinitializeTilesArray(width, height);
@@ -138,9 +141,9 @@ namespace RK.Common.Classes.Map
 
         abstract class SectionBase
         {
-            protected Map Map;
+            protected GameMap Map;
 
-            protected SectionBase(Map map)
+            protected SectionBase(GameMap map)
             {
                 Map = map;
             }
@@ -152,7 +155,7 @@ namespace RK.Common.Classes.Map
 
         class HeaderSection : SectionBase
         {
-            public HeaderSection(Map map) : base(map) { }
+            public HeaderSection(GameMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -169,7 +172,7 @@ namespace RK.Common.Classes.Map
 
         class MapSection : SectionBase
         {
-            public MapSection(Map map) : base(map) { }
+            public MapSection(GameMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -192,7 +195,7 @@ namespace RK.Common.Classes.Map
 
         class TilesSection : SectionBase
         {
-            public TilesSection(Map map) : base(map) { }
+            public TilesSection(GameMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -339,9 +342,9 @@ namespace RK.Common.Classes.Map
             return sectionBase.ReadSection(br, sectionSize);
         }
 
-        public static Map LoadFromMemory(byte[] data)
+        public static GameMap LoadFromMemory(byte[] data)
         {
-            Map map = new Map();
+            GameMap map = new GameMap();
             using (MemoryStream ms = new MemoryStream(data))
             {
                 using (BinaryReader br = new BinaryReader(ms))
@@ -376,7 +379,7 @@ namespace RK.Common.Classes.Map
             return map;
         }
 
-        public static Map LoadFromFile(string fileName)
+        public static GameMap LoadFromFile(string fileName)
         {
             byte[] data = File.ReadAllBytes(fileName);
             return LoadFromMemory(data);
@@ -386,7 +389,7 @@ namespace RK.Common.Classes.Map
 
 #region IDisposable
 
-        ~Map()
+        ~GameMap()
         {
             Dispose(false);
         }

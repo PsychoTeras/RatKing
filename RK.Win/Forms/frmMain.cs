@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AccidentalNoise;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
+using RK.Common.Classes.World;
+using RK.Common.Host;
+using RK.Common.Proto.User;
 using RK.Common.Win32;
 
 namespace RK.Win.Forms
@@ -15,6 +17,8 @@ namespace RK.Win.Forms
     public partial class frmMain : Form
     {
         private Point? _mousePos;
+        private GameWorld _world;
+        private int _sessionId;
 
         private object[] GetEnumValues(Type e)
         {
@@ -24,6 +28,15 @@ namespace RK.Win.Forms
         public frmMain()
         {
             InitializeComponent();
+
+            _world = new GameWorld();
+            GameHost host = new GameHost(_world);
+            RUserLogin r = (RUserLogin) host.ProcessPacket(new PUserLogin
+            {
+                UserName = "PsychoTeras",
+                Password = "password"
+            });
+            _sessionId = r.SessionId;
 
             cbLabyrinthType.Items.AddRange(GetEnumValues(typeof(FractalType)));
             cbLabyrinthType.SelectedItem = FractalType.FBM;
@@ -184,7 +197,7 @@ namespace RK.Win.Forms
                 });
             });
 
-            using (Map map = new Map(width, height, 0, pRoughMap))
+            using (GameMap map = new GameMap(width, height, 0, pRoughMap))
             {
                 map.SaveToFile("d:\\RK.save");
             }
@@ -204,11 +217,11 @@ namespace RK.Win.Forms
         private void BtnLoadLabyrinthClick(object sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
-            if (File.Exists("d:\\RK.save"))
+            if (_world.FirstMap == null)
             {
-                Map map = Map.LoadFromFile("d:\\RK.save");
-                mapCtrl.LoadMap(map);
+                _world.LoadMap();
             }
+            mapCtrl.LoadMap(_world.FirstMap);
             Cursor = DefaultCursor;
         }
 
