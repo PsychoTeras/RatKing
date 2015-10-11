@@ -19,6 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -31,6 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -42,6 +44,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <Optimize>false</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -50,6 +53,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

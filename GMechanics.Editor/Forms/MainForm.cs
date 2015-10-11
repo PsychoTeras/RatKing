@@ -98,7 +98,7 @@ namespace GMechanics.Editor.Forms
                     File.Delete(backupFilePath);
                 }
 
-                /*GlobalStorage.Instance.CloseSQLiteConnections();
+                GlobalStorage.Instance.CloseSQLiteConnections();
                 LocalStorage.Instance.CloseSQLiteConnections();
 
                 using (ZipFile zip = new ZipFile())
@@ -109,7 +109,7 @@ namespace GMechanics.Editor.Forms
                 }
 
                 GlobalStorage.Instance.RestoreSQLiteConnections();
-                LocalStorage.Instance.RestoreSQLiteConnections();*/
+                LocalStorage.Instance.RestoreSQLiteConnections();
 
                 Cursor = Cursors.Default;
 

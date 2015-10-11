@@ -19,6 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\_bin\</OutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -31,6 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -42,6 +44,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -49,6 +52,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
+	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <Optimize>true</Optimize>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -56,10 +60,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Classes\Map\MapBG.cs" />
