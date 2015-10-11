@@ -1,0 +1,466 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{BDA19613-B5A9-4D96-B544-7619237B1803}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GMechanics.Editor</RootNamespace>
+    <AssemblyName>GMechanics.Editor</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ApplicationIcon>Resources\hammer.ico</ApplicationIcon>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\_bin\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\_bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>..\_bin\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>false</Prefer32Bit>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Ionic.Zip, Version=1.9.1.8, Culture=neutral, PublicKeyToken=edbe51ad942a3f5c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Assemblies\Ionic.Zip.dll</HintPath>
+    </Reference>
+    <Reference Include="PropertyGridEx, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Assemblies\PropertyGridEx.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.SQLite, Version=1.0.82.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\GMechanics.Core\Assemblies\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\GMechanics.Core\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
+    <Compile Include="UIControls\Common\Header.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\Common\Header.Designer.cs">
+      <DependentUpon>Header.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\Common\TreeViewEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\GraphicEditor\GraphicEditor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\GraphicEditor\GraphicEditor.Designer.cs">
+      <DependentUpon>GraphicEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\GraphicEditor\GraphicEditor_ItemsManagement.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\PropertyGridEditor\GameObjectPropertyGridEditor.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\PropertyGridEditor\GameObjectPropertyGridEditor.Designer.cs">
+      <DependentUpon>GameObjectPropertyGridEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViewSearchBox\SearchLevel.cs" />
+    <Compile Include="UIControls\TreeViewSearchBox\SearchResultView.cs" />
+    <Compile Include="UIControls\TreeViewSearchBox\TreeNodeItem.cs" />
+    <Compile Include="UIControls\TreeViewSearchBox\TreeNodeItems.cs" />
+    <Compile Include="UIControls\TreeViews\GameObjectsTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\GameObjectsTreeView.Designer.cs">
+      <DependentUpon>GameObjectsTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\TvNodeSorterGameObjects.cs" />
+    <Compile Include="Data\FlowcharItemData.cs" />
+    <Compile Include="Data\FlowcharItems.cs" />
+    <Compile Include="Data\ScriptSourceData.cs" />
+    <Compile Include="Data\LocalStorage.cs" />
+    <Compile Include="Data\ScriptsSources.cs" />
+    <Compile Include="Forms\ApplicationAbout\ApplicationAboutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ApplicationAbout\ApplicationAboutForm.designer.cs">
+      <DependentUpon>ApplicationAboutForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ApplicationAbout\SolutionModulesInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ApplicationAbout\SolutionModulesInfoForm.designer.cs">
+      <DependentUpon>SolutionModulesInfoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectGroupManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectGroupManageForm.designer.cs">
+      <DependentUpon>GameObjectGroupManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectManageForm.designer.cs">
+      <DependentUpon>GameObjectManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\InteractiveManage\InteractiveRecipientManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\InteractiveManage\InteractiveRecipientManageForm.Designer.cs">
+      <DependentUpon>InteractiveRecipientManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\InteractiveManage\InteractiveRecipientsManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\InteractiveManage\InteractiveRecipientsManageForm.Designer.cs">
+      <DependentUpon>InteractiveRecipientsManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\Helper.cs" />
+    <Compile Include="UIControls\Common\CheckBoxEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\Common\ComboBoxEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\TvNodeSorter.cs" />
+    <Compile Include="UIControls\TreeViews\GameObjectsEntitiesTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\GameObjectsEntitiesTreeView.Designer.cs">
+      <DependentUpon>GameObjectsEntitiesTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectAttributeManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectAttributeManageForm.Designer.cs">
+      <DependentUpon>GameObjectAttributeManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectEntityClassManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectEntityClassManageForm.Designer.cs">
+      <DependentUpon>GameObjectEntityClassManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectEntityManageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GameObjectManage\GameObjectEntityManageForm.Designer.cs">
+      <DependentUpon>GameObjectEntityManageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RestoreBackupForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RestoreBackupForm.Designer.cs">
+      <DependentUpon>RestoreBackupForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\AttributesTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\AttributesTreeView.designer.cs">
+      <DependentUpon>AttributesTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\BaseTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\BaseTreeView.Designer.cs">
+      <DependentUpon>BaseTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\FeaturesTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\FeaturesTreeView.designer.cs">
+      <DependentUpon>FeaturesTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\PropertyGridEditor\EntityPropertyGridEditor.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\PropertyGridEditor\EntityPropertyGridEditor.Designer.cs">
+      <DependentUpon>EntityPropertyGridEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\PropertiesTreeView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViews\PropertiesTreeView.Designer.cs">
+      <DependentUpon>PropertiesTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViewSearchBox\TreeViewSearchBox.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViewSearchBox\TreeViewSearchBox.Designer.cs">
+      <DependentUpon>TreeViewSearchBox.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ScriptEditor\ScriptEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ScriptEditor\ScriptEditorForm.Designer.cs">
+      <DependentUpon>ScriptEditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ScriptEditor\ScriptEditorForm_ScriptFormatter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="UIControls\Common\Header.resx">
+      <DependentUpon>Header.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\GraphicEditor\GraphicEditor.resx">
+      <DependentUpon>GraphicEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\AttributesTreeView.resx">
+      <DependentUpon>AttributesTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\BaseTreeView.resx">
+      <DependentUpon>BaseTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\PropertyGridEditor\EntityPropertyGridEditor.resx">
+      <DependentUpon>EntityPropertyGridEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\FeaturesTreeView.resx">
+      <DependentUpon>FeaturesTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\GameObjectsTreeView.resx">
+      <DependentUpon>GameObjectsTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\PropertiesTreeView.resx">
+      <DependentUpon>PropertiesTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViewSearchBox\TreeViewSearchBox.resx">
+      <DependentUpon>TreeViewSearchBox.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViews\GameObjectsEntitiesTreeView.resx">
+      <DependentUpon>GameObjectsEntitiesTreeView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ApplicationAbout\ApplicationAboutForm.resx">
+      <DependentUpon>ApplicationAboutForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ApplicationAbout\SolutionModulesInfoForm.resx">
+      <DependentUpon>SolutionModulesInfoForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameObjectManage\GameObjectAttributeManageForm.resx">
+      <DependentUpon>GameObjectAttributeManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameObjectManage\GameObjectEntityClassManageForm.resx">
+      <DependentUpon>GameObjectEntityClassManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameObjectManage\GameObjectEntityManageForm.resx">
+      <DependentUpon>GameObjectEntityManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameObjectManage\GameObjectGroupManageForm.resx">
+      <DependentUpon>GameObjectGroupManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameObjectManage\GameObjectManageForm.resx">
+      <DependentUpon>GameObjectManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\InteractiveManage\InteractiveRecipientManageForm.resx">
+      <DependentUpon>InteractiveRecipientManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\InteractiveManage\InteractiveRecipientsManageForm.resx">
+      <DependentUpon>InteractiveRecipientsManageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RestoreBackupForm.resx">
+      <DependentUpon>RestoreBackupForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ScriptEditor\ScriptEditorForm.resx">
+      <DependentUpon>ScriptEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\Common\TransparentPanel.resx">
+      <DependentUpon>TransparentPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViewPathEdit\TreeViewPathButton.resx">
+      <DependentUpon>TreeViewPathButton.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIControls\TreeViewPathEdit\TreeViewPathEdit.resx">
+      <DependentUpon>TreeViewPathEdit.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="App.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="UIControls\Common\TransparentPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UIControls\Common\TransparentPanel.designer.cs">
+      <DependentUpon>TransparentPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViewPathEdit\TreeViewPathButton.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViewPathEdit\TreeViewPathButton.designer.cs">
+      <DependentUpon>TreeViewPathButton.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIControls\TreeViewPathEdit\TreeViewPathEdit.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIControls\TreeViewPathEdit\TreeViewPathEdit.designer.cs">
+      <DependentUpon>TreeViewPathEdit.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\scroll_run.png" />
+    <None Include="Resources\script_lightning.png" />
+    <None Include="Resources\star_yellow_preferences.png" />
+    <None Include="Resources\disk.png" />
+    <None Include="Resources\database_save.png" />
+    <None Include="Resources\database_refresh.png" />
+    <None Include="Resources\delete.png" />
+    <None Include="Resources\books_add.png" />
+    <None Include="Resources\book_yellow.png" />
+    <None Include="Resources\brick_add.png" />
+    <None Include="Resources\brick_edit.png" />
+    <None Include="Resources\folder_add.png" />
+    <None Include="Resources\folder_add1.png" />
+    <None Include="Resources\cube_yellow_add.png" />
+    <None Include="Resources\box_closed_add.png" />
+    <None Include="Resources\box_edit.png" />
+    <None Include="Resources\box_closed_edit.png" />
+    <None Include="Resources\data_into.png" />
+    <None Include="Resources\drive.png" />
+    <None Include="Resources\drive_disk.png" />
+    <None Include="Resources\drive_go.png" />
+    <None Include="Resources\arrow_refresh_small.png" />
+    <None Include="Resources\arrow_refresh.png" />
+    <None Include="Resources\cog_go.png" />
+    <None Include="Resources\cog_edit.png" />
+    <None Include="Resources\component_yellow_add.png" />
+    <None Include="Resources\flash_add.png" />
+    <None Include="Resources\flash_delete.png" />
+    <None Include="Resources\flash_edit.png" />
+    <None Include="Resources\flash.png" />
+    <None Include="Resources\cog.png" />
+    <None Include="Resources\cube_green_add.png" />
+    <None Include="Resources\cube_green_add1.png" />
+    <None Include="Resources\folder_cube_atom.png" />
+    <None Include="Resources\folder_cube_blue.png" />
+    <None Include="Resources\folder_cube_green.png" />
+    <None Include="Resources\folder_cube_yellow.png" />
+    <None Include="Resources\cube_blue_add.png" />
+    <None Include="Resources\cube_yellow_add1.png" />
+    <None Include="Resources\cube_molecule_add.png" />
+    <None Include="Resources\folder_edit.png" />
+    <None Include="Resources\cube_molecule_edit.png" />
+    <None Include="Resources\cube_blue_edit.png" />
+    <None Include="Resources\cube_green_edit.png" />
+    <None Include="Resources\cube_yellow_edit.png" />
+    <None Include="Resources\check.png" />
+    <None Include="Resources\element_delete.png" />
+    <None Include="Resources\bullet_ball_glass_green.png" />
+    <None Include="Resources\bullet_ball_glass_red.png" />
+    <Content Include="Resources\hammer.ico" />
+    <None Include="Resources\refresh.png" />
+    <None Include="Resources\star_yellow.png" />
+    <None Include="Resources\key1_edit.png" />
+    <None Include="Resources\key1_add.png" />
+    <None Include="Resources\lightning.png" />
+    <None Include="Resources\server_out.png" />
+    <None Include="Resources\server_into.png" />
+    <None Include="Resources\package_edit.png" />
+    <None Include="Resources\package_add.png" />
+    <None Include="Resources\star_yellow_add.png" />
+    <None Include="Resources\help.png" />
+    <None Include="Resources\row_delete.png" />
+    <None Include="Resources\row_edit.png" />
+    <None Include="Resources\row_add.png" />
+    <None Include="Resources\cubes_blue_add.png" />
+    <None Include="Resources\cubes_green.png" />
+    <None Include="Resources\atom.png" />
+    <None Include="Resources\cubes.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GMechanics.Core\GMechanics.Core.csproj">
+      <Project>{78BB568A-BB44-4596-90FF-9E73D0F5E839}</Project>
+      <Name>GMechanics.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Externals\GMechanics.Flowchart\GMechanics.Flowchart.csproj">
+      <Project>{0BD35500-AA6D-4D94-9E6C-879E4FE5B583}</Project>
+      <Name>GMechanics.Flowchart</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Externals\GMechanics.ScriptTextBox\GMechanics.ScriptTextBox.csproj">
+      <Project>{6DD14A85-CCFC-4774-BD26-0F5772512319}</Project>
+      <Name>GMechanics.ScriptTextBox</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+</Project>

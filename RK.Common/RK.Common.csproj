@@ -58,12 +58,14 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\Common\DBObject.cs" />
     <Compile Include="Classes\Common\ShortPoint.cs" />
     <Compile Include="Classes\Common\TinySize.cs" />
     <Compile Include="Classes\Map\Map.cs" />
     <Compile Include="Classes\Map\MapAreas.cs" />
     <Compile Include="Classes\Map\Tile.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
+    <Compile Include="Classes\Units\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Win32\HRTimer.cs" />
     <Compile Include="Win32\Memory.cs" />

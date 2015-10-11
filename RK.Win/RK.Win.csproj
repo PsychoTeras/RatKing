@@ -132,7 +132,7 @@
     <Content Include="Resources\bg_tiles.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\players.png">
+    <Content Include="Resources\player.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\rock.png">

@@ -135,10 +135,10 @@
             this.pMimiMap.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.pMimiMap.BackColor = System.Drawing.Color.DimGray;
             this.pMimiMap.Controls.Add(this.miniMapCtrl);
-            this.pMimiMap.Location = new System.Drawing.Point(470, 314);
+            this.pMimiMap.Location = new System.Drawing.Point(521, 365);
             this.pMimiMap.Name = "pMimiMap";
             this.pMimiMap.Padding = new System.Windows.Forms.Padding(1);
-            this.pMimiMap.Size = new System.Drawing.Size(250, 250);
+            this.pMimiMap.Size = new System.Drawing.Size(200, 200);
             this.pMimiMap.TabIndex = 1;
             // 
             // toolStrip4
@@ -523,7 +523,7 @@
             this.miniMapCtrl.Location = new System.Drawing.Point(1, 1);
             this.miniMapCtrl.MapControl = this.mapCtrl;
             this.miniMapCtrl.Name = "miniMapCtrl";
-            this.miniMapCtrl.Size = new System.Drawing.Size(248, 248);
+            this.miniMapCtrl.Size = new System.Drawing.Size(198, 198);
             this.miniMapCtrl.TabIndex = 0;
             this.miniMapCtrl.TabStop = false;
             // 

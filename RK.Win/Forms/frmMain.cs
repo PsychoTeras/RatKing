@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -203,8 +204,11 @@ namespace RK.Win.Forms
         private void BtnLoadLabyrinthClick(object sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
-            Map map = Map.LoadFromFile("d:\\RK.save");
-            mapCtrl.LoadMap(map);
+            if (File.Exists("d:\\RK.save"))
+            {
+                Map map = Map.LoadFromFile("d:\\RK.save");
+                mapCtrl.LoadMap(map);
+            }
             Cursor = DefaultCursor;
         }
 

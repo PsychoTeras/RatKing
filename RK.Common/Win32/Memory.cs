@@ -22,6 +22,10 @@ namespace RK.Common.Win32
         [DllImport("kernel32")]
         private static extern int HeapSize(int hHeap, int flags, void* block);
 
+        [DllImport("kernel32")]
+        private static extern bool HeapSetInformation(void* handle, int informationClass,
+            void* information, uint informationLength);
+
         [DllImport("kernel32", EntryPoint = "RtlZeroMemory")]
         public static extern void ZeroMemory(void* dest, int size);
 
