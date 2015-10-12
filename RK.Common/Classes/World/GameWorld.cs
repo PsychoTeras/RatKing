@@ -10,10 +10,10 @@ namespace RK.Common.Classes.World
     public sealed class GameWorld : IDisposable
     {
 
-#region Private fields
+#region Public fields
 
-        private Dictionary<long, GameMap> _maps;
-        private Dictionary<long, Player> _players;
+        public Dictionary<long, GameMap> Maps;
+        public Dictionary<long, Player> Players;
 
 #endregion
 
@@ -21,7 +21,7 @@ namespace RK.Common.Classes.World
 
         public GameMap FirstMap
         {
-            get { return _maps.Values.FirstOrDefault(); }
+            get { return Maps.Values.FirstOrDefault(); }
         }
 
 #endregion
@@ -30,8 +30,8 @@ namespace RK.Common.Classes.World
 
         public GameWorld()
         {
-            _maps = new Dictionary<long, GameMap>();
-            _players = new Dictionary<long, Player>();
+            Maps = new Dictionary<long, GameMap>();
+            Players = new Dictionary<long, Player>();
         }
 
 #endregion
@@ -40,15 +40,15 @@ namespace RK.Common.Classes.World
 
         public void LoadMap()
         {
-            foreach (GameMap map in _maps.Values)
+            foreach (GameMap map in Maps.Values)
             {
                 map.Dispose();
             }
-            _maps.Clear();
+            Maps.Clear();
             if (File.Exists("d:\\RK.save"))
             {
                 GameMap map = GameMap.LoadFromFile("d:\\RK.save");
-                _maps.Add(map.Id, map);
+                Maps.Add(map.Id, map);
             }
         }
 
@@ -58,9 +58,9 @@ namespace RK.Common.Classes.World
 
         public bool PlayerAdd(Player player)
         {
-            if (!_players.ContainsKey(player.Id))
+            if (!Players.ContainsKey(player.Id))
             {
-                _players.Add(player.Id, player);
+                Players.Add(player.Id, player);
                 return true;
             }
             return false;
@@ -69,7 +69,7 @@ namespace RK.Common.Classes.World
         public bool PlayerChangeMap(long playerId, long mapId)
         {
             Player player;
-            if (_players.TryGetValue(playerId, out player) && _maps.ContainsKey(mapId) &&
+            if (Players.TryGetValue(playerId, out player) && Maps.ContainsKey(mapId) &&
                 player.MapId != mapId)
             {
                 player.MapId = mapId;
@@ -84,15 +84,15 @@ namespace RK.Common.Classes.World
 
         public void Dispose()
         {
-            lock (_maps)
+            lock (Maps)
             {
-                if (_maps != null)
+                if (Maps != null)
                 {
-                    foreach (GameMap map in _maps.Values)
+                    foreach (GameMap map in Maps.Values)
                     {
                         map.Dispose();
                     }
-                    _maps = null;
+                    Maps = null;
                 }
             }
         }

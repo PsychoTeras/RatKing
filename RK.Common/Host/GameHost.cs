@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
 using RK.Common.Classes.World;
+using RK.Common.Host.Validators;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.User;
@@ -22,10 +23,16 @@ namespace RK.Common.Host
 #region Private fields
 
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
+        private List<BaseValidator> _validators;
 
-        private GameWorld _world;
         private Dictionary<long, User> _loggedUsers;
         private Dictionary<long, long> _userPlayers;
+
+#endregion
+
+#region Public fields
+
+        public GameWorld World;
 
 #endregion
 
@@ -40,11 +47,16 @@ namespace RK.Common.Host
             {
                 {PacketType.UserLogin, Login}
             };
+
+            _validators = new List<BaseValidator>
+            {
+                new VCheckPosition(this)
+            };
         }
 
         public GameHost(GameWorld world) : this()
         {
-            _world = world;
+            World = world;
         }
 
 #endregion
@@ -53,19 +65,20 @@ namespace RK.Common.Host
 
         public BaseResponse Login(BasePacket packet)
         {
-            PUserLogin pUserLogin = (PUserLogin) packet;
+            lock (_loggedUsers) lock (_userPlayers)
+            {
+                PUserLogin pUserLogin = (PUserLogin)packet;
+                pUserLogin.NewSessionId();
 
-            pUserLogin.NewSessionId();
+                User user = new User(pUserLogin.UserName, pUserLogin.Password);
+                _loggedUsers.Add(pUserLogin.SessionMark, user);
 
-            User user = new User(pUserLogin.UserName, pUserLogin.Password);
-            _loggedUsers.Add(pUserLogin.SessionMark, user);
+                Player player = Player.Create(user.UserName);
+                World.PlayerAdd(player);
+                _userPlayers.Add(pUserLogin.SessionMark, player.Id);
 
-            Player player = Player.Create(user.UserName);
-            _world.PlayerAdd(player);
-
-            _userPlayers.Add(user.Id, player.Id);
-
-            return new RUserLogin(pUserLogin.SessionId);
+                return new RUserLogin(pUserLogin.SessionId);
+            }
         }
 
 #endregion
@@ -96,7 +109,7 @@ namespace RK.Common.Host
             }
             catch (Exception ex)
             {
-                return BaseResponse.FromException<BaseResponse>(ex);
+                return BaseResponse.FromException<BaseResponse>(packet, ex);
             }
         }
 

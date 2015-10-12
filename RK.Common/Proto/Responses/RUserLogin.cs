@@ -4,7 +4,8 @@
     {
         public int SessionId;
 
-        public RUserLogin(int sessionId)
+        public RUserLogin(int sessionId) 
+            : base(PacketType.UserLogin)
         {
             SessionId = sessionId;
         }

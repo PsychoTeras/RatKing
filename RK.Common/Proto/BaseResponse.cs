@@ -15,6 +15,10 @@ namespace RK.Common.Proto
 
 #region Properties
 
+        public PacketType Type;
+
+        public int ErrorCode;
+
         public string ErrorMessage
         {
             get { return _errorMessage; }
@@ -24,16 +28,21 @@ namespace RK.Common.Proto
                 HasError = !string.IsNullOrEmpty(_errorMessage);
             }
         }
-        public int ErrorCode { get; set; }
+
         public bool HasError { get; private set; }
 
 #endregion
         
 #region Static methods
 
-        public static BaseResponse Successful
+        public static BaseResponse Successful(BasePacket packet)
         {
-            get { return new BaseResponse(); }
+            return Successful(packet.Type);
+        }
+
+        public static BaseResponse Successful(PacketType type)
+        {
+            return new BaseResponse(type);
         }
 
 #endregion
@@ -45,24 +54,33 @@ namespace RK.Common.Proto
             _errorMessage = string.Empty;
         }
 
-        public BaseResponse(string errorMessage, int errorCode = 0)
+        public BaseResponse(PacketType type) : this()
         {
-            Set(errorMessage, errorCode);
+            Type = type;
         }
 
-        public BaseResponse(Exception ex, int errorCode = 0)
+        public BaseResponse(BasePacket packet) : this(packet.Type) { }
+
+        public BaseResponse(PacketType type, string errorMessage, int errorCode = 0)
+            : this(type)
         {
-            Set(ex, errorCode);
+            Set(type, errorMessage, errorCode);
         }
 
-        public BaseResponse Set(string errorMessage, int errorCode)
+        public BaseResponse(PacketType type, Exception ex, int errorCode = 0)
+            : this(type)
+        {
+            Set(type, ex, errorCode);
+        }
+
+        public BaseResponse Set(PacketType type, string errorMessage, int errorCode)
         {
             ErrorMessage = errorMessage;
             ErrorCode = errorCode;
             return this;
         }
 
-        public BaseResponse Set(Exception ex, int errorCode)
+        public BaseResponse Set(PacketType type, Exception ex, int errorCode)
         {
             ErrorMessage = ex.Message;
             ErrorCode = errorCode;
@@ -92,19 +110,31 @@ namespace RK.Common.Proto
             throw ex;
         }
 
-        public static T FromException<T>(Exception ex) 
+        public static T FromException<T>(BasePacket packet, Exception ex)
+            where T : BaseResponse, new()
+        {
+            return FromException<T>(packet.Type, ex);
+        }
+
+        public static T FromException<T>(PacketType type, Exception ex) 
             where T : BaseResponse, new()
         {
             int errorCode = ex.Data.Contains("ErrorCode")
                                 ? (int) ex.Data["ErrorCode"]
                                 : ECGeneral.UnknownError;
-            return FromException<T>(ex, errorCode);
+            return FromException<T>(type, ex, errorCode);
         }
 
-        public static T FromException<T>(Exception ex, int errorCode)
+        public static T FromException<T>(BasePacket packet, Exception ex, int errorCode)
             where T : BaseResponse, new()
         {
-            return (T)new T().Set(ex, errorCode);
+            return FromException<T>(packet.Type, ex, errorCode);
+        }
+
+        public static T FromException<T>(PacketType type, Exception ex, int errorCode)
+            where T : BaseResponse, new()
+        {
+            return (T)new T().Set(type, ex, errorCode);
         }
 
 #endregion
