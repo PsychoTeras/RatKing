@@ -4,6 +4,7 @@
     {
         public int X;
         public int Y;
+        public byte D;
 
         public override PacketType Type
         {

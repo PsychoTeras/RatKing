@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -25,8 +26,9 @@ namespace RK.Win.Controls
         private Pen _mapWindowPen;
         private Brush _mapWallsBrush;
 
-        private bool _inScroll;
-
+        private Point? _mousePos;
+        private bool _dragScroll;
+        
 #endregion
 
 #region Properties
@@ -273,35 +275,39 @@ namespace RK.Win.Controls
             }
         }
 
-        private void SetMapPosition(Point location)
+        private void SetMapPosition(Point location, bool smothScroll)
         {
             float w = _map.Map.Width * RendererWalls.PIXEL_SIZE * _map.ScaleFactor;
             float h = _map.Map.Height * RendererWalls.PIXEL_SIZE * _map.ScaleFactor;
-            float x = (float)location.X / Width * w - ((float)_map.Width / 2);
-            float y = (float)location.Y / Height * h - ((float)_map.Height / 2);
-            _map.SetPosition((int)x, (int)y);
+            float x = (float)location.X / Width * w;
+            float y = (float)location.Y / Height * h;
+            _map.CenterTo((int)x, (int)y, smothScroll);
         }
 
         private void MiniMapControlMouseDown(object sender, MouseEventArgs e)
         {
             if (_map != null && _map.IsMapLoaded)
             {
-                _inScroll = true;
-                SetMapPosition(e.Location);
+                _mousePos = e.Location;
+                SetMapPosition(e.Location, true);
             }
         }
 
         private void MiniMapControlMouseMove(object sender, MouseEventArgs e)
         {
-            if (_inScroll)
+            if (_mousePos != null && (_dragScroll || 
+                Math.Abs(e.X - _mousePos.Value.X) > 3 ||
+                Math.Abs(e.Y - _mousePos.Value.Y) > 3))
             {
-                SetMapPosition(e.Location);
+                _dragScroll = true;
+                SetMapPosition(e.Location, false);
             }
         }
 
         private void MiniMapControlMouseUp(object sender, MouseEventArgs e)
         {
-            _inScroll = false;
+            _mousePos = null;
+            _dragScroll = false;
         }
 
 #endregion

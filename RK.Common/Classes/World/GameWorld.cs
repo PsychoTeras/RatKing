@@ -24,6 +24,11 @@ namespace RK.Common.Classes.World
             get { return Maps.Values.FirstOrDefault(); }
         }
 
+        public Player FirstPlayer
+        {
+            get { return Players.Values.FirstOrDefault(); }
+        }
+
 #endregion
 
 #region Ctor

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
@@ -47,6 +48,9 @@ namespace RK.Win.Controls
         private float _scaleFactor;
 
         private bool _showTileNumber;
+
+        private Point? _scrollToPos;
+        private object _syncScroll = new object();
 
 #endregion
 
@@ -97,11 +101,15 @@ namespace RK.Win.Controls
             {
                 if (_posX != value)
                 {
-                    _posX = value;
-                    Repaint();
-                    if (PositionChanged != null)
+                    lock (_syncScroll)
                     {
-                        PositionChanged(this);
+                        _scrollToPos = null;
+                        _posX = value;
+                        Repaint();
+                        if (PositionChanged != null)
+                        {
+                            PositionChanged(this);
+                        }
                     }
                 }
             }
@@ -115,11 +123,15 @@ namespace RK.Win.Controls
             {
                 if (_posY != value)
                 {
-                    _posY = value;
-                    Repaint();
-                    if (PositionChanged != null)
+                    lock (_syncScroll)
                     {
-                        PositionChanged(this);
+                        _scrollToPos = null;
+                        _posY = value;
+                        Repaint();
+                        if (PositionChanged != null)
+                        {
+                            PositionChanged(this);
+                        }
                     }
                 }
             }
@@ -365,23 +377,39 @@ namespace RK.Win.Controls
 
         public void SetPosition(int x, int y)
         {
-            _posX = x;
-            _posY = y;
-            Repaint();
-            if (PositionChanged != null)
+            lock (_syncScroll)
             {
-                PositionChanged(this);
+                _scrollToPos = null;
+                _posX = x;
+                _posY = y;
+                Repaint();
+                if (PositionChanged != null)
+                {
+                    PositionChanged(this);
+                }
             }
         }
 
         public void ShiftPosition(int shiftX, int shiftY)
         {
-            _posX += shiftX;
-            _posY += shiftY;
-            Repaint();
-            if (PositionChanged != null)
+            ShiftPosition(shiftX, shiftY, false);
+        }
+
+        private void ShiftPosition(int shiftX, int shiftY, bool scrollToPos)
+        {
+            lock (_syncScroll)
             {
-                PositionChanged(this);
+                if (!scrollToPos)
+                {
+                    _scrollToPos = null;
+                }
+                _posX += shiftX;
+                _posY += shiftY;
+                Repaint();
+                if (PositionChanged != null)
+                {
+                    PositionChanged(this);
+                }
             }
         }
 
@@ -494,6 +522,61 @@ namespace RK.Win.Controls
                 if (TilesChanged != null)
                 {
                     TilesChanged(this);
+                }
+            }
+        }
+
+        private void DoScrollToPos()
+        {
+            while (Thread.CurrentThread.IsAlive)
+            {
+                lock (_syncScroll)
+                {
+                    if (_scrollToPos == null)
+                    {
+                        return;
+                    }
+                    int xShift = (_scrollToPos.Value.X - _posX)/2;
+                    int yShift = (_scrollToPos.Value.Y - _posY)/2;
+                    if (Math.Abs(xShift) <= 35 && Math.Abs(yShift) <= 35)
+                    {
+                        SetPosition(_scrollToPos.Value.X, _scrollToPos.Value.Y);
+                    }
+                    else
+                    {
+                        ShiftPosition(xShift, yShift, true);
+                    }
+                }
+                Thread.Sleep(1);
+            }
+        }
+
+        public void CenterTo(Point pos, bool smothScroll = true)
+        {
+            CenterTo(pos.X, pos.Y);
+        }
+
+        public void CenterTo(int x, int y, bool smothScroll = false)
+        {
+            lock (_syncScroll)
+            {
+                x -= Width/2;
+                y -= Height/2;
+                if (!smothScroll)
+                {
+                    SetPosition(x, y);
+                }
+                else
+                {
+                    if (_scrollToPos != null)
+                    {
+                        _scrollToPos = new Point(x, y);
+                    }
+                    else
+                    {
+                        _scrollToPos = new Point(x, y);
+                        ThreadPool.QueueUserWorkItem(o => DoScrollToPos());
+                    }
                 }
             }
         }
