@@ -7,19 +7,13 @@ namespace RK.Common.Proto
     {
         private static int _sessionIdCounter = Environment.TickCount;
 
-        public int UserId;
-        public int SessionId;
-
-        public long SessionMark
-        {
-            get { return UserId << 32 | SessionId; }
-        }
+        public long SessionToken;
 
         public abstract PacketType Type { get; }
 
-        public void NewSessionId()
+        public static long NewSessionToken(int userId)
         {
-            SessionId = Interlocked.Increment(ref _sessionIdCounter);
+            return userId << 32 | Interlocked.Increment(ref _sessionIdCounter);
         }
     }
 }

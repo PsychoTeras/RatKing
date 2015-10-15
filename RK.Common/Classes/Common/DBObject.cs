@@ -4,9 +4,9 @@ namespace RK.Common.Classes.Common
 {
     public abstract class DbObject
     {
-        public static long IdCounter;
+        public static int IdCounter;
 
-        public long Id;
+        public int Id;
 
         protected void SetNewId()
         {

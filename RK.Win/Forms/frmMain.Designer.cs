@@ -535,7 +535,6 @@
             this.mapCtrl.Font = new System.Drawing.Font("Verdana", 6F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.mapCtrl.ForeColor = System.Drawing.Color.DarkGray;
             this.mapCtrl.Location = new System.Drawing.Point(0, 0);
-            this.mapCtrl.Map = null;
             this.mapCtrl.Name = "mapCtrl";
             this.mapCtrl.PosX = 0;
             this.mapCtrl.PosY = 0;

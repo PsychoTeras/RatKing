@@ -8,6 +8,10 @@ using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
+using RK.Common.Classes.Units;
+using RK.Common.Host;
+using RK.Common.Proto.Packets;
+using RK.Common.Proto.Responses;
 using RK.Win.Classes.Map.Renderers;
 
 namespace RK.Win.Controls
@@ -35,6 +39,7 @@ namespace RK.Win.Controls
 #region Private fields
 
         private GameMap _map;
+        private GameHost _host;
 
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
@@ -51,6 +56,9 @@ namespace RK.Win.Controls
 
         private Point? _scrollToPos;
         private object _syncScroll = new object();
+
+        private long _sessionToken;
+        private Dictionary<long, Player> _players;
 
 #endregion
 
@@ -168,15 +176,20 @@ namespace RK.Win.Controls
         }
 
         [Browsable(false)]
+        public GameHost Host
+        {
+            get { return _host; }
+            set
+            {
+                _host = value;
+                ConnectToHost();
+            }
+        }
+
+        [Browsable(false)]
         public GameMap Map
         {
             get { return _map; }
-            set
-            {
-                _map = value;
-                MapChanged();
-                Repaint();
-            }
         }
 
         [Browsable(false)]
@@ -225,7 +238,10 @@ namespace RK.Win.Controls
                 SetStyle(ControlStyles.ResizeRedraw, true);
                 SetStyle(ControlStyles.AllPaintingInWmPaint, true);
                 SetStyle(ControlStyles.Selectable, false);
+                
                 Application.AddMessageFilter(this);
+                
+                InitializeEnvironment();
                 InitializeRenderers();
             }
 
@@ -242,13 +258,100 @@ namespace RK.Win.Controls
 
 #region Class methods
 
-        public void LoadMap(GameMap map)
+        private void ConnectToHost()
         {
-            Map = map;
-            if (MapLoaded != null)
+            if (_host.World.FirstMap == null)
             {
-                MapLoaded(this);
+                _host.World.LoadMap();
             }
+            LoadMap(_host.World.FirstMap);
+
+            RUserLogin r = (RUserLogin)_host.ProcessPacket(new PUserLogin
+            {
+                UserName = "PsychoTeras",
+                Password = "password"
+            });
+            _sessionToken = r.SessionToken;
+        }
+
+        private void InitializeEnvironment()
+        {
+            _players = new Dictionary<long, Player>();
+        }
+
+        private void OnScaleFactorChanged()
+        {
+            if (!DesignMode)
+            {
+                foreach (IMapRenderer renderer in _renderers)
+                {
+                    renderer.ChangeScaleFactor(this, _scaleFactor);
+                }
+                Repaint();
+                if (ScaleFactorChanged != null)
+                {
+                    ScaleFactorChanged(this);
+                }
+            }
+        }
+
+        private void OnMapChanged()
+        {
+            if (!DesignMode)
+            {
+                foreach (IMapRenderer renderer in _renderers)
+                {
+                    renderer.ChangeMap(this);
+                }
+                Repaint();
+            }
+        }
+
+        protected virtual void OnMouseWheel(int delta)
+        {
+            MouseWheel handler = MouseWheel;
+            if (handler != null)
+            {
+                handler(this, delta);
+            }
+        }
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg == 0x20a)
+            {
+                Point pos = new Point(m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16);
+                if (WindowFromPoint(pos) == Handle)
+                {
+                    OnMouseWheel(m.WParam.ToInt32() > 0 ? 1 : -1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public new void Dispose()
+        {
+            if (!DesignMode)
+            {
+                Application.RemoveMessageFilter(this);
+                DestroyGraphics();
+            }
+            base.Dispose();
+        }
+
+#endregion
+
+#region Renderer
+
+        private void InitializeRenderers()
+        {
+            _renderers = new List<IMapRenderer>
+            {
+                new RendererBG(_scaleFactor),
+                new RendererWalls(),
+                new RendererBorders()
+            };
         }
 
         public void BeginUpdate()
@@ -306,7 +409,7 @@ namespace RK.Win.Controls
                     GeneralPaint();
                     Rectangle area = new Rectangle(0, 0, _bufferBitmap.Width,
                         _bufferBitmap.Height);
-                    _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area, 
+                    _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area,
                                                GraphicsUnit.Pixel);
                 }
             }
@@ -337,41 +440,18 @@ namespace RK.Win.Controls
             }
         }
 
-        private void InitializeRenderers()
-        {
-            _renderers = new List<IMapRenderer>
-            {
-                new RendererBG(_scaleFactor),
-                new RendererWalls(),
-                new RendererBorders()
-            };
-        }
+#endregion
 
-        private void OnScaleFactorChanged()
-        {
-            if (!DesignMode)
-            {
-                foreach (IMapRenderer renderer in _renderers)
-                {
-                    renderer.ChangeScaleFactor(this, _scaleFactor);
-                }
-                Repaint();
-                if (ScaleFactorChanged != null)
-                {
-                    ScaleFactorChanged(this);
-                }
-            }
-        }
+#region Map
 
-        private void MapChanged()
+        private void LoadMap(GameMap map)
         {
-            if (!DesignMode)
+            _map = map;
+            Repaint();
+            OnMapChanged();
+            if (MapLoaded != null)
             {
-                foreach (IMapRenderer renderer in _renderers)
-                {
-                    renderer.ChangeMap(this);
-                }
-                Repaint();
+                MapLoaded(this);
             }
         }
 
@@ -413,29 +493,6 @@ namespace RK.Win.Controls
             }
         }
 
-        protected virtual void OnMouseWheel(int delta)
-        {
-            MouseWheel handler = MouseWheel;
-            if (handler != null)
-            {
-                handler(this, delta);
-            }
-        }
-        
-        public bool PreFilterMessage(ref Message m)
-        {
-            if (m.Msg == 0x20a)
-            {
-                Point pos = new Point(m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16);
-                if (WindowFromPoint(pos) == Handle)
-                {
-                    OnMouseWheel(m.WParam.ToInt32() > 0 ? 1 : -1);
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public ShortPoint? CursorToTilePos(Point location)
         {
             if (_map != null)
@@ -464,7 +521,7 @@ namespace RK.Win.Controls
                 (*tile).Type = type;
                 foreach (IMapRenderer renderer in _renderers)
                 {
-                    renderer.UpdateTile(this, (ushort) x, (ushort) y, *tile);
+                    renderer.UpdateTile(this, (ushort)x, (ushort)y, *tile);
                 }
             }
         }
@@ -477,11 +534,11 @@ namespace RK.Win.Controls
                 int x = tilePos.Value.X;
                 int y = tilePos.Value.Y;
                 float sinus = 0.70710678118F;
-                int range = (int) (radius/(2*sinus));
+                int range = (int)(radius / (2 * sinus));
                 Random rnd = new Random(Environment.TickCount);
                 for (int i = radius; i >= range; --i)
                 {
-                    int j = (int) Math.Sqrt(radius*radius - i*i);
+                    int j = (int)Math.Sqrt(radius * radius - i * i);
                     for (int k = -j; k <= j; k++)
                     {
                         bool set = i != radius - 1 || rnd.Next(0, 2) == 1;
@@ -491,7 +548,7 @@ namespace RK.Win.Controls
                         SetTileType(x - i, y - k, TileType.Nothing, set);
                     }
                 }
-                range = (int) (radius*sinus);
+                range = (int)(radius * sinus);
                 for (int i = x - range + 1; i < x + range; i++)
                 {
                     for (int j = y - range + 1; j < y + range; j++)
@@ -536,8 +593,8 @@ namespace RK.Win.Controls
                     {
                         return;
                     }
-                    int xShift = (_scrollToPos.Value.X - _posX)/2;
-                    int yShift = (_scrollToPos.Value.Y - _posY)/2;
+                    int xShift = (_scrollToPos.Value.X - _posX) / 2;
+                    int yShift = (_scrollToPos.Value.Y - _posY) / 2;
                     if (Math.Abs(xShift) <= 35 && Math.Abs(yShift) <= 35)
                     {
                         SetPosition(_scrollToPos.Value.X, _scrollToPos.Value.Y);
@@ -560,8 +617,8 @@ namespace RK.Win.Controls
         {
             lock (_syncScroll)
             {
-                x -= Width/2;
-                y -= Height/2;
+                x -= Width / 2;
+                y -= Height / 2;
                 if (!smothScroll)
                 {
                     SetPosition(x, y);
@@ -581,15 +638,9 @@ namespace RK.Win.Controls
             }
         }
 
-        public new void Dispose()
-        {
-            if (!DesignMode)
-            {
-                Application.RemoveMessageFilter(this);
-                DestroyGraphics();
-            }
-            base.Dispose();
-        }
+#endregion
+
+#region Players
 
 #endregion
 

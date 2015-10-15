@@ -88,7 +88,7 @@ namespace RK.Common.Host.Validators
         public override bool Validate(BasePacket packet)
         {
             ValidationInfo info;
-            _info.TryGetValue(packet.SessionMark, out info);
+            _info.TryGetValue(packet.SessionToken, out info);
             if (info == null)
             {
                 return false;

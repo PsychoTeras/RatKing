@@ -1,10 +1,12 @@
-﻿namespace RK.Common.Proto.Packets
+﻿using RK.Common.Classes.Common;
+
+namespace RK.Common.Proto.Packets
 {
     public class PPlayerMove : BasePacket
     {
         public int X;
         public int Y;
-        public byte D;
+        public Direction D;
 
         public override PacketType Type
         {

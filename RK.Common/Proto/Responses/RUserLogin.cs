@@ -1,13 +1,13 @@
-﻿namespace RK.Common.Proto.User
+﻿namespace RK.Common.Proto.Responses
 {
     public sealed class RUserLogin : BaseResponse
     {
-        public int SessionId;
+        public long SessionToken;
 
-        public RUserLogin(int sessionId) 
+        public RUserLogin(long sessionToken) 
             : base(PacketType.UserLogin)
         {
-            SessionId = sessionId;
+            SessionToken = sessionToken;
         }
     }
 }

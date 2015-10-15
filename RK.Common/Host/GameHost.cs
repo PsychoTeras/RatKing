@@ -6,7 +6,8 @@ using RK.Common.Classes.World;
 using RK.Common.Host.Validators;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
-using RK.Common.Proto.User;
+using RK.Common.Proto.Packets;
+using RK.Common.Proto.Responses;
 
 namespace RK.Common.Host
 {
@@ -26,7 +27,7 @@ namespace RK.Common.Host
         private List<BaseValidator> _validators;
 
         private Dictionary<long, User> _loggedUsers;
-        private Dictionary<long, long> _userPlayers;
+        private Dictionary<long, int> _userPlayers;
 
 #endregion
 
@@ -41,11 +42,12 @@ namespace RK.Common.Host
         public GameHost()
         {
             _loggedUsers = new Dictionary<long, User>();
-            _userPlayers = new Dictionary<long, long>();
+            _userPlayers = new Dictionary<long, int>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
             {
-                {PacketType.UserLogin, Login}
+                {PacketType.UserLogin, Login},
+                {PacketType.PlayerEnter, PlayerEnter},
             };
 
             _validators = new List<BaseValidator>
@@ -68,22 +70,35 @@ namespace RK.Common.Host
             lock (_loggedUsers) lock (_userPlayers)
             {
                 PUserLogin pUserLogin = (PUserLogin)packet;
-                pUserLogin.NewSessionId();
 
                 User user = new User(pUserLogin.UserName, pUserLogin.Password);
-                _loggedUsers.Add(pUserLogin.SessionMark, user);
+                packet.SessionToken = BasePacket.NewSessionToken(user.Id);
+                _loggedUsers.Add(packet.SessionToken, user);
 
                 Player player = Player.Create(user.UserName);
-                World.PlayerAdd(player);
-                _userPlayers.Add(pUserLogin.SessionMark, player.Id);
+                _userPlayers.Add(packet.SessionToken, player.Id);
 
-                return new RUserLogin(pUserLogin.SessionId);
+                World.PlayerAdd(player);
+
+                return new RUserLogin(packet.SessionToken);
             }
         }
 
 #endregion
 
 #region Player methods
+
+        public BaseResponse PlayerEnter(BasePacket packet)
+        {
+            lock (_userPlayers)
+            {
+                PPlayerEnter pPlayerEnter = (PPlayerEnter)packet;
+
+                RPlayerEnter response = new RPlayerEnter();
+
+                return response;
+            }
+        }
 
 #endregion
 
@@ -93,7 +108,7 @@ namespace RK.Common.Host
         {
             if (packet.Type != PacketType.UserLogin)
             {
-                if (!_loggedUsers.ContainsKey(packet.SessionMark))
+                if (!_loggedUsers.ContainsKey(packet.SessionToken))
                 {
                     BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
                 }

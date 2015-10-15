@@ -6,6 +6,7 @@
         UserLogin,
 
         //100. Player
+        PlayerEnter,
         PlayerMove
     }
 }

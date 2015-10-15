@@ -1,4 +1,4 @@
-﻿namespace RK.Common.Proto.User
+﻿namespace RK.Common.Proto.Packets
 {
     public sealed class PUserLogin : BasePacket
     {
