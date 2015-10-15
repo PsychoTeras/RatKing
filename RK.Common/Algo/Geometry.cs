@@ -32,9 +32,10 @@ namespace RK.Common.Algo
             return Math.Sqrt(Math.Abs(x * x + y * y));
         }
 
-        public static ShortPoint? FindPlayerStartPoint(MapAreas areas, Player player,
+        public static ShortPoint? FindPlayerStartPoint(GameMap map, Player player, 
             int minAreaSpace)
         {
+            var areas = map.SpaceAreas;
             int iStart = _rnd.Next(areas.Count), iEnd = areas.Count;
 
             bool secondIter = false;
@@ -54,7 +55,7 @@ namespace RK.Common.Algo
                 if (area.CellsCount * ConstMap.PIXEL_SIZE_SQR >= minAreaSpace)
                 {
                     int playerMargin = (int) Math.Floor((float)player.Size.HighValue/ConstMap.PIXEL_SIZE);
-                    ShortPoint? cell = area.FindFreeCell(playerMargin + 1);
+                    ShortPoint? cell = area.FindFreeCell(map, playerMargin);
                     if (cell != null)
                     {
                         return cell;

@@ -46,6 +46,8 @@ namespace RK.Win.Controls
         private Bitmap _bufferBitmap;
         private Graphics _controlGraphics;
 
+        private Image _playerBitmap;
+
         private object _lockPaint;
 
         private List<IMapRenderer> _renderers;
@@ -395,6 +397,7 @@ namespace RK.Win.Controls
                 _buffer.Dispose();
                 _bufferBitmap.Dispose();
                 _controlGraphics.Dispose();
+                _playerBitmap.Dispose();
                 _buffer = null;
             }
         }
@@ -403,6 +406,7 @@ namespace RK.Win.Controls
         {
             if (Width != 0 && Height != 0)
             {
+                _playerBitmap = Image.FromFile(@"Resources\player.png");
                 _bufferBitmap = new Bitmap(Width, Height);
                 _buffer = Graphics.FromImage(_bufferBitmap);
                 _buffer.InterpolationMode = InterpolationMode.Low;
@@ -431,22 +435,28 @@ namespace RK.Win.Controls
 
                     if (_bufferBitmap != null)
                     {
-                        GeneralPaint();
-                        Rectangle area = new Rectangle(0, 0, _bufferBitmap.Width,
-                            _bufferBitmap.Height);
-                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area,
+                        BackgroundPaint();
+                        Rectangle srcRect = new Rectangle(0, 0, Width, Height);
+                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, srcRect,
                             GraphicsUnit.Pixel);
+                        if (_myPlayer != null)
+                        {
+                            _controlGraphics.DrawImage(_playerBitmap,
+                                new Rectangle(_myPlayer.Position.X - _posX,
+                                              _myPlayer.Position.Y - _posY, 
+                                              48, 48), 
+                                new Rectangle(0, 0, 48, 48), GraphicsUnit.Pixel);
+                        }
                     }
                 }
             }
         }
 
-        private void GeneralPaint()
+        private void BackgroundPaint()
         {
+            Rectangle area = new Rectangle(_posX, _posY, Width, Height);
             foreach (IMapRenderer renderer in _renderers)
             {
-                Rectangle area = new Rectangle(_posX, _posY, _bufferBitmap.Width,
-                    _bufferBitmap.Height);
                 renderer.Render(this, _buffer, area);
             }
         }
@@ -658,6 +668,14 @@ namespace RK.Win.Controls
                         ThreadPool.QueueUserWorkItem(o => DoScrollToPos());
                     }
                 }
+            }
+        }
+
+        public void CenterPlayer()
+        {
+            if (_myPlayer != null)
+            {
+                CenterTo(_myPlayer.Position, true);
             }
         }
 

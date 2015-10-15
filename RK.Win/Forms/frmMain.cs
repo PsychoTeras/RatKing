@@ -56,6 +56,9 @@ namespace RK.Win.Forms
                     break;
                 case Keys.D:
                     break;
+                case Keys.C:
+                    mapCtrl.CenterPlayer();
+                    break;
                 case Keys.Space:
                 {
                     if (tcMain.SelectedTab == tpLabyrinthGenerator)

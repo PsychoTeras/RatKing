@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using RK.Common.Classes.Common;
 
 namespace RK.Common.Classes.Map
 {
-    public class MapArea : List<ShortPoint>
+    public unsafe class MapArea : List<ShortPoint>
     {
 
 #region Public fields
@@ -45,15 +44,17 @@ namespace RK.Common.Classes.Map
                 ShortPoint pj = this[j];
                 if ((pi.Y < y && pj.Y >= y || pj.Y < y && pi.Y >= y) && (pi.X <= x || pj.X <= x))
                 {
-                    oddNodes ^= (pi.X + (y - pi.Y) / (pj.Y - pi.Y) * (pj.X - pi.X) < x);
+                    oddNodes ^= (pi.X + (y - pi.Y)/(pj.Y - pi.Y)*(pj.X - pi.X) < x);
                 }
                 j = i;
             }
             return oddNodes;
         }
 
-        public ShortPoint? FindFreeCell(int margin)
+        public ShortPoint? FindFreeCell(GameMap map, int margin)
         {
+            margin += 2;
+
             Random rnd = new Random(Environment.TickCount);
             int iStart = rnd.Next(Count), iEnd = Count;
 
@@ -70,16 +71,28 @@ namespace RK.Common.Classes.Map
                     iEnd = iStart - 1;
                     secondIter = true;
                 }
-                Point cell = this[i].ToPoint();
-                if ((IsPointInside(cell.X = (cell.X - margin), cell.Y) || 
-                     IsPointInside(cell.X = (cell.X + margin * 2), cell.Y)) &&
-                    (IsPointInside(cell.X, cell.Y = (cell.Y - margin)) || 
-                     IsPointInside(cell.X, cell.Y = (cell.Y + margin * 2))))
+                ShortPoint cell = this[i];
+                int x1 = cell.X, x2 = cell.X + margin;
+                int y1 = cell.Y, y2 = cell.Y + margin;
+                if (IsPointInside(x2, y2))
                 {
-                    return cell.ToShortPoint();
+                    bool success = true;
+                    for (int y = y1; y <= y2; y++)
+                    {
+                        for (int x = x1; x <= x2; x++)
+                        {
+                            success &= (*map[(ushort) x, (ushort) y]).Type == TileType.Nothing;
+                            if (!success) break;
+                        }
+                        if (!success) break;
+                    }
+                    if (success)
+                    {
+                        return new ShortPoint(x2 - 2, y2 - 2);
+                    }
                 }
             }
-            return ShortPoint.Empty;
+            return null;
         }
 
 #endregion
