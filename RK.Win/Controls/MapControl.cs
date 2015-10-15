@@ -300,7 +300,9 @@ namespace RK.Win.Controls
 
                 LoadMap(_host.World.FirstMap);
 
-                CenterTo(_myPlayer.Position, true);
+                CenterTo((int) (_myPlayer.Position.X * _scaleFactor),
+                         (int) (_myPlayer.Position.Y * _scaleFactor),
+                         true);
             }
             catch (Exception ex)
             {
@@ -676,7 +678,9 @@ namespace RK.Win.Controls
         {
             if (_myPlayer != null)
             {
-                CenterTo(_myPlayer.Position, true);
+                CenterTo((int)(_myPlayer.Position.X * _scaleFactor),
+                         (int)(_myPlayer.Position.Y * _scaleFactor),
+                         true);
             }
         }
 
