@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using RK.Common.Classes.Common;
 
 namespace RK.Common.Classes.Map
@@ -9,6 +10,8 @@ namespace RK.Common.Classes.Map
 
 #region Public fields
 
+        public ShortPoint TopLeft;
+        public ShortPoint BottomRight;
         public int CellsCount;
 
 #endregion
@@ -26,6 +29,57 @@ namespace RK.Common.Classes.Map
                 prevTraceCell = traceCell;
             }
             CalculateCellsCount();
+        }
+
+#endregion
+
+#region Class methods
+
+        private bool IsPointInside(int x, int y)
+        {
+            int i, j = Count - 1;
+            bool oddNodes = false;
+            for (i = 0; i < Count; i++)
+            {
+                ShortPoint pi = this[i];
+                ShortPoint pj = this[j];
+                if ((pi.Y < y && pj.Y >= y || pj.Y < y && pi.Y >= y) && (pi.X <= x || pj.X <= x))
+                {
+                    oddNodes ^= (pi.X + (y - pi.Y) / (pj.Y - pi.Y) * (pj.X - pi.X) < x);
+                }
+                j = i;
+            }
+            return oddNodes;
+        }
+
+        public ShortPoint? FindFreeCell(int margin)
+        {
+            Random rnd = new Random(Environment.TickCount);
+            int iStart = rnd.Next(Count), iEnd = Count;
+
+            bool secondIter = false;
+            for (int i = iStart; i <= iEnd; i++)
+            {
+                if (i == iEnd)
+                {
+                    if (secondIter)
+                    {
+                        return null;
+                    }
+                    i = 0;
+                    iEnd = iStart - 1;
+                    secondIter = true;
+                }
+                Point cell = this[i].ToPoint();
+                if ((IsPointInside(cell.X = (cell.X - margin), cell.Y) || 
+                     IsPointInside(cell.X = (cell.X + margin * 2), cell.Y)) &&
+                    (IsPointInside(cell.X, cell.Y = (cell.Y - margin)) || 
+                     IsPointInside(cell.X, cell.Y = (cell.Y + margin * 2))))
+                {
+                    return cell.ToShortPoint();
+                }
+            }
+            return ShortPoint.Empty;
         }
 
 #endregion
@@ -142,6 +196,9 @@ namespace RK.Common.Classes.Map
 
         private void CalculateCellsCount()
         {
+            BottomRight = new ShortPoint();
+            TopLeft = new ShortPoint(ushort.MaxValue, ushort.MaxValue);
+
             var cvDict = new Dictionary<ushort, List<ushort>>[2];
             cvDict[0] = new Dictionary<ushort, List<ushort>>();
             cvDict[1] = new Dictionary<ushort, List<ushort>>();
@@ -149,9 +206,20 @@ namespace RK.Common.Classes.Map
             int max = Count - 1, sum = 0;
             for (int i = 0; i < max; i++)
             {
-                sum += (this[i].X + this[i + 1].X)*(this[i + 1].Y - this[i].Y);
-                AcceptCornerValue(cvDict[0], this[i].Y, this[i].X);
-                AcceptCornerValue(cvDict[1], this[i].X, this[i].Y);
+                ShortPoint pi = this[i];
+                ShortPoint pn = this[i + 1];
+                sum += (pi.X + pn.X) * (pn.Y - pi.Y);
+                AcceptCornerValue(cvDict[0], pi.Y, pi.X);
+                AcceptCornerValue(cvDict[1], pi.X, pi.Y);
+
+                if (TopLeft.X > pi.X)
+                    TopLeft.X = pi.X;
+                if (TopLeft.Y > pi.Y)
+                    TopLeft.Y = pi.Y;
+                if (BottomRight.X < pi.X)
+                    BottomRight.X = pi.X;
+                if (BottomRight.Y < pi.Y)
+                    BottomRight.Y = pi.Y;
             }
             sum += (this[max].X + this[0].X)*(this[0].Y - this[max].Y);
             AcceptCornerValue(cvDict[0], this[max].Y, this[max].X);

@@ -62,11 +62,13 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Classes\Common\DbObject.cs" />
     <Compile Include="Classes\Common\Direction.cs" />
     <Compile Include="Classes\Common\ShortPoint.cs" />
     <Compile Include="Classes\Common\TinySize.cs" />
+    <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />
     <Compile Include="Classes\Map\GameMap.cs" />
     <Compile Include="Classes\Map\MapAreas.cs" />
@@ -85,6 +87,7 @@
     <Compile Include="Proto\ErrorCodes\ECLogout.cs" />
     <Compile Include="Proto\ErrorCodes\ECRegistration.cs" />
     <Compile Include="Proto\Packets\PPlayerEnter.cs" />
+    <Compile Include="Proto\Packets\PUserLogout.cs" />
     <Compile Include="Proto\PacketType.cs" />
     <Compile Include="Proto\Packets\PPlayerMove.cs" />
     <Compile Include="Proto\Packets\PUserLogin.cs" />

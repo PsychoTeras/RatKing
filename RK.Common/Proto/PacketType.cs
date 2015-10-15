@@ -4,6 +4,7 @@
     {
         //0. User
         UserLogin,
+        UserLogout,
 
         //100. Player
         PlayerEnter,

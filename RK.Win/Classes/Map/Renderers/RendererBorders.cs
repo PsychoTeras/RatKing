@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using RK.Common.Classes.Map;
+using RK.Common.Const;
 using RK.Win.Controls;
 
 namespace RK.Win.Classes.Map.Renderers
@@ -25,7 +26,7 @@ namespace RK.Win.Classes.Map.Renderers
             }
             
             float scale = mapCtrl.ScaleFactor;
-            float pixelSize = RendererWalls.PIXEL_SIZE * scale;
+            float pixelSize = ConstMap.PIXEL_SIZE * scale;
 
             ushort mapX1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosX / pixelSize - 1), 0);
             ushort mapY1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosY / pixelSize - 1), 0);

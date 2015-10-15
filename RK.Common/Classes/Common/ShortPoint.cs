@@ -77,6 +77,11 @@ namespace RK.Common.Classes.Common
         {
             return new Point(X, Y);
         }
+
+        public Point ToPoint(int pixelSize)
+        {
+            return new Point(X * pixelSize, Y * pixelSize);
+        }
     }
 
     public static class Extensions

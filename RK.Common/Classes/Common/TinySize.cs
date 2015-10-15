@@ -19,6 +19,16 @@ namespace RK.Common.Classes.Common
             get { return new TinySize(); }
         }
 
+        public int Area
+        {
+            get { return Width*Height; }
+        }
+
+        public byte HighValue
+        {
+            get { return Math.Max(Width, Height); }
+        }
+
         public TinySize(byte width, byte height)
         {
             Width = width;

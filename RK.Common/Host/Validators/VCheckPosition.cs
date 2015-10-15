@@ -57,30 +57,29 @@ namespace RK.Common.Host.Validators
             _info = new Dictionary<long, ValidationInfo>();
         }
 
-        public override void RegisterSession(long sessionMark)
+        public override void RegisterSession(long sessionToken)
         {
             lock (_info)
             {
-                if (!_info.ContainsKey(sessionMark))
+                if (!_info.ContainsKey(sessionToken))
                 {
-                    Player player;
-                    Host.World.Players.TryGetValue(sessionMark, out player);
+                    Player player = Host.World.PlayerGet(sessionToken);
                     if (player != null)
                     {
                         ValidationInfo info = new ValidationInfo(player);
-                        _info.Add(sessionMark, info);
+                        _info.Add(sessionToken, info);
                     }
                 }
             }
         }
 
-        public override void UnregisterSession(long sessionMark)
+        public override void UnregisterSession(long sessionToken)
         {
             lock (_info)
             {
-                if (_info.ContainsKey(sessionMark))
+                if (_info.ContainsKey(sessionToken))
                 {
-                    _info.Remove(sessionMark);
+                    _info.Remove(sessionToken);
                 }
             }
         }

@@ -92,11 +92,25 @@ namespace RK.Common.Proto
             if (HasError)
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendFormat("Error message:\t{0}\n", ErrorMessage);
-                sb.AppendFormat("Error code:\t{0}", ErrorCode);
+                sb.AppendFormat("Error message: {0}\r\n", ErrorMessage);
+                sb.AppendFormat("Error code: {0}", ErrorCode);
                 return sb.ToString();
             }
             return "No errors";
+        }
+
+        public T As<T>() where T : BaseResponse
+        {
+            Assert();
+            return this as T;
+        }
+
+        public void Assert()
+        {
+            if (HasError)
+            {
+                throw new Exception(ToString());
+            }
         }
 
 #endregion

@@ -2,18 +2,13 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using RK.Common.Classes.Map;
+using RK.Common.Const;
 using RK.Win.Controls;
 
 namespace RK.Win.Classes.Map.Renderers
 {
     public unsafe class RendererWalls : IMapRenderer
     {
-
-#region Constants
-
-        public const float PIXEL_SIZE = 15;
-
-#endregion
 
 #region Private fields
 
@@ -41,7 +36,7 @@ namespace RK.Win.Classes.Map.Renderers
             }
 
             float scale = mapCtrl.ScaleFactor;
-            float pixelSize = PIXEL_SIZE * scale;
+            float pixelSize = ConstMap.PIXEL_SIZE * scale;
             GameMap map = mapCtrl.Map;
 
             ushort mapX1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosX / pixelSize - 1), 0);

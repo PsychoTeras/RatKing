@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using RK.Common.Classes.Map;
-using RK.Win.Classes.Map.Renderers;
+using RK.Common.Const;
 
 namespace RK.Win.Controls
 {
@@ -22,7 +22,9 @@ namespace RK.Win.Controls
         private Image _bgBitmap;
         private Image _miniMapBitmap;
         private Graphics _miniMapBitmapBuffer;
-        
+
+        private object _lockPaint;
+
         private Pen _mapWindowPen;
         private Brush _mapWallsBrush;
 
@@ -117,6 +119,7 @@ namespace RK.Win.Controls
                 SetStyle(ControlStyles.AllPaintingInWmPaint, true);
                 SetStyle(ControlStyles.Selectable, false);
 
+                _lockPaint = new object();
                 _mapWallsBrush = new SolidBrush(Color.Black);
                 _mapWindowPen = new Pen(Color.LightSteelBlue);
 
@@ -225,8 +228,8 @@ namespace RK.Win.Controls
         {
             if (_map != null && _map.IsMapLoaded)
             {
-                float w = _map.Map.Width*RendererWalls.PIXEL_SIZE*_map.ScaleFactor;
-                float h = _map.Map.Height*RendererWalls.PIXEL_SIZE*_map.ScaleFactor;
+                float w = _map.Map.Width * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
+                float h = _map.Map.Height * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
 
                 int w1 = (int) (Width*(_map.Width/w));
                 int h1 = (int) (Height*(_map.Height/h));
@@ -243,22 +246,25 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                    _bufferBitmap.Height != Height)
+                lock (_lockPaint)
                 {
-                    DestroyGraphics();
-                    InitializeGraphics();
-                }
-
-                if (_bufferBitmap != null)
-                {
-                    if (!paintMapObjectsOnly)
+                    if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                        _bufferBitmap.Height != Height)
                     {
-                        PaintMiniMap();
+                        DestroyGraphics();
+                        InitializeGraphics();
                     }
-                    PaintMapObjects();
-                    Rectangle area = new Rectangle(0, 0, Width, Height);
-                    _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area, GraphicsUnit.Pixel);
+
+                    if (_bufferBitmap != null)
+                    {
+                        if (!paintMapObjectsOnly)
+                        {
+                            PaintMiniMap();
+                        }
+                        PaintMapObjects();
+                        Rectangle area = new Rectangle(0, 0, Width, Height);
+                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area, GraphicsUnit.Pixel);
+                    }
                 }
             }
         }
@@ -277,8 +283,8 @@ namespace RK.Win.Controls
 
         private void SetMapPosition(Point location, bool smothScroll)
         {
-            float w = _map.Map.Width * RendererWalls.PIXEL_SIZE * _map.ScaleFactor;
-            float h = _map.Map.Height * RendererWalls.PIXEL_SIZE * _map.ScaleFactor;
+            float w = _map.Map.Width * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
+            float h = _map.Map.Height * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
             float x = (float)location.X / Width * w;
             float y = (float)location.Y / Height * h;
             _map.CenterTo((int)x, (int)y, smothScroll);

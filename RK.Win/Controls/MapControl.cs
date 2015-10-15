@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
 using RK.Common.Classes.Units;
+using RK.Common.Const;
 using RK.Common.Host;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
@@ -44,7 +45,8 @@ namespace RK.Win.Controls
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
         private Graphics _controlGraphics;
-        private bool _repaintLocked;
+
+        private object _lockPaint;
 
         private List<IMapRenderer> _renderers;
 
@@ -57,8 +59,9 @@ namespace RK.Win.Controls
         private Point? _scrollToPos;
         private object _syncScroll = new object();
 
+        private Player _myPlayer;
         private long _sessionToken;
-        private Dictionary<long, Player> _players;
+        private Dictionary<int, Player> _players;
 
 #endregion
 
@@ -260,23 +263,54 @@ namespace RK.Win.Controls
 
         private void ConnectToHost()
         {
-            if (_host.World.FirstMap == null)
+            try
             {
-                _host.World.LoadMap();
-            }
-            LoadMap(_host.World.FirstMap);
+                if (_host.World.FirstMap == null)
+                {
+                    _host.World.LoadMap();
+                }
 
-            RUserLogin r = (RUserLogin)_host.ProcessPacket(new PUserLogin
+                if (_sessionToken != 0)
+                {
+                    _host.ProcessPacket(new PUserLogout
+                    {
+                        SessionToken = _sessionToken
+                    }).Assert();
+                }
+
+                RUserLogin userLogin = _host.ProcessPacket(new PUserLogin
+                {
+                    UserName = "PsychoTeras",
+                    Password = "password"
+                }).As<RUserLogin>();
+                _sessionToken = userLogin.SessionToken;
+
+                _players.Clear();
+                RPlayerEnter playerEnter = _host.ProcessPacket(new PPlayerEnter
+                {
+                    SessionToken = _sessionToken
+                }).As<RPlayerEnter>();
+                foreach (Player p in playerEnter.PlayersOnLocation)
+                {
+                    _players.Add(p.Id, p);
+                }
+                _myPlayer = _players[playerEnter.MyPlayerId];
+
+                LoadMap(_host.World.FirstMap);
+
+                CenterTo(_myPlayer.Position, true);
+            }
+            catch (Exception ex)
             {
-                UserName = "PsychoTeras",
-                Password = "password"
-            });
-            _sessionToken = r.SessionToken;
+                string msg = string.Format("ConnectToHost:\r\n{0}", ex);
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void InitializeEnvironment()
         {
-            _players = new Dictionary<long, Player>();
+            _lockPaint = new object();
+            _players = new Dictionary<int, Player>();
         }
 
         private void OnScaleFactorChanged()
@@ -353,18 +387,7 @@ namespace RK.Win.Controls
                 new RendererBorders()
             };
         }
-
-        public void BeginUpdate()
-        {
-            _repaintLocked = true;
-        }
-
-        public void EndUpdate()
-        {
-            _repaintLocked = false;
-            Repaint();
-        }
-
+    
         private void DestroyGraphics()
         {
             if (_buffer != null)
@@ -395,22 +418,25 @@ namespace RK.Win.Controls
 
         private void Repaint(Rectangle clipRectangle)
         {
-            if (!_repaintLocked && !DesignMode)
+            if (!DesignMode)
             {
-                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                    _bufferBitmap.Height != Height)
+                lock (_lockPaint)
                 {
-                    DestroyGraphics();
-                    InitializeGraphics();
-                }
+                    if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                        _bufferBitmap.Height != Height)
+                    {
+                        DestroyGraphics();
+                        InitializeGraphics();
+                    }
 
-                if (_bufferBitmap != null)
-                {
-                    GeneralPaint();
-                    Rectangle area = new Rectangle(0, 0, _bufferBitmap.Width,
-                        _bufferBitmap.Height);
-                    _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area,
-                                               GraphicsUnit.Pixel);
+                    if (_bufferBitmap != null)
+                    {
+                        GeneralPaint();
+                        Rectangle area = new Rectangle(0, 0, _bufferBitmap.Width,
+                            _bufferBitmap.Height);
+                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area,
+                            GraphicsUnit.Pixel);
+                    }
                 }
             }
         }
@@ -429,10 +455,7 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                if (!_repaintLocked)
-                {
-                    Repaint(e.ClipRectangle);
-                }
+                Repaint(e.ClipRectangle);
             }
             else
             {
@@ -497,7 +520,7 @@ namespace RK.Win.Controls
         {
             if (_map != null)
             {
-                float pixelSize = RendererWalls.PIXEL_SIZE * _scaleFactor;
+                float pixelSize = ConstMap.PIXEL_SIZE * _scaleFactor;
                 int x = (int)Math.Floor((_posX + location.X) / pixelSize);
                 int y = (int)Math.Floor((_posY + location.Y) / pixelSize);
                 if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
@@ -608,9 +631,9 @@ namespace RK.Win.Controls
             }
         }
 
-        public void CenterTo(Point pos, bool smothScroll = true)
+        public void CenterTo(Point pos, bool smothScroll = false)
         {
-            CenterTo(pos.X, pos.Y);
+            CenterTo(pos.X, pos.Y, smothScroll);
         }
 
         public void CenterTo(int x, int y, bool smothScroll = false)

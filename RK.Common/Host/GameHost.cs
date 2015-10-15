@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
 using RK.Common.Classes.World;
+using RK.Common.Const;
 using RK.Common.Host.Validators;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
@@ -26,8 +28,7 @@ namespace RK.Common.Host
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
         private List<BaseValidator> _validators;
 
-        private Dictionary<long, User> _loggedUsers;
-        private Dictionary<long, int> _userPlayers;
+        private Dictionary<long, int> _loggedPlayers;
 
 #endregion
 
@@ -41,12 +42,12 @@ namespace RK.Common.Host
 
         public GameHost()
         {
-            _loggedUsers = new Dictionary<long, User>();
-            _userPlayers = new Dictionary<long, int>();
+            _loggedPlayers = new Dictionary<long, int>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
             {
                 {PacketType.UserLogin, Login},
+                {PacketType.UserLogout, Logout},
                 {PacketType.PlayerEnter, PlayerEnter},
             };
 
@@ -63,41 +64,77 @@ namespace RK.Common.Host
 
 #endregion
 
+#region Class methods
+
+        private void ThrowSessionError(params object[] args)
+        {
+            BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
+        }
+
+#endregion
+
 #region User methods
 
-        public BaseResponse Login(BasePacket packet)
+        private BaseResponse Login(BasePacket packet)
         {
-            lock (_loggedUsers) lock (_userPlayers)
+            lock (_loggedPlayers)
             {
                 PUserLogin pUserLogin = (PUserLogin)packet;
 
                 User user = new User(pUserLogin.UserName, pUserLogin.Password);
                 packet.SessionToken = BasePacket.NewSessionToken(user.Id);
-                _loggedUsers.Add(packet.SessionToken, user);
 
                 Player player = Player.Create(user.UserName);
-                _userPlayers.Add(packet.SessionToken, player.Id);
+                ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
+                if (!startPoint.HasValue)
+                {
+                    BaseResponse.Throw("Cannot get start point for player", ECGeneral.ServerError);
+                    return null;
+                }
+                player.Position = startPoint.Value.ToPoint(ConstMap.PIXEL_SIZE);
 
-                World.PlayerAdd(player);
+                World.PlayerAdd(packet.SessionToken, player);
+
+                _loggedPlayers.Add(packet.SessionToken, player.Id);
 
                 return new RUserLogin(packet.SessionToken);
             }
+        }
+
+        private BaseResponse Logout(BasePacket packet)
+        {
+            lock (_loggedPlayers)
+            {
+                if (!_loggedPlayers.ContainsKey(packet.SessionToken))
+                {
+                    ThrowSessionError(packet.Type, packet.SessionToken);
+                }
+                _loggedPlayers.Remove(packet.SessionToken);
+                World.PlayerRemove(packet.SessionToken);
+            }
+            return BaseResponse.Successful(packet);
         }
 
 #endregion
 
 #region Player methods
 
-        public BaseResponse PlayerEnter(BasePacket packet)
+        private BaseResponse PlayerEnter(BasePacket packet)
         {
-            lock (_userPlayers)
+            PPlayerEnter pPlayerEnter = (PPlayerEnter) packet;
+
+            Player player = World.PlayerGet(pPlayerEnter.SessionToken);
+            if (player == null)
             {
-                PPlayerEnter pPlayerEnter = (PPlayerEnter)packet;
-
-                RPlayerEnter response = new RPlayerEnter();
-
-                return response;
+                ThrowSessionError(packet.Type, packet.SessionToken);
+                return null;
             }
+
+            RPlayerEnter response = new RPlayerEnter();
+            response.PlayersOnLocation = World.PlayersGetNearest(player);
+            response.MyPlayerId = player.Id;
+
+            return response;
         }
 
 #endregion
@@ -108,9 +145,9 @@ namespace RK.Common.Host
         {
             if (packet.Type != PacketType.UserLogin)
             {
-                if (!_loggedUsers.ContainsKey(packet.SessionToken))
+                if (!_loggedPlayers.ContainsKey(packet.SessionToken))
                 {
-                    BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
+                    ThrowSessionError(packet.Type, packet.SessionToken);
                 }
             }
         }

@@ -13,7 +13,7 @@ namespace RK.Common.Proto
 
         public static long NewSessionToken(int userId)
         {
-            return userId << 32 | Interlocked.Increment(ref _sessionIdCounter);
+            return ((long)userId << 32) | Interlocked.Increment(ref _sessionIdCounter);
         }
     }
 }

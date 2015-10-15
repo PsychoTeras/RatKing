@@ -17,12 +17,9 @@ namespace RK.Common.Classes.Units
         public float Speed;
         
         //Map
-        public long MapId;
+        public int MapId;
         public Point Position;
         public short Angle;
-
-        //States
-        public bool IsMoving;
 
 #endregion
 

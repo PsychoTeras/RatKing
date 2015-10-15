@@ -22,8 +22,8 @@ namespace RK.Common.Host
 
 #region Abstract methods
 
-        public abstract void RegisterSession(long sessionMark);
-        public abstract void UnregisterSession(long sessionMark);
+        public abstract void RegisterSession(long sessionToken);
+        public abstract void UnregisterSession(long sessionToken);
         public abstract bool Validate(BasePacket packet);
 
 #endregion
