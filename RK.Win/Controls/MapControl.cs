@@ -435,29 +435,30 @@ namespace RK.Win.Controls
 
                     if (_bufferBitmap != null)
                     {
-                        BackgroundPaint();
+                        GeneralPaint();
                         Rectangle srcRect = new Rectangle(0, 0, Width, Height);
                         _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, srcRect,
                             GraphicsUnit.Pixel);
-                        if (_myPlayer != null)
-                        {
-                            _controlGraphics.DrawImage(_playerBitmap,
-                                new Rectangle(_myPlayer.Position.X - _posX,
-                                              _myPlayer.Position.Y - _posY, 
-                                              48, 48), 
-                                new Rectangle(0, 0, 48, 48), GraphicsUnit.Pixel);
-                        }
                     }
                 }
             }
         }
 
-        private void BackgroundPaint()
+        private void GeneralPaint()
         {
             Rectangle area = new Rectangle(_posX, _posY, Width, Height);
             foreach (IMapRenderer renderer in _renderers)
             {
                 renderer.Render(this, _buffer, area);
+            }
+            if (_myPlayer != null)
+            {
+                float pSize = 48*_scaleFactor;
+                _buffer.DrawImage(_playerBitmap,
+                    new RectangleF((_myPlayer.Position.X * _scaleFactor - _posX),
+                                   (_myPlayer.Position.Y * _scaleFactor - _posY),
+                                   pSize, pSize),
+                    new RectangleF(0, 0, 48, 48), GraphicsUnit.Pixel);
             }
         }
 
