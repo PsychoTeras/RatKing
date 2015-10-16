@@ -414,8 +414,6 @@ namespace RK.Win.Controls
             if (!DesignMode)
             {
                 Application.RemoveMessageFilter(this);
-                _threadRenderer.Abort();
-                _threadRenderer.Join();
                 DestroyGraphics();
             }
             base.Dispose();
@@ -478,24 +476,21 @@ namespace RK.Win.Controls
 
         private void Repaint()
         {
-            if (!DesignMode)
+            if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                _bufferBitmap.Height != Height)
             {
-                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                    _bufferBitmap.Height != Height)
-                {
-                    DestroyGraphics();
-                    InitializeGraphics();
-                }
+                DestroyGraphics();
+                InitializeGraphics();
+            }
 
-                if (_bufferBitmap != null)
-                {
-                    GeneralPaint();
-                    PlayersPaint();
-                    DrawFps();
-                    _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
-                        ClientRectangle, GraphicsUnit.Pixel);
-                    _lastFrameRenderTime = DateTime.Now;
-                }
+            if (_bufferBitmap != null)
+            {
+                GeneralPaint();
+                PlayersPaint();
+                DrawFps();
+                _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
+                    ClientRectangle, GraphicsUnit.Pixel);
+                _lastFrameRenderTime = DateTime.Now;
             }
         }
 

@@ -25,6 +25,7 @@ namespace RK.Win.Controls
         private Graphics _miniMapBitmapBuffer;
 
         private Thread _threadRenderer;
+        private volatile bool _needRepaint;
         private volatile bool _tilesChanged;
 
         private Pen _mapWindowPen;
@@ -80,18 +81,24 @@ namespace RK.Win.Controls
             get { return _map; }
             set
             {
-                if (_map != null)
+                if (!DesignMode)
                 {
-                    _map.MapLoaded -= MapLoaded;
-                    _map.TilesChanged -= MapTilesChanged;
+                    if (_map != null)
+                    {
+                        _map.MapLoaded -= MapLoaded;
+                        _map.TilesChanged -= MapTilesChanged;
+                        _map.ScaleFactorChanged -= MapScaleFactorChanged;
+                        _map.PositionChanged -= MapPositionChanged;
+                    }
+                    if ((_map = value) != null)
+                    {
+                        _map.MapLoaded += MapLoaded;
+                        _map.TilesChanged += MapTilesChanged;
+                        _map.ScaleFactorChanged += MapScaleFactorChanged;
+                        _map.PositionChanged += MapPositionChanged;
+                    }
+                    NeedRepaint(true);
                 }
-                if ((_map = value) != null)
-                {
-                    _map.MapLoaded += MapLoaded;
-                    _map.PositionChanged += MapTilesChanged;
-                    _map.TilesChanged += MapTilesChanged;
-                }
-                _tilesChanged = true;
             }
         }
 
@@ -136,9 +143,25 @@ namespace RK.Win.Controls
 
 #region Class methods
 
+        private void NeedRepaint(bool tilesChanged)
+        {
+            _needRepaint = true;
+            _tilesChanged |= tilesChanged;
+        }
+
         private void MapTilesChanged(object sender)
         {
-            _tilesChanged = true;
+            NeedRepaint(true);
+        }
+
+        private void MapPositionChanged(object sender)
+        {
+            NeedRepaint(false);
+        }
+
+        private void MapScaleFactorChanged(object sender)
+        {
+            NeedRepaint(false);
         }
 
         private void MapLoaded(object sender)
@@ -152,7 +175,7 @@ namespace RK.Win.Controls
             {
                 _bgBitmap = Image.FromFile("Resources\\bg_minimap.png");
             }
-            _tilesChanged = true;
+            NeedRepaint(true);
         }
 
         private void DestroyGraphics()
@@ -193,7 +216,11 @@ namespace RK.Win.Controls
         {
             while (true)
             {
-                Invoke(new Action(Repaint));
+                if (_needRepaint)
+                {
+                    _needRepaint = false;
+                    Invoke(new Action(Repaint));
+                }
                 Thread.Sleep(1);
             }
         }
@@ -220,7 +247,7 @@ namespace RK.Win.Controls
             }
         }
 
-        private void PaintMapObjects()
+        private void GeneralPaint()
         {
             if (_map != null && _map.IsMapLoaded)
             {
@@ -240,26 +267,23 @@ namespace RK.Win.Controls
 
         private void Repaint()
         {
-            if (!DesignMode)
+            if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                _bufferBitmap.Height != Height)
             {
-                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                    _bufferBitmap.Height != Height)
-                {
-                    DestroyGraphics();
-                    InitializeGraphics();
-                }
+                DestroyGraphics();
+                InitializeGraphics();
+            }
 
-                if (_bufferBitmap != null)
+            if (_bufferBitmap != null)
+            {
+                if (_tilesChanged)
                 {
-                    if (_tilesChanged)
-                    {
-                        PaintMiniMap();
-                        _tilesChanged = false;
-                    }
-                    PaintMapObjects();
-                    _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
-                        ClientRectangle, GraphicsUnit.Pixel);
+                    PaintMiniMap();
+                    _tilesChanged = false;
                 }
+                GeneralPaint();
+                _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
+                    ClientRectangle, GraphicsUnit.Pixel);
             }
         }
 
@@ -267,7 +291,6 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                _tilesChanged = true;
                 Repaint();
             }
             else
@@ -315,8 +338,6 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                _threadRenderer.Abort();
-                _threadRenderer.Join();
                 DestroyGraphics();
             }
             base.Dispose();
