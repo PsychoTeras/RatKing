@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Annotations", "Annotations"
 	ProjectSection(SolutionItems) = preProject
 		Cutted.txt = Cutted.txt
 		Cutted_Borders.txt = Cutted_Borders.txt
+		Cutted_FixedFPS.txt = Cutted_FixedFPS.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GMechanics.Core", "GMechanics.Core\GMechanics.Core.csproj", "{78BB568A-BB44-4596-90FF-9E73D0F5E839}"

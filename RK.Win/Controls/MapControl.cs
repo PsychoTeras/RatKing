@@ -36,8 +36,6 @@ namespace RK.Win.Controls
 
 #region Constants
 
-        private const int FPS = 30;
-
         private const float DEF_SCALE_FACTOR = 1f;
         private const bool DEF_SHOW_TILE_NUMBER = true;
 
@@ -56,18 +54,14 @@ namespace RK.Win.Controls
         private Bitmap _playerRotatedBitmap;
         private Graphics _playerRotated;
 
-        private object _lockPaint;
-
         private List<IMapRenderer> _renderers;
 
         private int _posX;
         private int _posY;
         private float _scaleFactor;
 
-        private bool _showTileNumber;
-
         private Point? _scrollToPos;
-        private object _syncScroll = new object();
+        private object _syncScroll;
 
         private long _sessionToken;
         private Dictionary<int, Player> _players;
@@ -78,6 +72,10 @@ namespace RK.Win.Controls
 
         private Thread _threadRenderer;
         private DateTime _lastFrameRenderTime;
+
+        private byte[] _fpsCounterData;
+        private int _fpsCounterArrIdx;
+        private Brush _fpsFontBrush;
 
 #endregion
 
@@ -132,7 +130,6 @@ namespace RK.Win.Controls
                     {
                         _scrollToPos = null;
                         _posX = value;
-                        Repaint();
                         if (PositionChanged != null)
                         {
                             PositionChanged(this);
@@ -154,7 +151,6 @@ namespace RK.Win.Controls
                     {
                         _scrollToPos = null;
                         _posY = value;
-                        Repaint();
                         if (PositionChanged != null)
                         {
                             PositionChanged(this);
@@ -184,15 +180,7 @@ namespace RK.Win.Controls
         }
 
         [Browsable(true), DefaultValue(DEF_SHOW_TILE_NUMBER)]
-        public bool ShowTileNumber
-        {
-            get { return _showTileNumber; }
-            set
-            {
-                _showTileNumber = value;
-                Repaint();
-            }
-        }
+        public bool ShowTileNumber { get; set; }
 
         [Browsable(false)]
         public GameHost Host
@@ -253,15 +241,12 @@ namespace RK.Win.Controls
         public MapControl()
         {
             _scaleFactor = DEF_SCALE_FACTOR;
-            _showTileNumber = DEF_SHOW_TILE_NUMBER;
+            ShowTileNumber = DEF_SHOW_TILE_NUMBER;
 
             if (!DesignMode)
             {
-                SetStyle(ControlStyles.UserPaint, true);
-                SetStyle(ControlStyles.ResizeRedraw, true);
-                SetStyle(ControlStyles.AllPaintingInWmPaint, true);
                 SetStyle(ControlStyles.Selectable, false);
-
+                
                 MouseMove += MapControlMouseMove;
 
                 Application.AddMessageFilter(this);
@@ -343,7 +328,11 @@ namespace RK.Win.Controls
 
         private void InitializeEnvironment()
         {
-            _lockPaint = new object();
+            _syncScroll = new object();
+
+            _fpsCounterData = new byte[30];
+            _fpsFontBrush = new SolidBrush(Color.White);
+
             _players = new Dictionary<int, Player>();
             _playersEx = new Dictionary<int, PlayerEx>();
         }
@@ -356,7 +345,6 @@ namespace RK.Win.Controls
                 {
                     renderer.ChangeScaleFactor(this, _scaleFactor);
                 }
-                Repaint();
                 if (ScaleFactorChanged != null)
                 {
                     ScaleFactorChanged(this);
@@ -372,7 +360,6 @@ namespace RK.Win.Controls
                 {
                     renderer.ChangeMap(this);
                 }
-                Repaint();
             }
         }
 
@@ -427,6 +414,8 @@ namespace RK.Win.Controls
             if (!DesignMode)
             {
                 Application.RemoveMessageFilter(this);
+                _threadRenderer.Abort();
+                _threadRenderer.Join();
                 DestroyGraphics();
             }
             base.Dispose();
@@ -444,11 +433,8 @@ namespace RK.Win.Controls
                 new RendererWalls(),
                 new RendererBorders()
             };
-            _threadRenderer = new Thread(RendererProc);
-            _threadRenderer.IsBackground = true;
-            _threadRenderer.Start();
         }
-    
+
         private void DestroyGraphics()
         {
             if (_buffer != null)
@@ -480,43 +466,51 @@ namespace RK.Win.Controls
                 _buffer.InterpolationMode = InterpolationMode.Low;
                 _buffer.SmoothingMode = SmoothingMode.HighSpeed;
                 _controlGraphics = Graphics.FromHwnd(Handle);
+
+                if (_threadRenderer == null)
+                {
+                    _threadRenderer = new Thread(RendererProc);
+                    _threadRenderer.IsBackground = true;
+                    _threadRenderer.Start();
+                }
             }
         }
 
-        public void Repaint()
-        {
-            Repaint(ClientRectangle);
-        }
-
-        private void Repaint(Rectangle clipRectangle)
+        private void Repaint()
         {
             if (!DesignMode)
             {
-                lock (_lockPaint)
+                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                    _bufferBitmap.Height != Height)
                 {
-                    if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                        _bufferBitmap.Height != Height)
-                    {
-                        DestroyGraphics();
-                        InitializeGraphics();
-                    }
+                    DestroyGraphics();
+                    InitializeGraphics();
+                }
 
-                    if (_bufferBitmap != null)
-                    {
-                        GeneralPaint();
-                        PlayersPaint();
-                        Rectangle srcRect = new Rectangle(0, 0, Width, Height);
-                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, srcRect,
-                            GraphicsUnit.Pixel);
-                    }
+                if (_bufferBitmap != null)
+                {
+                    GeneralPaint();
+                    PlayersPaint();
+                    DrawFps();
+                    _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
+                        ClientRectangle, GraphicsUnit.Pixel);
                     _lastFrameRenderTime = DateTime.Now;
                 }
             }
         }
 
+        private void GeneralPaint()
+        {
+            Rectangle area = new Rectangle(_posX, _posY, Width, Height);
+            foreach (IMapRenderer renderer in _renderers)
+            {
+                renderer.Render(this, _buffer, area);
+            }
+        }
+
         private void PlayersPaint()
         {
-            float pSize = 48*_scaleFactor;
+            float pSize = 48 * _scaleFactor;
 
             foreach (int playerId in _players.Keys)
             {
@@ -538,12 +532,23 @@ namespace RK.Win.Controls
             }
         }
 
-        private void GeneralPaint()
+        private void DrawFps()
         {
-            Rectangle area = new Rectangle(_posX, _posY, Width, Height);
-            foreach (IMapRenderer renderer in _renderers)
+            int sum = 0, num = 0;
+            foreach (byte rec in _fpsCounterData)
             {
-                renderer.Render(this, _buffer, area);
+                if (rec != 0)
+                {
+                    sum += rec;
+                    num++;
+                }
+            }
+            if (num > 0)
+            {
+                int avg = sum/num;
+                int curFps = (int) Math.Ceiling(1000f/avg);
+                string fps = string.Format("{0} FPS", curFps);
+                _buffer.DrawString(fps, Font, _fpsFontBrush, 10, 10);
             }
         }
 
@@ -551,7 +556,7 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                Repaint(e.ClipRectangle);
+                Repaint();
             }
             else
             {
@@ -561,18 +566,19 @@ namespace RK.Win.Controls
 
         private void RendererProc()
         {
-            int timeToCall = 1000/FPS;
             while (true)
             {
-                TimeSpan elapsed = DateTime.Now - _lastFrameRenderTime;
-                if (elapsed.TotalMilliseconds < timeToCall) return;
+                DateTime prewFrameRenderTime = _lastFrameRenderTime;
 
+                Invoke(new Action(Repaint));
 
+                _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
+                    ? _fpsCounterArrIdx + 1
+                    : 0;
+                _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
+                    Subtract(prewFrameRenderTime).Milliseconds;
 
-
-                _lastFrameRenderTime = DateTime.Now;
-
-
+                Thread.Sleep(1);
             }
         }
 
@@ -583,7 +589,6 @@ namespace RK.Win.Controls
         private void LoadMap(GameMap map)
         {
             _map = map;
-            Repaint();
             OnMapChanged();
             if (MapLoaded != null)
             {
@@ -598,7 +603,6 @@ namespace RK.Win.Controls
                 _scrollToPos = null;
                 _posX = x;
                 _posY = y;
-                Repaint();
                 if (PositionChanged != null)
                 {
                     PositionChanged(this);
@@ -621,7 +625,6 @@ namespace RK.Win.Controls
                 }
                 _posX += shiftX;
                 _posY += shiftY;
-                Repaint();
                 if (PositionChanged != null)
                 {
                     PositionChanged(this);
@@ -692,7 +695,6 @@ namespace RK.Win.Controls
                         SetTileType(i, j, TileType.Nothing, true);
                     }
                 }
-                Repaint();
                 if (TilesChanged != null)
                 {
                     TilesChanged(this);
@@ -711,7 +713,6 @@ namespace RK.Win.Controls
                 {
                     renderer.UpdateTile(this, tilePos.Value.X, tilePos.Value.Y, *tile);
                 }
-                Repaint();
                 if (TilesChanged != null)
                 {
                     TilesChanged(this);
@@ -740,7 +741,7 @@ namespace RK.Win.Controls
                         ShiftPosition(xShift, yShift, true);
                     }
                 }
-                Thread.Sleep(1);
+                Thread.Sleep(25);
             }
         }
 
@@ -813,7 +814,6 @@ namespace RK.Win.Controls
                 case PacketType.PlayerRotate:
                     EPlayerRotate ePlayerRotate = (EPlayerRotate) e;
                     _players[ePlayerRotate.PlayerId].Angle = ePlayerRotate.Angle;
-                    Repaint();
                     break;
                 case PacketType.PlayerMove:
                     EPlayerMove ePlayerMove = (EPlayerMove) e;

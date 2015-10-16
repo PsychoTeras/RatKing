@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Map;
 using RK.Common.Const;
@@ -23,7 +24,8 @@ namespace RK.Win.Controls
         private Image _miniMapBitmap;
         private Graphics _miniMapBitmapBuffer;
 
-        private object _lockPaint;
+        private Thread _threadRenderer;
+        private volatile bool _tilesChanged;
 
         private Pen _mapWindowPen;
         private Brush _mapWallsBrush;
@@ -81,18 +83,15 @@ namespace RK.Win.Controls
                 if (_map != null)
                 {
                     _map.MapLoaded -= MapLoaded;
-                    _map.ScaleFactorChanged -= MapScaleFactorChanged;
-                    _map.PositionChanged -= MapPositionChanged;
                     _map.TilesChanged -= MapTilesChanged;
                 }
                 if ((_map = value) != null)
                 {
                     _map.MapLoaded += MapLoaded;
-                    _map.ScaleFactorChanged += MapScaleFactorChanged;
                     _map.PositionChanged += MapTilesChanged;
                     _map.TilesChanged += MapTilesChanged;
                 }
-                Repaint();
+                _tilesChanged = true;
             }
         }
 
@@ -114,12 +113,8 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                SetStyle(ControlStyles.UserPaint, true);
-                SetStyle(ControlStyles.ResizeRedraw, true);
-                SetStyle(ControlStyles.AllPaintingInWmPaint, true);
                 SetStyle(ControlStyles.Selectable, false);
 
-                _lockPaint = new object();
                 _mapWallsBrush = new SolidBrush(Color.Black);
                 _mapWindowPen = new Pen(Color.LightSteelBlue);
 
@@ -143,17 +138,7 @@ namespace RK.Win.Controls
 
         private void MapTilesChanged(object sender)
         {
-            Repaint();
-        }
-
-        private void MapPositionChanged(object sender)
-        {
-            Repaint(ClientRectangle, true);
-        }
-
-        private void MapScaleFactorChanged(object sender)
-        {
-            Repaint(ClientRectangle, true);
+            _tilesChanged = true;
         }
 
         private void MapLoaded(object sender)
@@ -167,7 +152,7 @@ namespace RK.Win.Controls
             {
                 _bgBitmap = Image.FromFile("Resources\\bg_minimap.png");
             }
-            Repaint();
+            _tilesChanged = true;
         }
 
         private void DestroyGraphics()
@@ -194,12 +179,23 @@ namespace RK.Win.Controls
                 _buffer.InterpolationMode = InterpolationMode.Low;
                 _buffer.SmoothingMode = SmoothingMode.HighSpeed;
                 _controlGraphics = Graphics.FromHwnd(Handle);
+
+                if (_threadRenderer == null)
+                {
+                    _threadRenderer = new Thread(RendererProc);
+                    _threadRenderer.IsBackground = true;
+                    _threadRenderer.Start();
+                }
             }
         }
 
-        public void Repaint()
+        private void RendererProc()
         {
-            Repaint(ClientRectangle, false);
+            while (true)
+            {
+                Invoke(new Action(Repaint));
+                Thread.Sleep(1);
+            }
         }
 
         private void PaintMiniMap()
@@ -242,29 +238,27 @@ namespace RK.Win.Controls
             }
         }
 
-        private void Repaint(Rectangle clipRectangle, bool paintMapObjectsOnly)
+        private void Repaint()
         {
             if (!DesignMode)
             {
-                lock (_lockPaint)
+                if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
+                    _bufferBitmap.Height != Height)
                 {
-                    if (_bufferBitmap == null || _bufferBitmap.Width != Width ||
-                        _bufferBitmap.Height != Height)
-                    {
-                        DestroyGraphics();
-                        InitializeGraphics();
-                    }
+                    DestroyGraphics();
+                    InitializeGraphics();
+                }
 
-                    if (_bufferBitmap != null)
+                if (_bufferBitmap != null)
+                {
+                    if (_tilesChanged)
                     {
-                        if (!paintMapObjectsOnly)
-                        {
-                            PaintMiniMap();
-                        }
-                        PaintMapObjects();
-                        Rectangle area = new Rectangle(0, 0, Width, Height);
-                        _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, area, GraphicsUnit.Pixel);
+                        PaintMiniMap();
+                        _tilesChanged = false;
                     }
+                    PaintMapObjects();
+                    _controlGraphics.DrawImage(_bufferBitmap, ClientRectangle,
+                        ClientRectangle, GraphicsUnit.Pixel);
                 }
             }
         }
@@ -273,7 +267,8 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
-                Repaint(e.ClipRectangle, false);
+                _tilesChanged = true;
+                Repaint();
             }
             else
             {
@@ -314,6 +309,17 @@ namespace RK.Win.Controls
         {
             _mousePos = null;
             _dragScroll = false;
+        }
+
+        public new void Dispose()
+        {
+            if (!DesignMode)
+            {
+                _threadRenderer.Abort();
+                _threadRenderer.Join();
+                DestroyGraphics();
+            }
+            base.Dispose();
         }
 
 #endregion

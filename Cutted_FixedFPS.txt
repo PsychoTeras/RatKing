@@ -1,0 +1,26 @@
+        private void RendererProc()
+        {
+            int timeToCall = 1000/FPS;
+            while (true)
+            {
+                TimeSpan elapsed = DateTime.Now - _lastFrameRenderTime;
+                if (elapsed.TotalMilliseconds < timeToCall)
+                {
+                    Thread.Sleep(1);
+                    continue;
+                }
+
+                DateTime lastFrameRenderTime = _lastFrameRenderTime;
+                int lostElapsedChunk = (int) (elapsed.TotalMilliseconds % timeToCall);
+                TimeSpan timeDiffWithChunk = new TimeSpan(0, 0, 0, 0, lostElapsedChunk);
+                _lastFrameRenderTime = DateTime.Now.Subtract(timeDiffWithChunk);
+
+                Repaint();
+
+                _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
+                    ? _fpsCounterArrIdx + 1
+                    : 0;
+                _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
+                    Subtract(lastFrameRenderTime).Milliseconds;
+            }
+        }
