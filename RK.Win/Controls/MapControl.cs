@@ -464,6 +464,8 @@ namespace RK.Win.Controls
         {
             if (Width != 0 && Height != 0)
             {
+                _playerRotatedBitmap = new Bitmap(48, 48);
+                _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
                 _playerBitmap = Image.FromFile(@"Resources\player_s.png");
                 _bufferBitmap = new Bitmap(Width, Height);
                 _buffer = Graphics.FromImage(_bufferBitmap);
@@ -505,31 +507,23 @@ namespace RK.Win.Controls
 
         private void PlayersPaint()
         {
-            if (_myPlayer != null)
+            float pSize = 48*_scaleFactor;
+
+            foreach (int playerId in _players.Keys)
             {
-                float pSize = 48 * _scaleFactor;
+                Player player = _players[playerId];
 
-                if (_playerRotatedBitmap == null || _myPlayer.Angle != _myPlayerEx.PrewAngle)
-                {
-                    if (_playerRotatedBitmap != null)
-                    {
-                        _playerRotatedBitmap.Dispose();
-                        _playerRotated.Dispose();
-                    }
+                _playerRotated.ResetTransform();
+                _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
 
-                    _playerRotatedBitmap = new Bitmap(48, 48);
-                    _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
-
-                    _playerRotated.TranslateTransform(24, 24);
-                    _playerRotated.RotateTransform(_myPlayer.Angle);
-                    _playerRotated.TranslateTransform(-24, -24);
-                    _playerRotated.DrawImage(_playerBitmap, 0, 0);
-                    _myPlayerEx.PrewAngle = _myPlayer.Angle;
-                }
+                _playerRotated.TranslateTransform(24, 24);
+                _playerRotated.RotateTransform(player.Angle);
+                _playerRotated.TranslateTransform(-24, -24);
+                _playerRotated.DrawImage(_playerBitmap, 0, 0);
 
                 _buffer.DrawImage(_playerRotatedBitmap,
-                    new RectangleF((_myPlayer.Position.X * _scaleFactor - _posX),
-                                   (_myPlayer.Position.Y * _scaleFactor - _posY),
+                    new RectangleF((player.Position.X * _scaleFactor - _posX),
+                                   (player.Position.Y * _scaleFactor - _posY),
                                    pSize, pSize),
                     new RectangleF(0, 0, 48, 48), GraphicsUnit.Pixel);
             }
