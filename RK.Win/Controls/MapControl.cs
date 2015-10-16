@@ -6,13 +6,17 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using RK.Common.Algo;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
 using RK.Common.Host;
+using RK.Common.Proto;
+using RK.Common.Proto.Events;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
+using RK.Win.Classes.Ex;
 using RK.Win.Classes.Map.Renderers;
 
 namespace RK.Win.Controls
@@ -47,6 +51,8 @@ namespace RK.Win.Controls
         private Graphics _controlGraphics;
 
         private Image _playerBitmap;
+        private Bitmap _playerRotatedBitmap;
+        private Graphics _playerRotated;
 
         private object _lockPaint;
 
@@ -61,9 +67,12 @@ namespace RK.Win.Controls
         private Point? _scrollToPos;
         private object _syncScroll = new object();
 
-        private Player _myPlayer;
         private long _sessionToken;
         private Dictionary<int, Player> _players;
+        private Dictionary<int, PlayerEx> _playersEx;
+
+        private Player _myPlayer;
+        private PlayerEx _myPlayerEx;
 
 #endregion
 
@@ -186,6 +195,10 @@ namespace RK.Win.Controls
             get { return _host; }
             set
             {
+                if (_host != null)
+                {
+                    _host.GameHostEvent -= GameHostEvent;
+                }
                 _host = value;
                 ConnectToHost();
             }
@@ -243,7 +256,9 @@ namespace RK.Win.Controls
                 SetStyle(ControlStyles.ResizeRedraw, true);
                 SetStyle(ControlStyles.AllPaintingInWmPaint, true);
                 SetStyle(ControlStyles.Selectable, false);
-                
+
+                MouseMove += MapControlMouseMove;
+
                 Application.AddMessageFilter(this);
                 
                 InitializeEnvironment();
@@ -265,6 +280,13 @@ namespace RK.Win.Controls
 
         private void ConnectToHost()
         {
+            if (_host == null)
+            {
+                return;
+            }
+
+            _host.GameHostEvent += GameHostEvent;
+
             try
             {
                 if (_host.World.FirstMap == null)
@@ -277,7 +299,7 @@ namespace RK.Win.Controls
                     _host.ProcessPacket(new PUserLogout
                     {
                         SessionToken = _sessionToken
-                    }).Assert();
+                    });
                 }
 
                 RUserLogin userLogin = _host.ProcessPacket(new PUserLogin
@@ -288,6 +310,7 @@ namespace RK.Win.Controls
                 _sessionToken = userLogin.SessionToken;
 
                 _players.Clear();
+                _playersEx.Clear();
                 RPlayerEnter playerEnter = _host.ProcessPacket(new PPlayerEnter
                 {
                     SessionToken = _sessionToken
@@ -295,8 +318,10 @@ namespace RK.Win.Controls
                 foreach (Player p in playerEnter.PlayersOnLocation)
                 {
                     _players.Add(p.Id, p);
+                    _playersEx.Add(p.Id, new PlayerEx(p));
                 }
                 _myPlayer = _players[playerEnter.MyPlayerId];
+                _myPlayerEx = _playersEx[playerEnter.MyPlayerId];
 
                 LoadMap(_host.World.FirstMap);
 
@@ -315,6 +340,7 @@ namespace RK.Win.Controls
         {
             _lockPaint = new object();
             _players = new Dictionary<int, Player>();
+            _playersEx = new Dictionary<int, PlayerEx>();
         }
 
         private void OnScaleFactorChanged()
@@ -368,6 +394,29 @@ namespace RK.Win.Controls
             return false;
         }
 
+        private void CheckPlayerRotate(Point mouseLocation)
+        {
+            if (_myPlayer != null)
+            {
+                Point p1 = new Point(_myPlayer.Position.X + 24, _myPlayer.Position.Y + 24);
+                Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
+                float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
+                if (angle != _myPlayer.Angle)
+                {
+                    _host.ProcessPacket(new PPlayerRotate
+                    {
+                        SessionToken = _sessionToken,
+                        Angle = angle
+                    });
+                }
+            }
+        }
+
+        private void MapControlMouseMove(object sender, MouseEventArgs e)
+        {
+            CheckPlayerRotate(e.Location);
+        }
+
         public new void Dispose()
         {
             if (!DesignMode)
@@ -401,6 +450,13 @@ namespace RK.Win.Controls
                 _controlGraphics.Dispose();
                 _playerBitmap.Dispose();
                 _buffer = null;
+
+                if (_playerRotatedBitmap != null)
+                {
+                    _playerRotatedBitmap.Dispose();
+                    _playerRotated.Dispose();
+                    _playerRotatedBitmap = null;
+                }
             }
         }
 
@@ -408,7 +464,7 @@ namespace RK.Win.Controls
         {
             if (Width != 0 && Height != 0)
             {
-                _playerBitmap = Image.FromFile(@"Resources\player.png");
+                _playerBitmap = Image.FromFile(@"Resources\player_s.png");
                 _bufferBitmap = new Bitmap(Width, Height);
                 _buffer = Graphics.FromImage(_bufferBitmap);
                 _buffer.InterpolationMode = InterpolationMode.Low;
@@ -438,11 +494,44 @@ namespace RK.Win.Controls
                     if (_bufferBitmap != null)
                     {
                         GeneralPaint();
+                        PlayersPaint();
                         Rectangle srcRect = new Rectangle(0, 0, Width, Height);
                         _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, srcRect,
                             GraphicsUnit.Pixel);
                     }
                 }
+            }
+        }
+
+        private void PlayersPaint()
+        {
+            if (_myPlayer != null)
+            {
+                float pSize = 48 * _scaleFactor;
+
+                if (_playerRotatedBitmap == null || _myPlayer.Angle != _myPlayerEx.PrewAngle)
+                {
+                    if (_playerRotatedBitmap != null)
+                    {
+                        _playerRotatedBitmap.Dispose();
+                        _playerRotated.Dispose();
+                    }
+
+                    _playerRotatedBitmap = new Bitmap(48, 48);
+                    _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
+
+                    _playerRotated.TranslateTransform(24, 24);
+                    _playerRotated.RotateTransform(_myPlayer.Angle);
+                    _playerRotated.TranslateTransform(-24, -24);
+                    _playerRotated.DrawImage(_playerBitmap, 0, 0);
+                    _myPlayerEx.PrewAngle = _myPlayer.Angle;
+                }
+
+                _buffer.DrawImage(_playerRotatedBitmap,
+                    new RectangleF((_myPlayer.Position.X * _scaleFactor - _posX),
+                                   (_myPlayer.Position.Y * _scaleFactor - _posY),
+                                   pSize, pSize),
+                    new RectangleF(0, 0, 48, 48), GraphicsUnit.Pixel);
             }
         }
 
@@ -452,15 +541,6 @@ namespace RK.Win.Controls
             foreach (IMapRenderer renderer in _renderers)
             {
                 renderer.Render(this, _buffer, area);
-            }
-            if (_myPlayer != null)
-            {
-                float pSize = 48*_scaleFactor;
-                _buffer.DrawImage(_playerBitmap,
-                    new RectangleF((_myPlayer.Position.X * _scaleFactor - _posX),
-                                   (_myPlayer.Position.Y * _scaleFactor - _posY),
-                                   pSize, pSize),
-                    new RectangleF(0, 0, 48, 48), GraphicsUnit.Pixel);
             }
         }
 
@@ -687,6 +767,36 @@ namespace RK.Win.Controls
 #endregion
 
 #region Players
+
+        public void PlayerMove(Direction direction)
+        {
+            if (_myPlayer != null && _myPlayer.Direction != direction)
+            {
+                _host.ProcessPacket(new PPlayerMove
+                {
+                    SessionToken = _sessionToken,
+                    X =  _myPlayer.Position.X,
+                    Y =  _myPlayer.Position.Y,
+                    D = direction
+                });
+            }
+        }
+
+#endregion
+
+#region Game host events
+
+        private void GameHostEvent(BaseEvent e)
+        {
+            switch (e.Type)
+            {
+                case PacketType.PlayerRotate:
+                    EPlayerRotate ePlayerRotate = (EPlayerRotate) e;
+                    _players[ePlayerRotate.PlayerId].Angle = ePlayerRotate.Angle;
+                    Repaint();
+                    break;
+            }
+        }
 
 #endregion
 

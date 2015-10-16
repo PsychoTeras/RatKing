@@ -2,7 +2,7 @@
 
 namespace RK.Common.Proto.Packets
 {
-    public class PPlayerMove : BasePacket
+    public sealed class PPlayerMove : BasePacket
     {
         public int X;
         public int Y;

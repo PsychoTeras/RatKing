@@ -65,5 +65,12 @@ namespace RK.Common.Algo
 
             return null;
         }
+
+        public static float GetAngleOfLine(Point p1, Point p2)
+        {
+            float xDiff = p2.X - p1.X;
+            float yDiff = p2.Y - p1.Y;
+            return (float) (Math.Atan2(yDiff, xDiff) * (180 / Math.PI));
+        }
     }
 }

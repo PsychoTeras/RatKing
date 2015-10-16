@@ -8,6 +8,7 @@
 
         //100. Player
         PlayerEnter,
-        PlayerMove
+        PlayerMove,
+        PlayerRotate
     }
 }

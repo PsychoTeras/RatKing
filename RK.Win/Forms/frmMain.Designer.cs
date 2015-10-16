@@ -33,6 +33,8 @@
             this.tpMap = new System.Windows.Forms.TabPage();
             this.pMapCtrl = new System.Windows.Forms.Panel();
             this.pMimiMap = new System.Windows.Forms.Panel();
+            this.miniMapCtrl = new RK.Win.Controls.MiniMapControl();
+            this.mapCtrl = new RK.Win.Controls.MapControl();
             this.toolStrip4 = new System.Windows.Forms.ToolStrip();
             this.btnLoadLabyrinth = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
@@ -79,8 +81,6 @@
             this.tbLabyrinthAngle = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
             this.tbLabyrinthLacunarity = new System.Windows.Forms.ToolStripTextBox();
-            this.miniMapCtrl = new RK.Win.Controls.MiniMapControl();
-            this.mapCtrl = new RK.Win.Controls.MapControl();
             this.tcMain.SuspendLayout();
             this.tpMap.SuspendLayout();
             this.pMapCtrl.SuspendLayout();
@@ -140,6 +140,39 @@
             this.pMimiMap.Padding = new System.Windows.Forms.Padding(1);
             this.pMimiMap.Size = new System.Drawing.Size(200, 200);
             this.pMimiMap.TabIndex = 1;
+            // 
+            // miniMapCtrl
+            // 
+            this.miniMapCtrl.BackColor = System.Drawing.Color.Black;
+            this.miniMapCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.miniMapCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.miniMapCtrl.Location = new System.Drawing.Point(1, 1);
+            this.miniMapCtrl.MapControl = this.mapCtrl;
+            this.miniMapCtrl.Name = "miniMapCtrl";
+            this.miniMapCtrl.Size = new System.Drawing.Size(198, 198);
+            this.miniMapCtrl.TabIndex = 0;
+            this.miniMapCtrl.TabStop = false;
+            // 
+            // mapCtrl
+            // 
+            this.mapCtrl.BackColor = System.Drawing.Color.Black;
+            this.mapCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.mapCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mapCtrl.Font = new System.Drawing.Font("Verdana", 6F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.mapCtrl.ForeColor = System.Drawing.Color.DarkGray;
+            this.mapCtrl.Location = new System.Drawing.Point(0, 0);
+            this.mapCtrl.Name = "mapCtrl";
+            this.mapCtrl.PosX = 0;
+            this.mapCtrl.PosY = 0;
+            this.mapCtrl.ShowTileNumber = false;
+            this.mapCtrl.Size = new System.Drawing.Size(721, 565);
+            this.mapCtrl.TabIndex = 1;
+            this.mapCtrl.TabStop = false;
+            this.mapCtrl.Text = "map1";
+            this.mapCtrl.MouseWheel += new RK.Win.Controls.MouseWheel(this.MapMouseWheel);
+            this.mapCtrl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MapMouseDown);
+            this.mapCtrl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MapMouseMove);
+            this.mapCtrl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.MapMouseUp);
             // 
             // toolStrip4
             // 
@@ -515,39 +548,6 @@
             this.tbLabyrinthLacunarity.Size = new System.Drawing.Size(38, 25);
             this.tbLabyrinthLacunarity.Text = "2";
             // 
-            // miniMapCtrl
-            // 
-            this.miniMapCtrl.BackColor = System.Drawing.Color.Black;
-            this.miniMapCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.miniMapCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.miniMapCtrl.Location = new System.Drawing.Point(1, 1);
-            this.miniMapCtrl.MapControl = this.mapCtrl;
-            this.miniMapCtrl.Name = "miniMapCtrl";
-            this.miniMapCtrl.Size = new System.Drawing.Size(198, 198);
-            this.miniMapCtrl.TabIndex = 0;
-            this.miniMapCtrl.TabStop = false;
-            // 
-            // mapCtrl
-            // 
-            this.mapCtrl.BackColor = System.Drawing.Color.Black;
-            this.mapCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.mapCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.mapCtrl.Font = new System.Drawing.Font("Verdana", 6F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.mapCtrl.ForeColor = System.Drawing.Color.DarkGray;
-            this.mapCtrl.Location = new System.Drawing.Point(0, 0);
-            this.mapCtrl.Name = "mapCtrl";
-            this.mapCtrl.PosX = 0;
-            this.mapCtrl.PosY = 0;
-            this.mapCtrl.ShowTileNumber = false;
-            this.mapCtrl.Size = new System.Drawing.Size(721, 565);
-            this.mapCtrl.TabIndex = 1;
-            this.mapCtrl.TabStop = false;
-            this.mapCtrl.Text = "map1";
-            this.mapCtrl.MouseWheel += new RK.Win.Controls.MouseWheel(this.MapMouseWheel);
-            this.mapCtrl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MapMouseDown);
-            this.mapCtrl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MapMouseMove);
-            this.mapCtrl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.MapMouseUp);
-            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -559,6 +559,7 @@
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "RKWin";
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FrmMainKeyUp);
             this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.FrmMainPreviewKeyDown);
             this.tcMain.ResumeLayout(false);
             this.tpMap.ResumeLayout(false);

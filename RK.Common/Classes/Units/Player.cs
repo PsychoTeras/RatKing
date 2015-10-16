@@ -18,8 +18,9 @@ namespace RK.Common.Classes.Units
         
         //Map
         public int MapId;
+        public float Angle;
         public Point Position;
-        public short Angle;
+        public Direction Direction;
 
 #endregion
 

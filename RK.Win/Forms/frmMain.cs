@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AccidentalNoise;
@@ -16,8 +17,11 @@ namespace RK.Win.Forms
     public partial class frmMain : Form
     {
         private GameHost _host;
-
         private Point? _mousePos;
+        private byte[] _keys = new byte[256];
+
+        [DllImport("user32.dll")]
+        private static extern int GetKeyboardState(byte[] keystate);
 
         private object[] GetEnumValues(Type e)
         {
@@ -44,20 +48,66 @@ namespace RK.Win.Forms
             cbLabyrinthACCombine.SelectedItem = CombinerTypes.MULT;
         }
 
+        private bool KeyPressed(Keys keys)
+        {
+            GetKeyboardState(_keys);
+            return (_keys[(int) keys] & 128) == 128;
+        }
+
+        private Direction GetPlayerMoveDirection()
+        {
+            Direction direction = Direction.None;
+            if (KeyPressed(Keys.W))
+            {
+                direction = KeyPressed(Keys.D)
+                    ? Direction.NE
+                    : KeyPressed(Keys.A)
+                        ? Direction.NW
+                        : Direction.N;
+            }
+            if (KeyPressed(Keys.S))
+            {
+                direction = KeyPressed(Keys.D)
+                    ? Direction.SE
+                    : KeyPressed(Keys.A)
+                        ? Direction.SW
+                        : Direction.S;
+            }
+            if (KeyPressed(Keys.A))
+            {
+                direction = KeyPressed(Keys.W)
+                    ? Direction.NE
+                    : KeyPressed(Keys.S)
+                        ? Direction.SE
+                        : Direction.E;
+            }
+            if (KeyPressed(Keys.D))
+            {
+                direction = KeyPressed(Keys.W)
+                    ? Direction.NW
+                    : KeyPressed(Keys.S)
+                        ? Direction.SW
+                        : Direction.W;
+            }
+            return direction;
+        }
+
         private void FrmMainPreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
+            Direction direction = Direction.None;
+
             switch (e.KeyCode)
             {
                 case Keys.W:
-                    break;
                 case Keys.S:
-                    break;
                 case Keys.A:
-                    break;
                 case Keys.D:
+                    if (tcMain.SelectedTab == tpMap)
+                        direction = GetPlayerMoveDirection();
                     break;
                 case Keys.C:
-                    mapCtrl.CenterPlayer();
+                    if (tcMain.SelectedTab == tpMap)
+                        mapCtrl.CenterPlayer();
                     break;
                 case Keys.Space:
                 {
@@ -71,6 +121,32 @@ namespace RK.Win.Forms
                     }
                     break;
                 }
+            }
+
+            if (tcMain.SelectedTab == tpMap)
+            {
+                mapCtrl.PlayerMove(direction);
+            }
+        }
+
+        private void FrmMainKeyUp(object sender, KeyEventArgs e)
+        {
+            Direction direction = Direction.None;
+
+            switch (e.KeyCode)
+            {
+                case Keys.W:
+                case Keys.S:
+                case Keys.A:
+                case Keys.D:
+                    if (tcMain.SelectedTab == tpMap)
+                        direction = GetPlayerMoveDirection();
+                    break;
+            }
+
+            if (tcMain.SelectedTab == tpMap)
+            {
+                mapCtrl.PlayerMove(direction);
             }
         }
 

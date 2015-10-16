@@ -86,6 +86,11 @@ namespace RK.Common.Classes.Common
 
     public static class Extensions
     {
+        public static bool EqualsTo(this Point source, int x, int y)
+        {
+            return source.X == x && source.Y == y;
+        }
+
         public static ShortPoint ToShortPoint(this Point source)
         {
             return new ShortPoint(source);

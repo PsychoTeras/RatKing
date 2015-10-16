@@ -32,7 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -44,7 +44,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -52,7 +52,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <Optimize>true</Optimize>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -64,6 +64,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\Ex\PlayerEx.cs" />
     <Compile Include="Classes\Map\MapBG.cs" />
     <Compile Include="Classes\Map\Renderers\IMapRenderer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererBG.cs" />
@@ -135,6 +136,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\player.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\player_s.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\rock.png">
