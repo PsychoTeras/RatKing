@@ -36,6 +36,8 @@ namespace RK.Win.Controls
 
 #region Constants
 
+        private const int FPS = 30;
+
         private const float DEF_SCALE_FACTOR = 1f;
         private const bool DEF_SHOW_TILE_NUMBER = true;
 
@@ -73,6 +75,9 @@ namespace RK.Win.Controls
 
         private Player _myPlayer;
         private PlayerEx _myPlayerEx;
+
+        private Thread _threadRenderer;
+        private DateTime _lastFrameRenderTime;
 
 #endregion
 
@@ -439,6 +444,9 @@ namespace RK.Win.Controls
                 new RendererWalls(),
                 new RendererBorders()
             };
+            _threadRenderer = new Thread(RendererProc);
+            _threadRenderer.IsBackground = true;
+            _threadRenderer.Start();
         }
     
         private void DestroyGraphics()
@@ -501,6 +509,7 @@ namespace RK.Win.Controls
                         _controlGraphics.DrawImage(_bufferBitmap, clipRectangle, srcRect,
                             GraphicsUnit.Pixel);
                     }
+                    _lastFrameRenderTime = DateTime.Now;
                 }
             }
         }
@@ -547,6 +556,23 @@ namespace RK.Win.Controls
             else
             {
                 base.OnPaint(e);
+            }
+        }
+
+        private void RendererProc()
+        {
+            int timeToCall = 1000/FPS;
+            while (true)
+            {
+                TimeSpan elapsed = DateTime.Now - _lastFrameRenderTime;
+                if (elapsed.TotalMilliseconds < timeToCall) return;
+
+
+
+
+                _lastFrameRenderTime = DateTime.Now;
+
+
             }
         }
 
@@ -788,6 +814,12 @@ namespace RK.Win.Controls
                     EPlayerRotate ePlayerRotate = (EPlayerRotate) e;
                     _players[ePlayerRotate.PlayerId].Angle = ePlayerRotate.Angle;
                     Repaint();
+                    break;
+                case PacketType.PlayerMove:
+                    EPlayerMove ePlayerMove = (EPlayerMove) e;
+                    Player player = _players[ePlayerMove.PlayerId];
+                    player.Position = new Point(ePlayerMove.X, ePlayerMove.Y);
+                    player.Direction = ePlayerMove.D;
                     break;
             }
         }
