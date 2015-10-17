@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -76,18 +77,18 @@ namespace RK.Win.Forms
             if (KeyPressed(Keys.A))
             {
                 direction = KeyPressed(Keys.W)
-                    ? Direction.NE
-                    : KeyPressed(Keys.S)
-                        ? Direction.SE
-                        : Direction.E;
-            }
-            if (KeyPressed(Keys.D))
-            {
-                direction = KeyPressed(Keys.W)
                     ? Direction.NW
                     : KeyPressed(Keys.S)
                         ? Direction.SW
                         : Direction.W;
+            }
+            if (KeyPressed(Keys.D))
+            {
+                direction = KeyPressed(Keys.W)
+                    ? Direction.NE
+                    : KeyPressed(Keys.S)
+                        ? Direction.SE
+                        : Direction.E;
             }
             return direction;
         }

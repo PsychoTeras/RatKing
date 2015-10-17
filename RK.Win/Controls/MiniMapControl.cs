@@ -81,16 +81,17 @@ namespace RK.Win.Controls
             get { return _map; }
             set
             {
+                if (_map != null)
+                {
+                    _map.MapLoaded -= MapLoaded;
+                    _map.TilesChanged -= MapTilesChanged;
+                    _map.ScaleFactorChanged -= MapScaleFactorChanged;
+                    _map.PositionChanged -= MapPositionChanged;
+                }
+                _map = value;
                 if (!DesignMode)
                 {
                     if (_map != null)
-                    {
-                        _map.MapLoaded -= MapLoaded;
-                        _map.TilesChanged -= MapTilesChanged;
-                        _map.ScaleFactorChanged -= MapScaleFactorChanged;
-                        _map.PositionChanged -= MapPositionChanged;
-                    }
-                    if ((_map = value) != null)
                     {
                         _map.MapLoaded += MapLoaded;
                         _map.TilesChanged += MapTilesChanged;
@@ -338,6 +339,8 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
+                _threadRenderer.Abort();
+                _threadRenderer.Join();
                 DestroyGraphics();
             }
             base.Dispose();

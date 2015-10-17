@@ -68,7 +68,6 @@ namespace RK.Win.Controls
         private Dictionary<int, PlayerEx> _playersEx;
 
         private Player _myPlayer;
-        private PlayerEx _myPlayerEx;
 
         private Thread _threadRenderer;
         private DateTime _lastFrameRenderTime;
@@ -245,9 +244,11 @@ namespace RK.Win.Controls
 
             if (!DesignMode)
             {
+                SetStyle(ControlStyles.Opaque, true);
                 SetStyle(ControlStyles.Selectable, false);
                 
                 MouseMove += MapControlMouseMove;
+                MouseWheel += MapControlMouseWheel;
 
                 Application.AddMessageFilter(this);
                 
@@ -311,7 +312,6 @@ namespace RK.Win.Controls
                     _playersEx.Add(p.Id, new PlayerEx(p));
                 }
                 _myPlayer = _players[playerEnter.MyPlayerId];
-                _myPlayerEx = _playersEx[playerEnter.MyPlayerId];
 
                 LoadMap(_host.World.FirstMap);
 
@@ -330,7 +330,7 @@ namespace RK.Win.Controls
         {
             _syncScroll = new object();
 
-            _fpsCounterData = new byte[30];
+            _fpsCounterData = new byte[10];
             _fpsFontBrush = new SolidBrush(Color.White);
 
             _players = new Dictionary<int, Player>();
@@ -386,11 +386,16 @@ namespace RK.Win.Controls
             return false;
         }
 
-        private void CheckPlayerRotate(Point mouseLocation)
+        private void CheckMyPlayerRotate()
         {
             if (_myPlayer != null)
             {
-                Point p1 = new Point(_myPlayer.Position.X + 24, _myPlayer.Position.Y + 24);
+                float pSizeWh = _myPlayer.Size.Width * _scaleFactor / 2;
+                float pSizeHh = _myPlayer.Size.Height * _scaleFactor / 2;
+
+                Point mouseLocation = PointToClient(Cursor.Position);
+                Point p1 = new Point((int)(_myPlayer.Position.X * _scaleFactor + pSizeWh),
+                                     (int)(_myPlayer.Position.Y * _scaleFactor + pSizeHh));
                 Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
                 float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
                 if (angle != _myPlayer.Angle)
@@ -406,7 +411,12 @@ namespace RK.Win.Controls
 
         private void MapControlMouseMove(object sender, MouseEventArgs e)
         {
-            CheckPlayerRotate(e.Location);
+            CheckMyPlayerRotate();
+        }
+
+        private void MapControlMouseWheel(object sender, int delta)
+        {
+            CheckMyPlayerRotate();
         }
 
         public new void Dispose()
@@ -414,6 +424,8 @@ namespace RK.Win.Controls
             if (!DesignMode)
             {
                 Application.RemoveMessageFilter(this);
+                _threadRenderer.Abort();
+                _threadRenderer.Join();
                 DestroyGraphics();
             }
             base.Dispose();
@@ -422,6 +434,108 @@ namespace RK.Win.Controls
 #endregion
 
 #region Renderer
+
+        private void UpdatePlayersPosition()
+        {
+            int wPart = (int) (Width/3f);
+            int leftWinBorder = _posX + wPart;
+            int rightWinBorder = _posX + Width - wPart;
+            int hPart = (int) (Height/3f);
+            int topWinBorder = _posY + hPart;
+            int bottomWinBorder = _posY + Height - hPart;
+
+            foreach (int playerId in _players.Keys)
+            {
+                Player player = _players[playerId];
+                if (player.Direction == Direction.None)
+                {
+                    continue;
+                }
+
+                PlayerEx playerEx = _playersEx[playerId];
+                double moveTimeElapsed = DateTime.Now.Subtract(playerEx.MovingStartedTime).
+                    TotalMilliseconds;
+                int traveled = (int) Math.Ceiling(moveTimeElapsed/player.Speed);
+
+                Point newPos = default(Point);
+                Point startPos = playerEx.MovingStartedPoint;
+                switch (player.Direction)
+                {
+                    case Direction.N:
+                        newPos = new Point(startPos.X, startPos.Y - traveled);
+                        break;
+                    case Direction.NW:
+                        newPos = new Point(startPos.X - traveled, startPos.Y - traveled);
+                        break;
+                    case Direction.NE:
+                        newPos = new Point(startPos.X + traveled, startPos.Y - traveled);
+                        break;
+                    case Direction.S:
+                        newPos = new Point(startPos.X, startPos.Y + traveled);
+                        break;
+                    case Direction.SW:
+                        newPos = new Point(startPos.X - traveled, startPos.Y + traveled);
+                        break;
+                    case Direction.SE:
+                        newPos = new Point(startPos.X + traveled, startPos.Y + traveled);
+                        break;
+                    case Direction.W:
+                        newPos = new Point(startPos.X - traveled, startPos.Y);
+                        break;
+                    case Direction.E:
+                        newPos = new Point(startPos.X + traveled, startPos.Y);
+                        break;
+                }
+                if (player.Position != newPos)
+                {
+                    player.Position = newPos;
+                    if (player.Id == _myPlayer.Id)
+                    {
+                        float pSizeW = player.Size.Width*_scaleFactor;
+                        float pSizeH = player.Size.Height*_scaleFactor;
+                        float nPosX = newPos.X * _scaleFactor;
+                        float nPosY = newPos.Y * _scaleFactor;
+                        if (nPosX + pSizeW > rightWinBorder)
+                        {
+                            PosX = (int)(nPosX - (wPart * 2) + pSizeW);
+                        }
+                        else if (nPosX < leftWinBorder)
+                        {
+                            PosX = (int) (nPosX - wPart);
+                        }
+                        if (nPosY + pSizeH > bottomWinBorder)
+                        {
+                            PosY = (int)(nPosY - (hPart * 2) + pSizeH);
+                        }
+                        else if (nPosY < topWinBorder)
+                        {
+                            PosY = (int) (nPosY - hPart);
+                        }
+                        Invoke(new Action(CheckMyPlayerRotate));
+                    }
+                }
+            }
+        }
+
+        private void RendererProc()
+        {
+            while (true)
+            {
+                DateTime prewFrameRenderTime = _lastFrameRenderTime;
+
+                UpdatePlayersPosition();
+
+                Invoke(new Action(Repaint));
+
+                _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
+                    ? _fpsCounterArrIdx + 1
+                    : 0;
+                _fpsCounterData[_fpsCounterArrIdx] = (byte)_lastFrameRenderTime.
+                    Subtract(prewFrameRenderTime).TotalMilliseconds;
+
+                Thread.Sleep(1);
+            }
+        }
 
         private void InitializeRenderers()
         {
@@ -505,46 +619,41 @@ namespace RK.Win.Controls
 
         private void PlayersPaint()
         {
-            float pSize = 48 * _scaleFactor;
-
             foreach (int playerId in _players.Keys)
             {
                 Player player = _players[playerId];
+                float pSizeW = player.Size.Width*_scaleFactor,
+                      pSizeHw = (float) player.Size.Width/2;
+                float pSizeH = player.Size.Height*_scaleFactor,
+                      pSizeHh = (float) player.Size.Height/2;
 
                 _playerRotated.ResetTransform();
                 _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
 
-                _playerRotated.TranslateTransform(24, 24);
+                _playerRotated.TranslateTransform(pSizeHw, pSizeHh);
                 _playerRotated.RotateTransform(player.Angle);
-                _playerRotated.TranslateTransform(-24, -24);
+                _playerRotated.TranslateTransform(-pSizeHw, -pSizeHh);
                 _playerRotated.DrawImage(_playerBitmap, 0, 0);
 
                 _buffer.DrawImage(_playerRotatedBitmap,
                     new RectangleF((player.Position.X * _scaleFactor - _posX),
                                    (player.Position.Y * _scaleFactor - _posY),
-                                   pSize, pSize),
+                                   pSizeW, pSizeH),
                     new RectangleF(0, 0, 48, 48), GraphicsUnit.Pixel);
             }
         }
 
         private void DrawFps()
         {
-            int sum = 0, num = 0;
+            int sum = 0;
             foreach (byte rec in _fpsCounterData)
             {
-                if (rec != 0)
-                {
-                    sum += rec;
-                    num++;
-                }
+                sum += rec;
             }
-            if (num > 0)
-            {
-                int avg = sum/num;
-                int curFps = (int) Math.Ceiling(1000f/avg);
-                string fps = string.Format("{0} FPS", curFps);
-                _buffer.DrawString(fps, Font, _fpsFontBrush, 10, 10);
-            }
+            int avg = sum/_fpsCounterData.Length;
+            int curFps = (int) Math.Ceiling(1000f/avg);
+            string fps = string.Format("{0} FPS", curFps);
+            _buffer.DrawString(fps, Font, _fpsFontBrush, 10, 10);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -556,24 +665,6 @@ namespace RK.Win.Controls
             else
             {
                 base.OnPaint(e);
-            }
-        }
-
-        private void RendererProc()
-        {
-            while (true)
-            {
-                DateTime prewFrameRenderTime = _lastFrameRenderTime;
-
-                Invoke(new Action(Repaint));
-
-                _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
-                    ? _fpsCounterArrIdx + 1
-                    : 0;
-                _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
-                    Subtract(prewFrameRenderTime).Milliseconds;
-
-                Thread.Sleep(1);
             }
         }
 
@@ -723,6 +814,7 @@ namespace RK.Win.Controls
                 {
                     if (_scrollToPos == null)
                     {
+                        Invoke(new Action(CheckMyPlayerRotate));
                         return;
                     }
                     int xShift = (_scrollToPos.Value.X - _posX) / 2;
@@ -815,6 +907,10 @@ namespace RK.Win.Controls
                     Player player = _players[ePlayerMove.PlayerId];
                     player.Position = new Point(ePlayerMove.X, ePlayerMove.Y);
                     player.Direction = ePlayerMove.D;
+
+                    PlayerEx playerEx = _playersEx[ePlayerMove.PlayerId];
+                    playerEx.MovingStartedTime = DateTime.Now;
+                    playerEx.MovingStartedPoint = player.Position;
                     break;
             }
         }

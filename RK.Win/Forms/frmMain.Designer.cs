@@ -32,6 +32,7 @@
             this.tcMain = new System.Windows.Forms.TabControl();
             this.tpMap = new System.Windows.Forms.TabPage();
             this.pMapCtrl = new System.Windows.Forms.Panel();
+            this.pMiniMap = new System.Windows.Forms.Panel();
             this.toolStrip4 = new System.Windows.Forms.ToolStrip();
             this.btnLoadLabyrinth = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
@@ -78,12 +79,12 @@
             this.tbLabyrinthAngle = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
             this.tbLabyrinthLacunarity = new System.Windows.Forms.ToolStripTextBox();
-            this.pMimiMap = new System.Windows.Forms.Panel();
             this.miniMapCtrl = new RK.Win.Controls.MiniMapControl();
             this.mapCtrl = new RK.Win.Controls.MapControl();
             this.tcMain.SuspendLayout();
             this.tpMap.SuspendLayout();
             this.pMapCtrl.SuspendLayout();
+            this.pMiniMap.SuspendLayout();
             this.toolStrip4.SuspendLayout();
             this.tpLabyrinthGenerator.SuspendLayout();
             this.toolStrip3.SuspendLayout();
@@ -91,7 +92,6 @@
             this.pLabyrinth.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbLabyrinth)).BeginInit();
             this.toolStrip1.SuspendLayout();
-            this.pMimiMap.SuspendLayout();
             this.SuspendLayout();
             // 
             // tcMain
@@ -123,12 +123,23 @@
             this.pMapCtrl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.pMapCtrl.Controls.Add(this.pMimiMap);
+            this.pMapCtrl.Controls.Add(this.pMiniMap);
             this.pMapCtrl.Controls.Add(this.mapCtrl);
             this.pMapCtrl.Location = new System.Drawing.Point(3, 31);
             this.pMapCtrl.Name = "pMapCtrl";
             this.pMapCtrl.Size = new System.Drawing.Size(721, 565);
             this.pMapCtrl.TabIndex = 3;
+            // 
+            // pMiniMap
+            // 
+            this.pMiniMap.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.pMiniMap.BackColor = System.Drawing.Color.DimGray;
+            this.pMiniMap.Controls.Add(this.miniMapCtrl);
+            this.pMiniMap.Location = new System.Drawing.Point(521, 365);
+            this.pMiniMap.Name = "pMiniMap";
+            this.pMiniMap.Padding = new System.Windows.Forms.Padding(1);
+            this.pMiniMap.Size = new System.Drawing.Size(200, 200);
+            this.pMiniMap.TabIndex = 5;
             // 
             // toolStrip4
             // 
@@ -504,17 +515,6 @@
             this.tbLabyrinthLacunarity.Size = new System.Drawing.Size(38, 25);
             this.tbLabyrinthLacunarity.Text = "2";
             // 
-            // pMimiMap
-            // 
-            this.pMimiMap.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.pMimiMap.BackColor = System.Drawing.Color.DimGray;
-            this.pMimiMap.Controls.Add(this.miniMapCtrl);
-            this.pMimiMap.Location = new System.Drawing.Point(521, 365);
-            this.pMimiMap.Name = "pMimiMap";
-            this.pMimiMap.Padding = new System.Windows.Forms.Padding(1);
-            this.pMimiMap.Size = new System.Drawing.Size(200, 200);
-            this.pMimiMap.TabIndex = 5;
-            // 
             // miniMapCtrl
             // 
             this.miniMapCtrl.BackColor = System.Drawing.Color.Black;
@@ -566,6 +566,7 @@
             this.tpMap.ResumeLayout(false);
             this.tpMap.PerformLayout();
             this.pMapCtrl.ResumeLayout(false);
+            this.pMiniMap.ResumeLayout(false);
             this.toolStrip4.ResumeLayout(false);
             this.toolStrip4.PerformLayout();
             this.tpLabyrinthGenerator.ResumeLayout(false);
@@ -579,7 +580,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.pbLabyrinth)).EndInit();
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
-            this.pMimiMap.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -636,7 +636,7 @@
         private Controls.MapControl mapCtrl;
         private System.Windows.Forms.ToolStripLabel lblLabyrinthTilePos;
         private System.Windows.Forms.ToolStripButton btnSaveLabyrinth;
-        private System.Windows.Forms.Panel pMimiMap;
+        private System.Windows.Forms.Panel pMiniMap;
         private Controls.MiniMapControl miniMapCtrl;
 
     }
