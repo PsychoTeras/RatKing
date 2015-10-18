@@ -859,13 +859,13 @@ namespace RK.Win.Controls
 
         private void DestroyGraphics()
         {
-            if (_buffer != null)
+            if (_bufferBitmap != null)
             {
                 _buffer.Dispose();
                 _bufferBitmap.Dispose();
                 _controlGraphics.Dispose();
                 _playerBitmap.Dispose();
-                _buffer = null;
+                _bufferBitmap = null;
 
                 if (_playerRotatedBitmap != null)
                 {
