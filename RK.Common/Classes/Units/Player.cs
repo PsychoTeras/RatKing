@@ -33,7 +33,7 @@ namespace RK.Common.Classes.Units
             Player player = new Player
             {
                 Name = name,
-                Size = new TinySize(45, 45),
+                Size = new TinySize(36, 36),
                 Health = 100,
                 Speed = 10f
             };

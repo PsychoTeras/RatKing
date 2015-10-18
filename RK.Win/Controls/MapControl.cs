@@ -878,7 +878,7 @@ namespace RK.Win.Controls
         {
             if (Width != 0 && Height != 0)
             {
-                _playerBitmap = Image.FromFile(@"Resources\player_o.png");
+                _playerBitmap = Image.FromFile(@"Resources\player_s.png");
 
                 _playerRotatedBitmap = new Bitmap(_playerBitmap.Width, _playerBitmap.Height);
                 _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
@@ -941,8 +941,8 @@ namespace RK.Win.Controls
                       pSizeHh = (float) player.Size.Height/2;
 
                 _playerRotated.ResetTransform();
-                _playerRotated.Clear(Color.FromArgb(255, 255, 157, 0));
-//                _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
+//                _playerRotated.Clear(Color.FromArgb(255, 255, 157, 0));
+                _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
 
                 _playerRotated.TranslateTransform(pSizeHw, pSizeHh);
                 _playerRotated.RotateTransform(player.Angle);
