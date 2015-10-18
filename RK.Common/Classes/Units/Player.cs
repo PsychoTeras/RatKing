@@ -33,9 +33,9 @@ namespace RK.Common.Classes.Units
             Player player = new Player
             {
                 Name = name,
-                Size = new TinySize(48, 48),
+                Size = new TinySize(45, 45),
                 Health = 100,
-                Speed = 10
+                Speed = 10f
             };
             player.SetNewId();
             return player;

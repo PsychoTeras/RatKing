@@ -40,31 +40,31 @@ namespace RK.Win.Classes.Map.Renderers
                     Tile* tile = map[x, y];
                     if ((*tile).Type == TileType.Wall)
                     {
-                        float x1 = x * pixelSize - mapCtrl.PosX;
-                        float y1 = y * pixelSize - mapCtrl.PosY;
+                        float x1 = x*pixelSize - mapCtrl.PosX;
+                        float y1 = y*pixelSize - mapCtrl.PosY;
 
                         float x2, y2;
                         int borders = (*tile).Borders;
                         if ((borders | 1) == borders)
                         {
-                            y2 = y1 + (1 * pixelSize);
+                            y2 = y1 + pixelSize - 1;
                             buffer.DrawLine(_borderPen, x1, y1, x1, y2);
                         }
                         if ((borders | 2) == borders)
                         {
-                            x2 = x1 + (1 * pixelSize);
-                            y2 = y1 + (1 * pixelSize);
+                            x2 = x1 + pixelSize - 1;
+                            y2 = y1 + pixelSize - 1;
                             buffer.DrawLine(_borderPen, x2, y1, x2, y2);
                         }
                         if ((borders | 4) == borders)
                         {
-                            x2 = x1 + (1 * pixelSize);
+                            x2 = x1 + pixelSize - 1;
                             buffer.DrawLine(_borderPen, x1, y1, x2, y1);
                         }
                         if ((borders | 8) == borders)
                         {
-                            x2 = x1 + (1 * pixelSize);
-                            y2 = y1 + (1 * pixelSize);
+                            x2 = x1 + pixelSize - 1;
+                            y2 = y1 + pixelSize - 1;
                             buffer.DrawLine(_borderPen, x1, y2, x2, y2);
                         }
                     }

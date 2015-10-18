@@ -7,7 +7,7 @@ namespace RK.Win.Classes.Ex
     public sealed class PlayerEx
     {
         public Point MovingStartedPoint;
-        public DateTime MovingStartedTime;
+        public DateTime MovingStartTime;
 
         public PlayerEx(Player player)
         {
