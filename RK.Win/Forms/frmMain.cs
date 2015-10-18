@@ -250,7 +250,7 @@ namespace RK.Win.Forms
                 pbLabyrinth.Image.Dispose();
             }
 
-            ushort width = 500, height = 500;
+            ushort width = 4000, height = 4000;
             Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadWrite, bitmap.PixelFormat);

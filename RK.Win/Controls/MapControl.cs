@@ -518,6 +518,8 @@ namespace RK.Win.Controls
             TinySize size = player.Size;
             bool stop = false, xStop = false, yStop = false;
 
+            int mapWidth = _map.Width, mapHeight = _map.Height;
+
             int cellTs = (int)Math.Floor((float)pos.Y / ConstMap.PIXEL_SIZE);
             int cellTe = (int)Math.Floor((float)newPos.Y / ConstMap.PIXEL_SIZE);
             int cellLs = (int)Math.Floor((float)pos.X / ConstMap.PIXEL_SIZE);
@@ -540,10 +542,10 @@ namespace RK.Win.Controls
                 {
                     for (int y = cellTs; y >= cellTe; y--)
                     {
-                        if (y < 0 || y >= _map.Height || stop) break;
+                        if (y < 0 || y >= mapHeight || stop) break;
                         for (int x = cellL; x <= cellR; x++)
                         {
-                            if (x < 0 || x >= _map.Width) continue;
+                            if (x < 0 || x >= mapWidth) continue;
                             if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
                             {
                                 newPos.Y = y*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
@@ -568,14 +570,14 @@ namespace RK.Win.Controls
 
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
 
                             //Y
                             if (y == cellT && i <= tTotalDist)
                             {
                                 for (int x = cellL; x <= cellR; x++)
                                 {
-                                    if (x < 0 || x >= _map.Width) continue;
+                                    if (x < 0 || x >= mapWidth) continue;
                                     if (!yStop && (*_map[(ushort) (x + 1), (ushort) cellT]).Type != TileType.Nothing)
                                     {
                                         newPos.Y = cellT*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
@@ -613,14 +615,14 @@ namespace RK.Win.Controls
 
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
 
                             //Y
                             if (y == cellT && i <= tTotalDist)
                             {
                                 for (int x = cellL; x <= cellR; x++)
                                 {
-                                    if (x < 0 || x >= _map.Width) continue;
+                                    if (x < 0 || x >= mapWidth) continue;
                                     if (!yStop && (*_map[(ushort) (x - 1), (ushort) cellT]).Type != TileType.Nothing)
                                     {
                                         newPos.Y = cellT*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
@@ -648,10 +650,10 @@ namespace RK.Win.Controls
                 {
                     for (int y = cellBs; y <= cellBe; y++)
                     {
-                        if (y < 0 || y >= _map.Height || stop) break;
+                        if (y < 0 || y >= mapHeight || stop) break;
                         for (int x = cellL; x <= cellR; x++)
                         {
-                            if (x < 0 || x >= _map.Width) continue;
+                            if (x < 0 || x >= mapWidth) continue;
                             if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
                             {
                                 newPos.Y = y*ConstMap.PIXEL_SIZE - size.Height;
@@ -676,14 +678,14 @@ namespace RK.Win.Controls
 
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
 
                             //Y
                             if (y == cellT && i <= bTotalDist)
                             {
                                 for (int x = cellL; x <= cellR; x++)
                                 {
-                                    if (x < 0 || x >= _map.Width) continue;
+                                    if (x < 0 || x >= mapWidth) continue;
                                     if (!yStop && (*_map[(ushort) (x + 1), (ushort) cellB]).Type != TileType.Nothing)
                                     {
                                         newPos.Y = cellB*ConstMap.PIXEL_SIZE - size.Height;
@@ -721,14 +723,14 @@ namespace RK.Win.Controls
 
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
 
                             //Y
                             if (y == cellT && i <= bTotalDist)
                             {
                                 for (int x = cellL; x <= cellR; x++)
                                 {
-                                    if (x < 0 || x >= _map.Width) continue;
+                                    if (x < 0 || x >= mapWidth) continue;
                                     if (!yStop && (*_map[(ushort) (x - 1), (ushort) cellB]).Type != TileType.Nothing)
                                     {
                                         newPos.Y = cellB*ConstMap.PIXEL_SIZE - size.Height;
@@ -756,10 +758,10 @@ namespace RK.Win.Controls
                 {
                     for (int x = cellLs; x >= cellLe; x--)
                     {
-                        if (x < 0 || x >= _map.Width || stop) break;
+                        if (x < 0 || x >= mapWidth || stop) break;
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
                             if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
                             {
                                 newPos.X = x*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
@@ -774,10 +776,10 @@ namespace RK.Win.Controls
                 {
                     for (int x = cellRs; x <= cellRe; x++)
                     {
-                        if (x < 0 || x >= _map.Width || stop) break;
+                        if (x < 0 || x >= mapWidth || stop) break;
                         for (int y = cellT; y <= cellB; y++)
                         {
-                            if (y < 0 || y >= _map.Height) continue;
+                            if (y < 0 || y >= mapHeight) continue;
                             if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
                             {
                                 newPos.X = x*ConstMap.PIXEL_SIZE - size.Width;
