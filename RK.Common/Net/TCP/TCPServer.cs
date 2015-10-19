@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -13,21 +12,21 @@ namespace RK.Common.Net.TCP
 
 #region Delegates
 
-        public delegate void OnClient(TCPClientEx tcpClient);
+        public delegate void OnClientConnetion(TCPClientEx tcpClient);
         public delegate void OnClientDataReceived(TCPClientEx tcpClient, string data);
         public delegate void OnClientDataReceiveError(TCPClientEx tcpClient, Exception ex);
         public delegate void OnClientDataSent(TCPClientEx tcpClient, string data, object userData);
-        public delegate void OnClientDataSendError(TCPClientEx tcpClient, string data, 
-                                                   object userData, Exception ex);
+        public delegate void OnClientDataSendError(TCPClientEx tcpClient, string data, object userData, Exception ex);
 
 #endregion
 
 #region Events
+
         public event Action Started;
         public event Action Stopped;
 
-        public event OnClient ClientConnected;
-        public event OnClient ClientDisonnected;
+        public event OnClientConnetion ClientConnected;
+        public event OnClientConnetion ClientDisonnected;
         public event OnClientDataReceived ClientDataReceived;
         public event OnClientDataReceiveError ClientDataReceiveError;
         public event OnClientDataSent ClientDataSent;
@@ -41,7 +40,6 @@ namespace RK.Common.Net.TCP
 
         private volatile TcpListener _tcpListener;
         private Thread _listenerThread;
-        private Dictionary<int, TCPClientEx> _connectedClientsIp;
         private Dictionary<long, TCPClientEx> _connectedClientsId;
 
         private int _started;
@@ -61,7 +59,6 @@ namespace RK.Common.Net.TCP
 
         public TCPServer()
         {
-            _connectedClientsIp = new Dictionary<int, TCPClientEx>();
             _connectedClientsId = new Dictionary<long, TCPClientEx>();
         }
 
@@ -77,35 +74,16 @@ namespace RK.Common.Net.TCP
 
         private void AddConnectedClient(TCPClientEx tcpClient)
         {
-            lock (_connectedClientsIp)
+            lock (_connectedClientsId)
             {
                 RemoveConnectedClient(tcpClient);
-                _connectedClientsIp.Add(tcpClient.Ip, tcpClient);
                 _connectedClientsId.Add(tcpClient.Id, tcpClient);
-            }
-        }
-
-        public TCPClientEx GetFirstConnectedClient()
-        {
-            lock (_connectedClientsIp)
-            {
-                return _connectedClientsIp.Values.FirstOrDefault();
-            }
-        }
-
-        public TCPClientEx GetConnectedClient(int clientIp)
-        {
-            lock (_connectedClientsIp)
-            {
-                return _connectedClientsIp.ContainsKey(clientIp)
-                           ? _connectedClientsIp[clientIp]
-                           : null;
             }
         }
 
         public TCPClientEx GetConnectedClient(long clientId)
         {
-            lock (_connectedClientsIp)
+            lock (_connectedClientsId)
             {
                 return _connectedClientsId.ContainsKey(clientId)
                            ? _connectedClientsId[clientId]
@@ -115,17 +93,8 @@ namespace RK.Common.Net.TCP
 
         private void RemoveConnectedClient(TCPClientEx tcpClient)
         {
-            lock (_connectedClientsIp)
+            lock (_connectedClientsId)
             {
-                if (_connectedClientsIp.ContainsKey(tcpClient.Ip))
-                {
-                    TcpClient oldTcpClient = _connectedClientsIp[tcpClient.Ip];
-                    if (oldTcpClient.Connected)
-                    {
-                        oldTcpClient.Close();
-                    }
-                    _connectedClientsIp.Remove(tcpClient.Ip);
-                }
                 if (_connectedClientsId.ContainsKey(tcpClient.Id))
                 {
                     TcpClient oldTcpClient = _connectedClientsId[tcpClient.Id];
@@ -140,9 +109,8 @@ namespace RK.Common.Net.TCP
 
         private void ClearConnectedClients()
         {
-            lock (_connectedClientsIp)
+            lock (_connectedClientsId)
             {
-                _connectedClientsIp.Clear();
                 _connectedClientsId.Clear();
             }
         }

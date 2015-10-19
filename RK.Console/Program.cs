@@ -8,9 +8,9 @@ using RK.Common.Win32;
 
 namespace RK.Console
 {
-    class Program
+    unsafe class Program
     {
-        static unsafe void Main(string[] args)
+        internal void TestGameMapPerf()
         {
             ushort width = 10000, height = 10000;
             int count = width * height;
@@ -55,6 +55,11 @@ namespace RK.Console
                 }
                 System.Console.WriteLine(timer.StopWatch());
             }
+        }
+
+        static void Main(string[] args)
+        {
+
 
             System.Console.ReadKey();
         }
