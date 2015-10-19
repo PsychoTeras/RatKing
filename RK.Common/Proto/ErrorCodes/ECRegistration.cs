@@ -2,9 +2,9 @@
 {
     public static class ECRegistration
     {
-        public const int UserNameIsBlank = 1;
-        public const int PasswordIsBlank = 2;
-        public const int InvalidEmail = 3;
-        public const int UserExists = 4;
+        public const short UserNameIsBlank = 1;
+        public const short PasswordIsBlank = 2;
+        public const short InvalidEmail = 3;
+        public const short UserExists = 4;
     }
 }

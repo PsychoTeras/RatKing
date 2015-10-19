@@ -10,7 +10,6 @@ using RK.Common.Host.Validators;
 using RK.Common.Net.TCP;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
-using RK.Common.Proto.Events;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
 
@@ -24,7 +23,7 @@ namespace RK.Common.Host
         private delegate BaseResponse OnAcceptPacket<in T>(T packet) 
             where T: BasePacket;
 
-        public delegate void OnGameHostEvent(BaseEvent e);
+        public delegate void OnGameHostResponse(BaseResponse e);
 
 #endregion
 
@@ -43,7 +42,7 @@ namespace RK.Common.Host
 
         public GameWorld World;
 
-        public event OnGameHostEvent GameHostEvent;
+        public event OnGameHostResponse GameHostResponse;
 
 #endregion
 
@@ -85,11 +84,11 @@ namespace RK.Common.Host
             BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
         }
 
-        private void SendGameHostEvent(BaseEvent e)
+        private void SendGameHostEvent(BaseResponse e)
         {
-            if (GameHostEvent != null)
+            if (GameHostResponse != null)
             {
-                GameHostEvent(e);
+                GameHostResponse(e);
             }
         }
 
@@ -104,7 +103,7 @@ namespace RK.Common.Host
                 PUserLogin pUserLogin = (PUserLogin)packet;
 
                 User user = new User(pUserLogin.UserName, pUserLogin.Password);
-                packet.SessionToken = BasePacket.NewSessionToken(user.Id);
+                pUserLogin.SessionToken = BasePacket.NewSessionToken(user.Id);
 
                 Player player = Player.Create(user.UserName);
                 ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
@@ -115,11 +114,11 @@ namespace RK.Common.Host
                 }
                 player.Position = startPoint.Value.ToPoint(ConstMap.PIXEL_SIZE);
 
-                World.PlayerAdd(packet.SessionToken, player);
+                World.PlayerAdd(pUserLogin.SessionToken, player);
 
-                _loggedPlayers.Add(packet.SessionToken, player.Id);
+                _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
 
-                return new RUserLogin(packet.SessionToken);
+                return BaseResponse.FromPacket<RUserLogin>(pUserLogin);
             }
         }
 
@@ -152,7 +151,7 @@ namespace RK.Common.Host
                 return null;
             }
 
-            RPlayerEnter response = new RPlayerEnter();
+            RPlayerEnter response = BaseResponse.FromPacket<RPlayerEnter>(pPlayerEnter);
             response.PlayersOnLocation = World.PlayersGetNearest(player);
             response.MyPlayerId = player.Id;
 
@@ -173,7 +172,7 @@ namespace RK.Common.Host
             {
                 player.Angle = pPlayerRotate.Angle;
 
-                SendGameHostEvent(new EPlayerRotate(player.Id, pPlayerRotate));
+                SendGameHostEvent(new RPlayerRotate(player.Id, pPlayerRotate));
             }
 
             return null;
@@ -195,7 +194,7 @@ namespace RK.Common.Host
                 player.Position = new Point(pPlayerMove.X, pPlayerMove.Y);
                 player.Direction = pPlayerMove.D;
 
-                SendGameHostEvent(new EPlayerMove(player.Id, pPlayerMove));
+                SendGameHostEvent(new RPlayerMove(player.Id, pPlayerMove));
             }
 
             return null;

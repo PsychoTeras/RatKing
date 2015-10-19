@@ -6,6 +6,8 @@ namespace RK.Common.Classes.Common
     [StructLayout(LayoutKind.Sequential)]
     public struct TinySize : IEquatable<TinySize>
     {
+        public static readonly unsafe int SizeOf = sizeof(TinySize);
+
         public byte Width;
         public byte Height;
 
@@ -64,6 +66,11 @@ namespace RK.Common.Classes.Common
         public override int GetHashCode()
         {
             return (Width.GetHashCode() * 0x18D) ^ Height.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0}x{1}", Width, Height);
         }
     }
 }

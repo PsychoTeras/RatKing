@@ -29,6 +29,12 @@ namespace RK.Common.Win32
         [DllImport("kernel32", EntryPoint = "RtlZeroMemory")]
         public static extern void ZeroMemory(void* dest, int size);
 
+        [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void* MemCopy(void* dest, void* src, int count);
+
+        [DllImport("msvcrt.dll", EntryPoint = "memmove", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void* MemMove(void* dest, void* src, int count);
+
         private static int _ph = GetProcessHeap();
 
         public static void* Alloc(int size, bool zeroMem = true)
@@ -82,6 +88,5 @@ namespace RK.Common.Win32
                 for (ps += count, pd += count; count != 0; count--) *--pd = *--ps;
             }
         }
-
     }
 }

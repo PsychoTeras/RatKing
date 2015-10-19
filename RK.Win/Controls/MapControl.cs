@@ -13,7 +13,6 @@ using RK.Common.Classes.Units;
 using RK.Common.Const;
 using RK.Common.Host;
 using RK.Common.Proto;
-using RK.Common.Proto.Events;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
 using RK.Win.Classes.Ex;
@@ -189,7 +188,7 @@ namespace RK.Win.Controls
             {
                 if (_host != null)
                 {
-                    _host.GameHostEvent -= GameHostEvent;
+                    _host.GameHostResponse -= GameHostResponse;
                 }
                 _host = value;
                 ConnectToHost();
@@ -276,7 +275,7 @@ namespace RK.Win.Controls
                 return;
             }
 
-            _host.GameHostEvent += GameHostEvent;
+            _host.GameHostResponse += GameHostResponse;
 
             try
             {
@@ -1211,22 +1210,22 @@ namespace RK.Win.Controls
 
 #region Game host events
 
-        private void GameHostEvent(BaseEvent e)
+        private void GameHostResponse(BaseResponse e)
         {
             switch (e.Type)
             {
                 case PacketType.PlayerRotate:
-                    EPlayerRotate ePlayerRotate = (EPlayerRotate) e;
-                    _players[ePlayerRotate.PlayerId].Angle = ePlayerRotate.Angle;
+                    RPlayerRotate rPlayerRotate = (RPlayerRotate) e;
+                    _players[rPlayerRotate.PlayerId].Angle = rPlayerRotate.Angle;
                     break;
 
                 case PacketType.PlayerMove:
-                    EPlayerMove ePlayerMove = (EPlayerMove) e;
-                    Player player = _players[ePlayerMove.PlayerId];
-                    player.Position = new Point(ePlayerMove.X, ePlayerMove.Y);
-                    player.Direction = ePlayerMove.D;
+                    RPlayerMove rPlayerMove = (RPlayerMove) e;
+                    Player player = _players[rPlayerMove.PlayerId];
+                    player.Position = new Point(rPlayerMove.X, rPlayerMove.Y);
+                    player.Direction = rPlayerMove.D;
 
-                    PlayerEx playerEx = _playersEx[ePlayerMove.PlayerId];
+                    PlayerEx playerEx = _playersEx[rPlayerMove.PlayerId];
                     playerEx.MovingStartTime = DateTime.Now;
                     playerEx.MovingStartedPoint = player.Position;
                     break;

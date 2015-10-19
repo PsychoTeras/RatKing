@@ -2,7 +2,7 @@
 {
     public static class ECLogout
     {
-        public const int UserIdIsInvalid = 1;
-        public const int UserDoesNotLogged = 2;
+        public const short UserIdIsInvalid = 1;
+        public const short UserDoesNotLogged = 2;
     }
 }

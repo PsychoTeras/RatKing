@@ -1,35 +1,33 @@
 ﻿using System;
 using System.Text;
 using RK.Common.Proto.ErrorCodes;
+using RK.Common.Proto.Responses;
 
 namespace RK.Common.Proto
 {
-    public class BaseResponse
+    public unsafe class BaseResponse
     {
 
-#region Private fields
+#region Constants
 
-        private string _errorMessage;
+        protected const int BASE_SIZE = 16;
+
+#endregion
+
+#region Public fields
+
+        public long Id;
+        public PacketType Type;
+        public short ErrorCode;
 
 #endregion
 
 #region Properties
 
-        public PacketType Type;
-
-        public int ErrorCode;
-
-        public string ErrorMessage
+        public bool HasError
         {
-            get { return _errorMessage; }
-            set
-            {
-                _errorMessage = value;
-                HasError = !string.IsNullOrEmpty(_errorMessage);
-            }
+            get { return ErrorCode != 0; }
         }
-
-        public bool HasError { get; private set; }
 
 #endregion
         
@@ -37,66 +35,32 @@ namespace RK.Common.Proto
 
         public static BaseResponse Successful(BasePacket packet)
         {
-            return Successful(packet.Type);
-        }
-
-        public static BaseResponse Successful(PacketType type)
-        {
-            return new BaseResponse(type);
+            return new BaseResponse(packet);
         }
 
 #endregion
 
 #region Class methods
 
-        public BaseResponse()
-        {
-            _errorMessage = string.Empty;
-        }
+        public BaseResponse() { }
 
-        public BaseResponse(PacketType type) : this()
+        public BaseResponse(PacketType type)
         {
             Type = type;
         }
 
-        public BaseResponse(BasePacket packet) : this(packet.Type) { }
-
-        public BaseResponse(PacketType type, string errorMessage, int errorCode = 0)
-            : this(type)
+        public BaseResponse(BasePacket packet)
         {
-            Set(type, errorMessage, errorCode);
+            Id = packet.Id;
+            Type = packet.Type;
         }
 
-        public BaseResponse(PacketType type, Exception ex, int errorCode = 0)
-            : this(type)
+        private BaseResponse Set(long id, PacketType type, short errorCode)
         {
-            Set(type, ex, errorCode);
-        }
-
-        public BaseResponse Set(PacketType type, string errorMessage, int errorCode)
-        {
-            ErrorMessage = errorMessage;
+            Id = id;
+            Type = type;
             ErrorCode = errorCode;
             return this;
-        }
-
-        public BaseResponse Set(PacketType type, Exception ex, int errorCode)
-        {
-            ErrorMessage = ex.Message;
-            ErrorCode = errorCode;
-            return this;
-        }
-
-        public override string ToString()
-        {
-            if (HasError)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendFormat("Error message: {0}\r\n", ErrorMessage);
-                sb.AppendFormat("Error code: {0}", ErrorCode);
-                return sb.ToString();
-            }
-            return "No errors";
         }
 
         public T As<T>() where T : BaseResponse
@@ -113,9 +77,33 @@ namespace RK.Common.Proto
             }
         }
 
+        public override string ToString()
+        {
+            if (HasError)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendFormat("Error code: {0}", ErrorCode);
+                return sb.ToString();
+            }
+            return "No errors";
+        }
+
+        protected virtual BaseResponse Set(BasePacket p)
+        {
+            Id = p.Id;
+            Type = p.Type;
+            return this;
+        }
+
 #endregion
 
 #region Class static methods
+
+        public static T FromPacket<T>(BasePacket p)
+            where T: BaseResponse, new()
+        {
+            return (T) new T().Set(p);
+        }
 
         public static Exception Throw(string message, int errorCode)
         {
@@ -127,28 +115,101 @@ namespace RK.Common.Proto
         public static T FromException<T>(BasePacket packet, Exception ex)
             where T : BaseResponse, new()
         {
-            return FromException<T>(packet.Type, ex);
+            return FromException<T>(packet.Id, packet.Type, ex);
         }
 
-        public static T FromException<T>(PacketType type, Exception ex) 
+        public static T FromException<T>(long id, PacketType type, Exception ex) 
             where T : BaseResponse, new()
         {
-            int errorCode = ex.Data.Contains("ErrorCode")
-                                ? (int) ex.Data["ErrorCode"]
+            short errorCode = ex.Data.Contains("ErrorCode")
+                                ? (short)ex.Data["ErrorCode"]
                                 : ECGeneral.UnknownError;
-            return FromException<T>(type, ex, errorCode);
+            return FromException<T>(id, type, errorCode);
         }
 
-        public static T FromException<T>(BasePacket packet, Exception ex, int errorCode)
+        public static T FromException<T>(long id, PacketType type, short errorCode)
             where T : BaseResponse, new()
         {
-            return FromException<T>(packet.Type, ex, errorCode);
+            return (T)new T().Set(id, type, errorCode);
         }
 
-        public static T FromException<T>(PacketType type, Exception ex, int errorCode)
-            where T : BaseResponse, new()
+#endregion
+
+#region Serialize
+
+        protected void SerializeHeader(byte* bData, int packetSize)
         {
-            return (T)new T().Set(type, ex, errorCode);
+            (*(int*)bData) = packetSize;
+            (*(PacketType*)&bData[4]) = Type;
+            (*(long*)&bData[6]) = Id;
+            (*(short*)&bData[14]) = ErrorCode;
+        }
+
+        public virtual byte[] Serialize()
+        {
+            byte[] data = new byte[BASE_SIZE];
+            fixed (byte* bData = data)
+            {
+                SerializeHeader(bData, BASE_SIZE);
+            }
+            return data;
+        }
+
+#endregion
+
+#region Deserialize
+
+        private static BaseResponse AllocNew(PacketType packetType)
+        {
+            switch (packetType)
+            {
+                    //User
+                case PacketType.UserLogin:
+                    return new RUserLogin();
+
+                    //Player
+                case PacketType.PlayerEnter:
+                    return new RPlayerEnter();
+                case PacketType.PlayerMove:
+                    return new RPlayerMove();
+                case PacketType.PlayerRotate:
+                    return new RPlayerRotate();
+
+                    //Base
+                default:
+                    return new BaseResponse();
+            }
+        }
+
+        internal virtual void InitializeFromMemory(byte* bData)
+        {
+            Type = *(PacketType*)&bData[4];
+            Id = *(long*)&bData[6];
+            ErrorCode = *(short*)&bData[14];
+        }
+
+        public static BaseResponse Deserialize(byte[] data, out int responseSize)
+        {
+            int dataLength = data.Length;
+            if (dataLength < BASE_SIZE)
+            {
+                responseSize = -1;
+                return null;
+            }
+
+            fixed (byte* bData = data)
+            {
+                responseSize = *((int*)bData);
+                if (responseSize < dataLength)
+                {
+                    return null;
+                }
+
+                PacketType responseType = (PacketType)(*(short*)&bData[4]);
+                BaseResponse response = AllocNew(responseType);
+                response.InitializeFromMemory(bData);
+                return response;
+            }
         }
 
 #endregion

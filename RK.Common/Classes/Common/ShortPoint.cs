@@ -82,6 +82,11 @@ namespace RK.Common.Classes.Common
         {
             return new Point(X * pixelSize, Y * pixelSize);
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}x{1}", X, Y);
+        }
     }
 
     public static class Extensions

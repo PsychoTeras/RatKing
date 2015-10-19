@@ -2,6 +2,9 @@
 {
     public enum PacketType : short
     {
+        //Generic
+        Generic = -1,
+
         //0. User
         UserLogin,
         UserLogout,

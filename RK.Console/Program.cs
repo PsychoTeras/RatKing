@@ -1,6 +1,9 @@
 ﻿#define UNSAFE_ARRAY
 
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Map;
+using RK.Common.Proto;
+using RK.Common.Proto.Packets;
 #if UNSAFE_ARRAY
 using System.Runtime.InteropServices;
 #endif
@@ -57,10 +60,29 @@ namespace RK.Console
             }
         }
 
+        private static void TestProtoPacketsPerf()
+        {
+            HRTimer timer = HRTimer.CreateAndStart();
+
+            for (int i = 0; i < 1000000; i++)
+            {
+                int psize;
+                PUserLogin p = new PUserLogin
+                {
+                    UserName = "psychoteras",
+                    Password = "password"
+                };
+                p.Setup();
+                byte[] ps = p.Serialize();
+                p = (PUserLogin)BasePacket.Deserialize(ps, out psize);
+            }
+
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
         static void Main(string[] args)
         {
-
-
+            TestProtoPacketsPerf();
             System.Console.ReadKey();
         }
     }
