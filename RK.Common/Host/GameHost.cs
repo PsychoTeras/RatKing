@@ -7,6 +7,7 @@ using RK.Common.Classes.Users;
 using RK.Common.Classes.World;
 using RK.Common.Const;
 using RK.Common.Host.Validators;
+using RK.Common.Net.TCP;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.Events;
@@ -15,7 +16,7 @@ using RK.Common.Proto.Responses;
 
 namespace RK.Common.Host
 {
-    public sealed class GameHost
+    public sealed class GameHost : IDisposable
     {
 
 #region Delegates
@@ -28,6 +29,8 @@ namespace RK.Common.Host
 #endregion
 
 #region Private fields
+
+        private TCPServer _netServer;
 
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
         private List<BaseValidator> _validators;
@@ -48,6 +51,8 @@ namespace RK.Common.Host
 
         public GameHost()
         {
+            _netServer = new TCPServer(15051);
+
             _loggedPlayers = new Dictionary<long, int>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
@@ -222,6 +227,11 @@ namespace RK.Common.Host
             {
                 return BaseResponse.FromException<BaseResponse>(packet, ex);
             }
+        }
+
+        public void Dispose()
+        {
+            _netServer.Dispose();
         }
 
 #endregion

@@ -250,7 +250,7 @@ namespace RK.Win.Forms
                 pbLabyrinth.Image.Dispose();
             }
 
-            ushort width = 4000, height = 4000;
+            ushort width = 200, height = 200;
             Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadWrite, bitmap.PixelFormat);
@@ -272,7 +272,7 @@ namespace RK.Win.Forms
 
             using (GameMap map = new GameMap(width, height, 0, pRoughMap))
             {
-                map.SaveToFile("d:\\RK.save");
+                map.SaveToFile("RK.save");
             }
             Memory.Free(pRoughMap);
 
@@ -299,7 +299,7 @@ namespace RK.Win.Forms
             if (mapCtrl.IsMapLoaded)
             {
                 Cursor = Cursors.WaitCursor;
-                mapCtrl.Map.SaveToFile("d:\\RK.save");
+                mapCtrl.Map.SaveToFile("RK.save");
                 Cursor = DefaultCursor;
             }
         }

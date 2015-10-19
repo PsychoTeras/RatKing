@@ -215,7 +215,7 @@ namespace RK.Win.Controls
 
         private void RendererProc()
         {
-            while (true)
+            while (Thread.CurrentThread.IsAlive)
             {
                 if (_needRepaint)
                 {

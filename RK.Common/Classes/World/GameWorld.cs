@@ -60,9 +60,9 @@ namespace RK.Common.Classes.World
                 map.Dispose();
             }
             _maps.Clear();
-            if (File.Exists("d:\\RK.save"))
+            if (File.Exists("RK.save"))
             {
-                GameMap map = GameMap.LoadFromFile("d:\\RK.save");
+                GameMap map = GameMap.LoadFromFile("RK.save");
                 _maps.Add(map.Id, map);
             }
         }

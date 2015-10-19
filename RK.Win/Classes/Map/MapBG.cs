@@ -406,9 +406,6 @@ namespace RK.Win.Classes.Map
         {
             data = InterpolateEdges(data, ref width, ref height, edgeColor);
 
-            //byte[] gsData = GrayscaledDataToArray(data, width*height);
-            //File.WriteAllBytes("d:\\g.dat", gsData);
-
             Edges edges = new Edges(width, height);
 
             int maxSide = Math.Max(width, height) - 1;

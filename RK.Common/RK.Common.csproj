@@ -78,6 +78,11 @@
     <Compile Include="Classes\Users\User.cs" />
     <Compile Include="Classes\World\GameWorld.cs" />
     <Compile Include="Host\Validators\VCheckPosition.cs" />
+    <Compile Include="Net\TCP\TCPBase.cs" />
+    <Compile Include="Net\TCP\TCPClient.cs" />
+    <Compile Include="Net\TCP\TCPExtentions.cs" />
+    <Compile Include="Net\TCP\TCPServer.cs" />
+    <Compile Include="Net\TCP\TCPClientEx.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Proto\BaseEvent.cs" />
     <Compile Include="Proto\BasePacket.cs" />

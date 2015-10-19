@@ -829,7 +829,7 @@ namespace RK.Win.Controls
 
         private void RendererProc()
         {
-            while (true)
+            while (Thread.CurrentThread.IsAlive)
             {
                 DateTime prewFrameRenderTime = _lastFrameRenderTime;
 
