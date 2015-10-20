@@ -13,26 +13,30 @@ namespace RK.Common.Proto.Packets
             get { return PacketType.PlayerMove; }
         }
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            X = *(int*)&bData[BASE_SIZE];
-            Y = *(int*)&bData[BASE_SIZE + 4];
-            D = *(Direction*)&bData[BASE_SIZE + 8];
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return
+                    BASE_SIZE +
+                    sizeof(int) +
+                    sizeof(int) +
+                    sizeof(Direction);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            const int pSize = BASE_SIZE + 9;
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                (*(int*) &bData[BASE_SIZE]) = X;
-                (*(int*) &bData[BASE_SIZE + 4]) = Y;
-                (*(Direction*) &bData[BASE_SIZE + 8]) = D;
-            }
-            return data;
+            X = *(int*)&bData[pos];
+            Y = *(int*)&bData[pos + 4];
+            D = *(Direction*)&bData[pos + 8];
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            (*(int*)&bData[pos]) = X;
+            (*(int*)&bData[pos + 4]) = Y;
+            (*(Direction*)&bData[pos + 8]) = D;
         }
     }
 }

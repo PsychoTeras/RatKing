@@ -2,15 +2,15 @@
 {
     public enum PacketType : short
     {
-        //Generic
-        Generic = -1,
+        //Error
+        Error = -1,
 
         //0. User
-        UserLogin,
+        UserLogin = 0,
         UserLogout,
 
         //100. Player
-        PlayerEnter,
+        PlayerEnter = 100,
         PlayerMove,
         PlayerRotate
     }

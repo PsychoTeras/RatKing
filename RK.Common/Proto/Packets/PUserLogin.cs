@@ -12,26 +12,26 @@ namespace RK.Common.Proto.Packets
             get { return PacketType.UserLogin; }
         }
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            int sSize = Serializer.ReadString(bData, out UserName, BASE_SIZE);
-            Serializer.ReadString(bData, out Password, BASE_SIZE + sSize);
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return BASE_SIZE +
+                       Serializer.StringLength(UserName) +
+                       Serializer.StringLength(Password);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            int pSize = BASE_SIZE +
-                        Serializer.StringLength(UserName) +
-                        Serializer.StringLength(Password);
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                int sSize = Serializer.WriteString(bData, UserName, BASE_SIZE);
-                Serializer.WriteString(bData, Password, BASE_SIZE + sSize);
-            }
-            return data;
+            pos += Serializer.ReadString(bData, out UserName, pos);
+            Serializer.ReadString(bData, out Password, pos);
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            pos += Serializer.WriteString(bData, UserName, pos);
+            Serializer.WriteString(bData, Password, pos);
         }
     }
 }

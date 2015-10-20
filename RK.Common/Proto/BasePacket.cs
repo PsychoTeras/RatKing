@@ -9,20 +9,24 @@ namespace RK.Common.Proto
 
 #region Constants
 
-        protected const int BASE_SIZE = 30;
+        public const int ERR_PARTIAL_PACKET = 0;
+        public const int ERR_INVALID_PACKET_SIZE = -1;
+        public const int ERR_INVALID_PACKET_TYPE = -2;
+
+        protected const int BASE_SIZE = 22;
 
 #endregion
 
 #region Static fields
 
-        private static long _packetIdCounter;
+        private static int _packetIdCounter;
         private static int _sessionIdCounter = Environment.TickCount;
 
 #endregion
 
 #region Public fields
 
-        public long Id;
+        public int Id;
         public long SessionToken;
         public long TimeStamp;
 
@@ -31,6 +35,11 @@ namespace RK.Common.Proto
 #region Properties
 
         public abstract PacketType Type { get; }
+
+        protected virtual int SizeOf
+        {
+            get { return BASE_SIZE; }
+        }
 
 #endregion
 
@@ -51,21 +60,21 @@ namespace RK.Common.Proto
 
 #region Serialize
 
-        protected void SerializeHeader(byte* bData, int packetSize)
-        {
-            (*(int*)bData) = packetSize;
-            (*(PacketType*)&bData[4]) = Type;
-            (*(long*)&bData[6]) = Id;
-            (*(long*)&bData[14]) = SessionToken;
-            (*(long*)&bData[22]) = TimeStamp;
-        }
+        protected virtual void SerializeToMemory(byte* bData, int pos) {}
 
-        public virtual byte[] Serialize()
+        public byte[] Serialize()
         {
-            byte[] data = new byte[BASE_SIZE];
+            int packetSize = SizeOf;
+            byte[] data = new byte[packetSize];
             fixed (byte* bData = data)
             {
-                SerializeHeader(bData, BASE_SIZE);
+                (*(short*)bData) = (short)packetSize;
+                (*(PacketType*)&bData[2]) = Type;
+                (*(long*)&bData[4]) = Id;
+                (*(long*)&bData[8]) = SessionToken;
+                (*(long*)&bData[16]) = TimeStamp;
+
+                SerializeToMemory(bData, BASE_SIZE);
             }
             return data;
         }
@@ -78,13 +87,13 @@ namespace RK.Common.Proto
         {
             switch (packetType)
             {
-                //User
+                    //User
                 case PacketType.UserLogin:
                     return new PUserLogin();
                 case PacketType.UserLogout:
                     return new PUserLogout();
 
-                //Player
+                    //Player
                 case PacketType.PlayerEnter:
                     return new PPlayerEnter();
                 case PacketType.PlayerMove:
@@ -92,38 +101,52 @@ namespace RK.Common.Proto
                 case PacketType.PlayerRotate:
                     return new PPlayerRotate();
 
+                    //Error
                 default:
-                    throw new Exception(string.Format("Unknown packet type: {0}", packetType));
+                    return null;
             }
         }
 
-        internal virtual void InitializeFromMemory(byte* bData)
-        {
-            Id = *(long*)&bData[6];
-            SessionToken = *(long*)&bData[14];
-            TimeStamp = *(long*)&bData[22];
-        }
+        protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BasePacket Deserialize(byte[] data, out int packetSize)
+        public static BasePacket Deserialize(byte[] data, out short packetSize)
         {
             int dataLength = data.Length;
             if (dataLength < BASE_SIZE)
             {
-                packetSize = -1;
+                packetSize = 0;
                 return null;
             }
 
             fixed (byte* bData = data)
             {
-                packetSize = *((int*) bData);
-                if (packetSize < dataLength)
+                packetSize = *((short*)bData);
+                if (packetSize <= 0)
                 {
+                    packetSize = ERR_INVALID_PACKET_SIZE;
                     return null;
                 }
 
-                PacketType packetType = (PacketType) (*(short*)&bData[4]);
+                if (packetSize < dataLength)
+                {
+                    packetSize = ERR_PARTIAL_PACKET;
+                    return null;
+                }
+
+                PacketType packetType = (PacketType)(*(short*)&bData[2]);
                 BasePacket packet = AllocNew(packetType);
-                packet.InitializeFromMemory(bData);
+                if (packet == null)
+                {
+                    packetSize = ERR_INVALID_PACKET_TYPE;
+                    return null;
+                }
+
+                packet.Id = *(int*)&bData[4];
+                packet.SessionToken = *(long*)&bData[8];
+                packet.TimeStamp = *(long*)&bData[16];
+
+                packet.DeserializeFromMemory(bData, BASE_SIZE);
+
                 return packet;
             }
         }

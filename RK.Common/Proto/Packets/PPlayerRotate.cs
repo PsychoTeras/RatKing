@@ -9,22 +9,24 @@
             get { return PacketType.PlayerRotate; }
         }
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            Angle = *(float*)&bData[BASE_SIZE];
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return
+                    BASE_SIZE +
+                    sizeof(float);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            const int pSize = BASE_SIZE + 4;
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                (*(float*)&bData[BASE_SIZE]) = Angle;
-            }
-            return data;
+            Angle = *(float*)&bData[pos];
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            (*(float*)&bData[pos]) = Angle;
         }
     }
 }
