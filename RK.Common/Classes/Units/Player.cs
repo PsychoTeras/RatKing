@@ -51,6 +51,8 @@ namespace RK.Common.Classes.Units
         public int SizeOf()
         {
             return
+                sizeof (int) + //Id
+
                 Serializer.Length(Name) + //Name 
 
                 sizeof (TinySize) + //Size
@@ -65,6 +67,8 @@ namespace RK.Common.Classes.Units
         // ReSharper disable once RedundantAssignment
         public void Serialize(byte* bData, ref int pos)
         {
+            Serializer.Write(bData, Id, ref pos);
+
             Serializer.Write(bData, Name, ref pos);
 
             Serializer.Write(bData, Size, ref pos);
@@ -78,6 +82,8 @@ namespace RK.Common.Classes.Units
 
         public void Deserialize(byte* bData, ref int pos)
         {
+            Serializer.Read(bData, out Id, ref pos);
+
             Serializer.Read(bData, out Name, ref pos);
 
             Serializer.Read(bData, out Size, ref pos);

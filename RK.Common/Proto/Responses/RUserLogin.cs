@@ -13,7 +13,7 @@ namespace RK.Common.Proto.Responses
             {
                 return
                     BASE_SIZE +
-                    sizeof (int);
+                    sizeof(long);
             }
         }
 
