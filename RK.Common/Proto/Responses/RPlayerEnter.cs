@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using RK.Common.Classes.Units;
+using RK.Common.Proto.Packets;
 using RK.Common.Win32;
 
 namespace RK.Common.Proto.Responses
@@ -9,26 +10,36 @@ namespace RK.Common.Proto.Responses
         public int MyPlayerId;
         public List<Player> PlayersOnLocation;
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            MyPlayerId = *(int*)&bData[BASE_SIZE];
-//            Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, BASE_SIZE + 4);
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return
+                    BASE_SIZE +
+                    sizeof (int) +
+                    Serializer.Length(PlayersOnLocation);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            int pSize = BASE_SIZE + 4 +
-                Serializer.Length(PlayersOnLocation);
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                (*(int*)&bData[BASE_SIZE]) = MyPlayerId;
-//                Serializer.Write(bData, PlayersOnLocation, BASE_SIZE + 4);
-//                Serializer.Write(bData, PlayersOnLocation, ref pSize);
-            }
-            return data;
+            Serializer.Read(bData, out MyPlayerId, ref pos);
+            Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, ref pos);
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            Serializer.Write(bData, MyPlayerId, ref pos);
+            Serializer.Write(bData, PlayersOnLocation, ref pos);
+        }
+
+        public RPlayerEnter() { }
+
+        public RPlayerEnter(int myPlayerId, List<Player> playersOnLocation, PPlayerEnter pPlayerEnter)
+            : base(pPlayerEnter)
+        {
+            MyPlayerId = myPlayerId;
+            PlayersOnLocation = playersOnLocation;
         }
     }
 }

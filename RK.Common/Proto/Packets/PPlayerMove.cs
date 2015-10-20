@@ -1,4 +1,5 @@
 ﻿using RK.Common.Classes.Common;
+using RK.Common.Win32;
 
 namespace RK.Common.Proto.Packets
 {
@@ -27,16 +28,16 @@ namespace RK.Common.Proto.Packets
 
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            X = *(int*)&bData[pos];
-            Y = *(int*)&bData[pos + 4];
-            D = *(Direction*)&bData[pos + 8];
+            Serializer.Read(bData, out X, ref pos);
+            Serializer.Read(bData, out Y, ref pos);
+            Serializer.Read(bData, out D, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
         {
-            (*(int*)&bData[pos]) = X;
-            (*(int*)&bData[pos + 4]) = Y;
-            (*(Direction*)&bData[pos + 8]) = D;
+            Serializer.Write(bData, X, ref pos);
+            Serializer.Write(bData, Y, ref pos);
+            Serializer.Write(bData, D, ref pos);
         }
     }
 }

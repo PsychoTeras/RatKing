@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using RK.Common.Proto.Packets;
-using RK.Common.Win32;
 
 namespace RK.Common.Proto
 {

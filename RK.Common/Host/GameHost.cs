@@ -118,7 +118,7 @@ namespace RK.Common.Host
 
                 _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
 
-                return BaseResponse.FromPacket<RUserLogin>(pUserLogin);
+                return new RUserLogin(pUserLogin);
             }
         }
 
@@ -151,11 +151,8 @@ namespace RK.Common.Host
                 return null;
             }
 
-            RPlayerEnter response = BaseResponse.FromPacket<RPlayerEnter>(pPlayerEnter);
-            response.PlayersOnLocation = World.PlayersGetNearest(player);
-            response.MyPlayerId = player.Id;
-
-            return response;
+            List<Player> playersOnLocation = World.PlayersGetNearest(player);
+            return new RPlayerEnter(player.Id, playersOnLocation, pPlayerEnter);
         }
 
         private BaseResponse PlayerRotate(BasePacket packet)

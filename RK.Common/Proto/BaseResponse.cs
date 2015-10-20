@@ -29,6 +29,11 @@ namespace RK.Common.Proto
             get { return ErrorCode != 0; }
         }
 
+        protected virtual int SizeOf
+        {
+            get { return BASE_SIZE; }
+        }
+
 #endregion
         
 #region Static methods
@@ -53,14 +58,6 @@ namespace RK.Common.Proto
         {
             Id = packet.Id;
             Type = packet.Type;
-        }
-
-        private BaseResponse Set(long id, PacketType type, short errorCode)
-        {
-            Id = id;
-            Type = type;
-            ErrorCode = errorCode;
-            return this;
         }
 
         public T As<T>() where T : BaseResponse
@@ -88,22 +85,9 @@ namespace RK.Common.Proto
             return "No errors";
         }
 
-        protected virtual BaseResponse Set(BasePacket p)
-        {
-            Id = p.Id;
-            Type = p.Type;
-            return this;
-        }
-
 #endregion
 
 #region Class static methods
-
-        public static T FromPacket<T>(BasePacket p)
-            where T: BaseResponse, new()
-        {
-            return (T) new T().Set(p);
-        }
 
         public static Exception Throw(string message, int errorCode)
         {
@@ -130,27 +114,30 @@ namespace RK.Common.Proto
         public static T FromException<T>(long id, PacketType type, short errorCode)
             where T : BaseResponse, new()
         {
-            return (T)new T().Set(id, type, errorCode);
+            T t = new T();
+            t.Id = id;
+            t.Type = type;
+            t.ErrorCode = errorCode;
+            return t;
         }
 
 #endregion
 
 #region Serialize
 
-        protected void SerializeHeader(byte* bData, int packetSize)
-        {
-            (*(int*)bData) = packetSize;
-            (*(PacketType*)&bData[4]) = Type;
-            (*(long*)&bData[6]) = Id;
-            (*(short*)&bData[14]) = ErrorCode;
-        }
+        protected virtual void SerializeToMemory(byte* bData, int pos) { }
 
-        public virtual byte[] Serialize()
+        public byte[] Serialize()
         {
-            byte[] data = new byte[BASE_SIZE];
+            int packetSize = SizeOf;
+            byte[] data = new byte[packetSize];
             fixed (byte* bData = data)
             {
-                SerializeHeader(bData, BASE_SIZE);
+                (*(int*) bData) = packetSize;
+                (*(PacketType*) &bData[4]) = Type;
+                (*(long*) &bData[6]) = Id;
+                (*(short*) &bData[14]) = ErrorCode;
+                SerializeToMemory(bData, BASE_SIZE);
             }
             return data;
         }
@@ -181,12 +168,7 @@ namespace RK.Common.Proto
             }
         }
 
-        internal virtual void InitializeFromMemory(byte* bData)
-        {
-            Type = *(PacketType*)&bData[4];
-            Id = *(long*)&bData[6];
-            ErrorCode = *(short*)&bData[14];
-        }
+        protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
         public static BaseResponse Deserialize(byte[] data, out int responseSize)
         {
@@ -207,7 +189,13 @@ namespace RK.Common.Proto
 
                 PacketType responseType = (PacketType)(*(short*)&bData[4]);
                 BaseResponse response = AllocNew(responseType);
-                response.InitializeFromMemory(bData);
+
+                response.Type = *(PacketType*)&bData[4];
+                response.Id = *(long*)&bData[6];
+                response.ErrorCode = *(short*)&bData[14];
+
+                response.DeserializeFromMemory(bData, BASE_SIZE);
+
                 return response;
             }
         }

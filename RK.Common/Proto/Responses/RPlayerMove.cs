@@ -1,5 +1,6 @@
 ﻿using RK.Common.Classes.Common;
 using RK.Common.Proto.Packets;
+using RK.Common.Win32;
 
 namespace RK.Common.Proto.Responses
 {
@@ -11,28 +12,33 @@ namespace RK.Common.Proto.Responses
 
         public int PlayerId;
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            X = *(int*)&bData[BASE_SIZE];
-            Y = *(int*)&bData[BASE_SIZE + 4];
-            D = *(Direction*)&bData[BASE_SIZE + 8];
-            PlayerId = *(int*)&bData[BASE_SIZE + 9];
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return
+                    BASE_SIZE +
+                    sizeof (int) +
+                    sizeof (int) +
+                    sizeof (Direction) +
+                    sizeof (int);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            const int pSize = BASE_SIZE + 13;
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                (*(int*)&bData[BASE_SIZE]) = X;
-                (*(int*)&bData[BASE_SIZE + 4]) = Y;
-                (*(Direction*)&bData[BASE_SIZE + 8]) = D;
-                (*(int*)&bData[BASE_SIZE + 9]) = PlayerId;
-            }
-            return data;
+            Serializer.Read(bData, out PlayerId, ref pos);
+            Serializer.Read(bData, out X, ref pos);
+            Serializer.Read(bData, out Y, ref pos);
+            Serializer.Read(bData, out D, ref pos);
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            Serializer.Write(bData, PlayerId, ref pos);
+            Serializer.Write(bData, X, ref pos);
+            Serializer.Write(bData, Y, ref pos);
+            Serializer.Write(bData, D, ref pos);
         }
 
         public RPlayerMove() { } 

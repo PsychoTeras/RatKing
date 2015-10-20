@@ -1,4 +1,6 @@
-﻿namespace RK.Common.Proto.Packets
+﻿using RK.Common.Win32;
+
+namespace RK.Common.Proto.Packets
 {
     public unsafe sealed class PPlayerRotate : BasePacket
     {
@@ -21,12 +23,12 @@
 
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            Angle = *(float*)&bData[pos];
+            Serializer.Read(bData, out Angle, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
         {
-            (*(float*)&bData[pos]) = Angle;
+            Serializer.Write(bData, Angle, ref pos);
         }
     }
 }

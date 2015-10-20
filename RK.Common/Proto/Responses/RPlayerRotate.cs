@@ -1,4 +1,5 @@
 ﻿using RK.Common.Proto.Packets;
+using RK.Common.Win32;
 
 namespace RK.Common.Proto.Responses
 {
@@ -7,24 +8,27 @@ namespace RK.Common.Proto.Responses
         public int PlayerId;
         public float Angle;
 
-        internal override void InitializeFromMemory(byte* bData)
+        protected override int SizeOf
         {
-            Angle = *(float*)&bData[BASE_SIZE];
-            PlayerId = *(int*)&bData[BASE_SIZE + 4];
-            base.InitializeFromMemory(bData);
+            get
+            {
+                return
+                    BASE_SIZE +
+                    sizeof (int) +
+                    sizeof (float);
+            }
         }
 
-        public override byte[] Serialize()
+        protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            const int pSize = BASE_SIZE + 8;
-            byte[] data = new byte[pSize];
-            fixed (byte* bData = data)
-            {
-                SerializeHeader(bData, pSize);
-                (*(float*)&bData[BASE_SIZE]) = Angle;
-                (*(int*)&bData[BASE_SIZE + 4]) = PlayerId;
-            }
-            return data;
+            Serializer.Read(bData, out PlayerId, ref pos);
+            Serializer.Read(bData, out Angle, ref pos);
+        }
+
+        protected override void SerializeToMemory(byte* bData, int pos)
+        {
+            Serializer.Write(bData, PlayerId, ref pos);
+            Serializer.Write(bData, Angle, ref pos);
         }
 
         public RPlayerRotate() { }
