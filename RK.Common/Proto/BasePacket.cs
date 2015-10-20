@@ -109,10 +109,11 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BasePacket Deserialize(byte[] data, int pos, out short packetSize)
+        public static BasePacket Deserialize(byte[] data, int dataSize, int pos, 
+            out short packetSize)
         {
-            int dataLength = data.Length - pos;
-            if (dataLength < BASE_SIZE)
+            dataSize = data.Length - pos;
+            if (dataSize < BASE_SIZE)
             {
                 packetSize = 0;
                 return null;
@@ -127,7 +128,7 @@ namespace RK.Common.Proto
                     return null;
                 }
 
-                if (dataLength < packetSize)
+                if (dataSize < packetSize)
                 {
                     packetSize = ERR_PARTIAL_PACKET;
                     return null;

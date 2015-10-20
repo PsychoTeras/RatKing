@@ -189,17 +189,18 @@ namespace RK.Common.Net.TCP
             return false;
         }
 
-        private void ProcessReceivedData(MemoryStream data)
+        private void ProcessReceivedData(MemoryStream stream)
         {
             List<BaseResponse> packets = new List<BaseResponse>();
-            byte[] buf = data.GetBuffer();
+            byte[] buf = stream.GetBuffer();
 
             //Parse packets
             int rSize, pos = 0;
+            int dataSize = (int) stream.Length;
             BaseResponse packet;
             do
             {
-                packet = BaseResponse.Deserialize(buf, pos, out rSize);
+                packet = BaseResponse.Deserialize(buf, dataSize, pos, out rSize);
                 if (rSize > 0)
                 {
                     packets.Add(packet);
@@ -210,8 +211,8 @@ namespace RK.Common.Net.TCP
             //Shrink stream
             if (pos > 0)
             {
-                Buffer.BlockCopy(buf, pos, buf, 0, (int)data.Length - pos);
-                data.SetLength(data.Length - pos);
+                Buffer.BlockCopy(buf, pos, buf, 0, dataSize - pos);
+                stream.SetLength(dataSize - pos);
             }
 
             //Fire DataReceived event

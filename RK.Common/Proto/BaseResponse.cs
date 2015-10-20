@@ -171,10 +171,11 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BaseResponse Deserialize(byte[] data, int pos, out int responseSize)
+        public static BaseResponse Deserialize(byte[] data, int dataSize, int pos, 
+            out int responseSize)
         {
-            int dataLength = data.Length - pos;
-            if (dataLength < BASE_SIZE)
+            dataSize = dataSize - pos;
+            if (dataSize < BASE_SIZE)
             {
                 responseSize = -1;
                 return null;
@@ -183,7 +184,7 @@ namespace RK.Common.Proto
             fixed (byte* bData = &data[pos])
             {
                 responseSize = *((int*)bData);
-                if (dataLength < responseSize)
+                if (dataSize < responseSize)
                 {
                     return null;
                 }

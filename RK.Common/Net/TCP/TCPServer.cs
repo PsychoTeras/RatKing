@@ -111,7 +111,7 @@ namespace RK.Common.Net.TCP
                     {
                         oldTcpClient.Close();
                     }
-                    _clientsData.Remove(tcpClient.Id);
+                    _connectedClients.Remove(tcpClient.Id);
                     
                     _clientsData[tcpClient.Id].Dispose();
                     _clientsData.Remove(tcpClient.Id);
@@ -323,18 +323,18 @@ namespace RK.Common.Net.TCP
             return false;
         }
 
-        private void ProcessReceivedData(TCPClientEx tcpClientEx, MemoryStream data)
+        private void ProcessReceivedData(TCPClientEx tcpClientEx, MemoryStream stream)
         {
             List<BasePacket> packets = new List<BasePacket>();
-            byte[] buf = data.GetBuffer();
+            byte[] buf = stream.GetBuffer();
 
             //Parse packets
             short rSize;
-            int pos = 0;
+            int pos = 0, dataSize = (int) stream.Length;
             BasePacket packet;
             do
             {
-                packet = BasePacket.Deserialize(buf, pos, out rSize);
+                packet = BasePacket.Deserialize(buf, dataSize, pos, out rSize);
                 if (rSize > 0)
                 {
                     packets.Add(packet);
@@ -345,8 +345,8 @@ namespace RK.Common.Net.TCP
             //Shrink stream
             if (pos > 0)
             {
-                Buffer.BlockCopy(buf, pos, buf, 0, (int)data.Length - pos);
-                data.SetLength(data.Length - pos);
+                Buffer.BlockCopy(buf, pos, buf, 0, dataSize - pos);
+                stream.SetLength(dataSize - pos);
             }
 
             //Fire ClientDataReceived event

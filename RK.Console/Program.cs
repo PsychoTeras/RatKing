@@ -70,7 +70,7 @@ namespace RK.Console
             };
             p.Setup();
             byte[] ps = p.Serialize();
-            BasePacket.Deserialize(ps, 0, out psize);
+            BasePacket.Deserialize(ps, ps.Length, 0, out psize);
 
             HRTimer timer = HRTimer.CreateAndStart();
 
@@ -84,7 +84,7 @@ namespace RK.Console
                 };
                 p.Setup();
                 ps = p.Serialize();
-                p = (PUserLogin) BasePacket.Deserialize(ps, 0, out psize);
+                p = (PUserLogin)BasePacket.Deserialize(ps, ps.Length, 0, out psize);
             }
 //            });
 
