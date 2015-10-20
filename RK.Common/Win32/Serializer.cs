@@ -21,7 +21,7 @@ namespace RK.Common.Win32
             {
                 fixed (char* c = str)
                 {
-                    Memory.MemMove(&bData[pos + sSize], c, strLen);
+                    Memory.MemCopy(&bData[pos + sSize], c, strLen);
                 }
             }
             return strLen > 0 ? sSize + strLen : sSize;
