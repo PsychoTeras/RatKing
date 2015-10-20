@@ -1,7 +1,9 @@
 ﻿namespace RK.Common.Common
 {
-    public interface ISerializable
+    public unsafe interface ISerializable
     {
-        byte[] Serialize();
+        int SizeOf();
+        void Serialize(byte* bData, ref int pos);
+        void Deserialize(byte* bData, ref int pos);
     }
 }

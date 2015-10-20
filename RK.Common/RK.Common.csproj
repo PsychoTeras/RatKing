@@ -66,8 +66,8 @@
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Common\DbObject.cs" />
     <Compile Include="Common\Direction.cs" />
+    <Compile Include="Common\ITransferable.cs" />
     <Compile Include="Common\ISerializable.cs" />
-    <Compile Include="Common\ITranserable.cs" />
     <Compile Include="Common\ShortPoint.cs" />
     <Compile Include="Common\TinySize.cs" />
     <Compile Include="Const\ConstMap.cs" />

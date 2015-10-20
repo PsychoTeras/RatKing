@@ -1,22 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
+using RK.Common.Common;
+using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP
 {
-    internal sealed class TCPServer : TCPBase
+    public sealed class TCPServer : TCPBase
     {
 
 #region Delegates
 
         public delegate void OnClientConnetion(TCPClientEx tcpClient);
-        public delegate void OnClientDataReceived(TCPClientEx tcpClient, string data);
+        public delegate void OnClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets);
         public delegate void OnClientDataReceiveError(TCPClientEx tcpClient, Exception ex);
-        public delegate void OnClientDataSent(TCPClientEx tcpClient, string data, object userData);
-        public delegate void OnClientDataSendError(TCPClientEx tcpClient, string data, object userData, Exception ex);
+        public delegate void OnClientDataSent(TCPClientEx tcpClient, ITransferable packet, object userData);
+        public delegate void OnClientDataSendError(TCPClientEx tcpClient, ITransferable packet, object userData, Exception ex);
 
 #endregion
 
@@ -39,8 +41,10 @@ namespace RK.Common.Net.TCP
         private int _port;
 
         private volatile TcpListener _tcpListener;
+
         private Thread _listenerThread;
-        private Dictionary<long, TCPClientEx> _connectedClientsId;
+        private Dictionary<long, TCPClientEx> _connectedClients;
+        private Dictionary<long, MemoryStream> _clientsData;
 
         private int _started;
         
@@ -59,7 +63,8 @@ namespace RK.Common.Net.TCP
 
         public TCPServer()
         {
-            _connectedClientsId = new Dictionary<long, TCPClientEx>();
+            _connectedClients = new Dictionary<long, TCPClientEx>();
+            _clientsData = new Dictionary<long, MemoryStream>();
         }
 
         public TCPServer(int port) : this()
@@ -72,46 +77,53 @@ namespace RK.Common.Net.TCP
             _port = port;
         }
 
-        private void AddConnectedClient(TCPClientEx tcpClient)
+        private MemoryStream AddConnectedClient(TCPClientEx tcpClient)
         {
-            lock (_connectedClientsId)
+            lock (_clientsData)
             {
                 RemoveConnectedClient(tcpClient);
-                _connectedClientsId.Add(tcpClient.Id, tcpClient);
+                _connectedClients.Add(tcpClient.Id, tcpClient);
+                
+                MemoryStream data = new MemoryStream();
+                _clientsData.Add(tcpClient.Id, data);
+                return data;
             }
         }
 
         public TCPClientEx GetConnectedClient(long clientId)
         {
-            lock (_connectedClientsId)
+            lock (_clientsData)
             {
-                return _connectedClientsId.ContainsKey(clientId)
-                           ? _connectedClientsId[clientId]
+                return _connectedClients.ContainsKey(clientId)
+                           ? _connectedClients[clientId]
                            : null;
             }
         }
 
         private void RemoveConnectedClient(TCPClientEx tcpClient)
         {
-            lock (_connectedClientsId)
+            lock (_clientsData)
             {
-                if (_connectedClientsId.ContainsKey(tcpClient.Id))
+                if (_clientsData.ContainsKey(tcpClient.Id))
                 {
-                    TcpClient oldTcpClient = _connectedClientsId[tcpClient.Id];
+                    TcpClient oldTcpClient = _connectedClients[tcpClient.Id];
                     if (oldTcpClient.Connected)
                     {
                         oldTcpClient.Close();
                     }
-                    _connectedClientsId.Remove(tcpClient.Id);
+                    _clientsData.Remove(tcpClient.Id);
+                    
+                    _clientsData[tcpClient.Id].Dispose();
+                    _clientsData.Remove(tcpClient.Id);
                 }
             }
         }
 
         private void ClearConnectedClients()
         {
-            lock (_connectedClientsId)
+            lock (_clientsData)
             {
-                _connectedClientsId.Clear();
+                _clientsData.Clear();
             }
         }
 
@@ -217,7 +229,7 @@ namespace RK.Common.Net.TCP
                     {
                         //Accept the client
                         TCPClientEx tcpClient = new TCPClientEx(_tcpListener.AcceptTcpClient());
-                        AddConnectedClient(tcpClient);
+                        MemoryStream clientData = AddConnectedClient(tcpClient);
 
                         //Create input stream reader for the client
                         NetworkStream networkStream = ((TcpClient)tcpClient).GetStream();
@@ -225,6 +237,7 @@ namespace RK.Common.Net.TCP
                             new object[]
                             {
                                 tcpClient,
+                                clientData,
                                 networkStream
                             });
 
@@ -272,7 +285,7 @@ namespace RK.Common.Net.TCP
 
         #region Data
 
-        public bool SendData(long clientId, string data)
+        public bool SendData(long clientId, ITransferable packet)
         {
             TCPClientEx tcpClient = GetConnectedClient(clientId);
             if (tcpClient == null)
@@ -280,44 +293,75 @@ namespace RK.Common.Net.TCP
                 OutLogMessage(string.Format("SRV DATA SEND ERROR, client ID is invalid: {0}", clientId));
                 return false;
             }
-            return SendData(tcpClient, data);
+            return SendData(tcpClient, packet);
         }
 
-        public bool SendData(TCPClientEx tcpClient, string data, object userData = null)
+        public bool SendData(TCPClientEx tcpClient, ITransferable packet, object userData = null)
         {
             try
             {
-                if (!string.IsNullOrEmpty(data))
+                //Send data
+                byte[] byteBuffer = packet.Serialize();
+                int dataLength = byteBuffer.Length;
+                ((TcpClient) tcpClient).GetStream().Write(byteBuffer, 0, dataLength);
+
+                //Fire DataSent event
+                if (ClientDataSent != null)
                 {
-                    //Send data
-                    byte[] byteBuffer = Encoding.UTF8.GetBytes(data);
-                    int dataLength = byteBuffer.Length;
-                    ((TcpClient)tcpClient).GetStream().Write(byteBuffer, 0, dataLength);
-
-                    //Fire DataSent event
-                    if (ClientDataSent != null)
-                    {
-                        ClientDataSent(tcpClient, data, userData);
-                    }
-
-                    return true;
+                    ClientDataSent(tcpClient, packet, userData);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 if (ClientDataSendError != null)
                 {
-                    ClientDataSendError(tcpClient, data, userData, ex);
+                    ClientDataSendError(tcpClient, packet, userData, ex);
                 }
             }
             return false;
+        }
+
+        private void ProcessReceivedData(TCPClientEx tcpClientEx, MemoryStream data)
+        {
+            List<BasePacket> packets = new List<BasePacket>();
+            byte[] buf = data.GetBuffer();
+
+            //Parse packets
+            short rSize;
+            int pos = 0;
+            BasePacket packet;
+            do
+            {
+                packet = BasePacket.Deserialize(buf, pos, out rSize);
+                if (rSize > 0)
+                {
+                    packets.Add(packet);
+                    pos += rSize;
+                }
+            } while (rSize > 0 && packet != null);
+
+            //Shrink stream
+            if (pos > 0)
+            {
+                Buffer.BlockCopy(buf, pos, buf, 0, (int)data.Length - pos);
+                data.SetLength(data.Length - pos);
+            }
+
+            //Fire ClientDataReceived event
+            if (ClientDataReceived != null && packets.Count > 0)
+            {
+                ClientDataReceived(tcpClientEx, packets);
+            }
         }
 
         private void IncomingClientPrc(object client)
         {
             //Get TCP objects
             TCPClientEx tcpClientEx = (TCPClientEx)((object[])client)[0];
-            NetworkStream networkStream = (NetworkStream)((object[])client)[1];
+            MemoryStream clientData = (MemoryStream)((object[])client)[1];
+            NetworkStream networkStream = (NetworkStream)((object[])client)[2];
             TcpClient tcpClient = tcpClientEx;
 
             try
@@ -328,14 +372,8 @@ namespace RK.Common.Net.TCP
                     int dataSize;
                     while ((dataSize = networkStream.Read(buffer, 0, buffer.Length)) != 0)
                     {
-                        //Receive data
-                        string data = Encoding.UTF8.GetString(buffer, 0, dataSize);
-
-                        //Fire ClientDataReceived event
-                        if (ClientDataReceived != null)
-                        {
-                            ClientDataReceived(tcpClientEx, data);
-                        }
+                        clientData.Write(buffer, 0, dataSize);
+                        ProcessReceivedData(tcpClientEx, clientData);
                     }
                 }
                 catch (Exception ex)

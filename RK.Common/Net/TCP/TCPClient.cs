@@ -1,19 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
+using RK.Common.Common;
+using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP
 {
-    internal sealed class TCPClient : TCPBase
+    public sealed class TCPClient : TCPBase
     {
 
 #region Delegates
 
-        public delegate void OnDataReceived(string data);
+        public delegate void OnDataReceived(IList<BaseResponse> packets);
         public delegate void OnDataReceiveError(Exception ex);
-        public delegate void OnDataSent(string data, object userData);
-        public delegate void OnDataSendError(string data, object userData, Exception ex);
+        public delegate void OnDataSent(ITransferable packet, object userData);
+        public delegate void OnDataSendError(ITransferable packet, object userData, Exception ex);
 
 #endregion
         
@@ -38,6 +41,7 @@ namespace RK.Common.Net.TCP
         private NetworkStream _networkStream;
 
         private Thread _dataThread;
+        private MemoryStream _receivedData;
 
         private int _connected;
 
@@ -91,6 +95,7 @@ namespace RK.Common.Net.TCP
                 _networkStream = ((TcpClient)_tcpClient).GetStream();
 
                 //Create data thread
+                _receivedData = new MemoryStream();
                 _dataThread = new Thread(() => ReceiveData(_tcpClient, _networkStream));
                 _dataThread.Start();
 
@@ -133,6 +138,7 @@ namespace RK.Common.Net.TCP
                         _dataThread.Join();
                         _dataThread = null;
                     }
+                    _receivedData.Dispose();
 
                     //Fire Disconnected event
                     if (Disconnected != null)
@@ -154,36 +160,65 @@ namespace RK.Common.Net.TCP
         
         #region Data
 
-        public bool SendData(string data, object userData = null)
+        public bool SendData(ITransferable packet, object userData = null)
         {
             try
             {
-                if (!string.IsNullOrEmpty(data))
+                //Send data
+                byte[] byteBuffer = packet.Serialize();
+                int dataLength = byteBuffer.Length;
+                _networkStream.Write(byteBuffer, 0, dataLength);
+
+                //Fire DataSent event
+                if (DataSent != null)
                 {
-                    //Send data
-                    byte[] byteBuffer = Encoding.UTF8.GetBytes(data);
-                    int dataLength = byteBuffer.Length;
-                    _networkStream.Write(byteBuffer, 0, dataLength);
-
-                    //Fire DataSent event
-                    if (DataSent != null)
-                    {
-                        DataSent(data, userData);
-                    }
-
-                    return true;
+                    DataSent(packet, userData);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 if (DataSendError != null)
                 {
-                    DataSendError(data, userData, ex);
+                    DataSendError(packet, userData, ex);
                 }
                 Disconnect();
             }
 
             return false;
+        }
+
+        private void ProcessReceivedData(MemoryStream data)
+        {
+            List<BaseResponse> packets = new List<BaseResponse>();
+            byte[] buf = data.GetBuffer();
+
+            //Parse packets
+            int rSize, pos = 0;
+            BaseResponse packet;
+            do
+            {
+                packet = BaseResponse.Deserialize(buf, pos, out rSize);
+                if (rSize > 0)
+                {
+                    packets.Add(packet);
+                    pos += rSize;
+                }
+            } while (rSize > 0 && packet != null);
+
+            //Shrink stream
+            if (pos > 0)
+            {
+                Buffer.BlockCopy(buf, pos, buf, 0, (int)data.Length - pos);
+                data.SetLength(data.Length - pos);
+            }
+
+            //Fire DataReceived event
+            if (DataReceived != null && packets.Count > 0)
+            {
+                DataReceived(packets);
+            }
         }
 
         private void ReceiveData(TCPClientEx tcpClientEx, NetworkStream networkStream)
@@ -195,14 +230,8 @@ namespace RK.Common.Net.TCP
                 byte[] buffer = new byte[tcpClient.ReceiveBufferSize];
                 while ((dataSize = networkStream.Read(buffer, 0, buffer.Length)) != 0)
                 {
-                    //Receive data
-                    string data = Encoding.UTF8.GetString(buffer, 0, dataSize);
-
-                    //Fire DataReceived event
-                    if (DataReceived != null)
-                    {
-                        DataReceived(data);
-                    }
+                    _receivedData.Write(buffer, 0, dataSize);
+                    ProcessReceivedData(_receivedData);
                 }
             }
             catch (Exception ex)

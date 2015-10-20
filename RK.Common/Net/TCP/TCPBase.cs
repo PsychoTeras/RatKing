@@ -2,7 +2,7 @@
 
 namespace RK.Common.Net.TCP
 {
-    internal abstract class TCPBase : IDisposable
+    public abstract class TCPBase : IDisposable
     {
 
 #region Delegates

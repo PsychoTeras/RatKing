@@ -4,7 +4,7 @@ using RK.Common.Win32;
 
 namespace RK.Common.Classes.Units
 {
-    public unsafe class Player : DbObject, ITranserable
+    public unsafe class Player : DbObject, ISerializable
     {
 
 #region Public fields

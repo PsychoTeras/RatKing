@@ -2,7 +2,7 @@
 
 namespace RK.Common.Net.TCP
 {
-    internal sealed class TCPClientEx
+    public sealed class TCPClientEx
     {
 
 #region Private fields
@@ -14,7 +14,6 @@ namespace RK.Common.Net.TCP
 
 #region Properties
 
-        public int Ip { get; private set; }
         public long Id { get; private set; }
 
         public bool Connected
@@ -30,7 +29,6 @@ namespace RK.Common.Net.TCP
         {
             _client = client;
             _hostInfo = _client.Client.RemoteEndPoint.ToString();
-            Ip = _client.GetIp();
             Id = _client.GetId();
         }
 
@@ -38,7 +36,6 @@ namespace RK.Common.Net.TCP
         {
             _client = new TcpClient(hostName, port);
             _hostInfo = _client.Client.RemoteEndPoint.ToString();
-            Ip = _client.GetIp();
             Id = _client.GetId();
         }
 

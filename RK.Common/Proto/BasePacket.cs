@@ -5,7 +5,7 @@ using RK.Common.Proto.Packets;
 
 namespace RK.Common.Proto
 {
-    public unsafe abstract class BasePacket : ISerializable
+    public unsafe abstract class BasePacket : ITransferable
     {
 
 #region Constants
@@ -109,16 +109,16 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BasePacket Deserialize(byte[] data, out short packetSize)
+        public static BasePacket Deserialize(byte[] data, int pos, out short packetSize)
         {
-            int dataLength = data.Length;
+            int dataLength = data.Length - pos;
             if (dataLength < BASE_SIZE)
             {
                 packetSize = 0;
                 return null;
             }
 
-            fixed (byte* bData = data)
+            fixed (byte* bData = &data[pos])
             {
                 packetSize = *((short*) bData);
                 if (packetSize <= 0)
@@ -127,7 +127,7 @@ namespace RK.Common.Proto
                     return null;
                 }
 
-                if (packetSize < dataLength)
+                if (dataLength < packetSize)
                 {
                     packetSize = ERR_PARTIAL_PACKET;
                     return null;

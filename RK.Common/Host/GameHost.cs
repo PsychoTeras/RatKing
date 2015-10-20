@@ -20,7 +20,7 @@ namespace RK.Common.Host
 
 #region Delegates
 
-        private delegate BaseResponse OnAcceptPacket<in T>(T packet) 
+        private delegate BaseResponse OnAcceptPacket<in T>(TCPClientEx tcpClient, T packet) 
             where T: BasePacket;
 
         public delegate void OnGameHostResponse(BaseResponse e);
@@ -35,14 +35,13 @@ namespace RK.Common.Host
         private List<BaseValidator> _validators;
 
         private Dictionary<long, int> _loggedPlayers;
+        private Dictionary<long, long> _tcpClients;
 
 #endregion
 
 #region Public fields
 
         public GameWorld World;
-
-        public event OnGameHostResponse GameHostResponse;
 
 #endregion
 
@@ -51,8 +50,12 @@ namespace RK.Common.Host
         public GameHost()
         {
             _netServer = new TCPServer(15051);
+            _netServer.ClientConnected += TCPClientConnected;
+            _netServer.ClientDataReceived += TCPClientDataReceived;
+            _netServer.Start();
 
             _loggedPlayers = new Dictionary<long, int>();
+            _tcpClients = new Dictionary<long, long>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
             {
@@ -84,19 +87,11 @@ namespace RK.Common.Host
             BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
         }
 
-        private void SendGameHostEvent(BaseResponse e)
-        {
-            if (GameHostResponse != null)
-            {
-                GameHostResponse(e);
-            }
-        }
-
 #endregion
 
 #region User methods
 
-        private BaseResponse Login(BasePacket packet)
+        private BaseResponse Login(TCPClientEx tcpClient, BasePacket packet)
         {
             lock (_loggedPlayers)
             {
@@ -117,12 +112,13 @@ namespace RK.Common.Host
                 World.PlayerAdd(pUserLogin.SessionToken, player);
 
                 _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
+                _tcpClients.Add(pUserLogin.SessionToken, tcpClient.Id);
 
                 return new RUserLogin(pUserLogin);
             }
         }
 
-        private BaseResponse Logout(BasePacket packet)
+        private BaseResponse Logout(TCPClientEx tcpClient, BasePacket packet)
         {
             lock (_loggedPlayers)
             {
@@ -140,7 +136,7 @@ namespace RK.Common.Host
 
 #region Player methods
 
-        private BaseResponse PlayerEnter(BasePacket packet)
+        private BaseResponse PlayerEnter(TCPClientEx tcpClient, BasePacket packet)
         {
             PPlayerEnter pPlayerEnter = (PPlayerEnter) packet;
 
@@ -155,7 +151,7 @@ namespace RK.Common.Host
             return new RPlayerEnter(player.Id, playersOnLocation, pPlayerEnter);
         }
 
-        private BaseResponse PlayerRotate(BasePacket packet)
+        private BaseResponse PlayerRotate(TCPClientEx tcpClient, BasePacket packet)
         {
             PPlayerRotate pPlayerRotate = (PPlayerRotate)packet;
             Player player = World.PlayerGet(pPlayerRotate.SessionToken);
@@ -169,13 +165,13 @@ namespace RK.Common.Host
             {
                 player.Angle = pPlayerRotate.Angle;
 
-                SendGameHostEvent(new RPlayerRotate(player.Id, pPlayerRotate));
+                return new RPlayerRotate(player.Id, pPlayerRotate);
             }
 
             return null;
         }
 
-        private BaseResponse PlayerMove(BasePacket packet)
+        private BaseResponse PlayerMove(TCPClientEx tcpClient, BasePacket packet)
         {
             PPlayerMove pPlayerMove = (PPlayerMove)packet;
             Player player = World.PlayerGet(pPlayerMove.SessionToken);
@@ -191,7 +187,7 @@ namespace RK.Common.Host
                 player.Position = new Point(pPlayerMove.X, pPlayerMove.Y);
                 player.Direction = pPlayerMove.D;
 
-                SendGameHostEvent(new RPlayerMove(player.Id, pPlayerMove));
+                return new RPlayerMove(player.Id, pPlayerMove);
             }
 
             return null;
@@ -212,12 +208,12 @@ namespace RK.Common.Host
             }
         }
 
-        public BaseResponse ProcessPacket(BasePacket packet)
+        public BaseResponse ProcessPacket(TCPClientEx tcpClient, BasePacket packet)
         {
             try
             {
                 AssertSession(packet);
-                return _actions[packet.Type](packet);
+                return _actions[packet.Type](tcpClient, packet);
             }
             catch (Exception ex)
             {
@@ -228,6 +224,26 @@ namespace RK.Common.Host
         public void Dispose()
         {
             _netServer.Dispose();
+        }
+
+#endregion
+
+#region TCP
+
+        private void TCPClientConnected(TCPClientEx tcpClient)
+        {
+        }
+
+        private void TCPClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets)
+        {
+            foreach (BasePacket packet in packets)
+            {
+                BaseResponse response = ProcessPacket(tcpClient, packet);
+                if (response != null)
+                {
+                    _netServer.SendData(tcpClient, response);
+                }
+            }
         }
 
 #endregion

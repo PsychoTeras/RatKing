@@ -12,6 +12,7 @@ using RK.Common.Classes.Units;
 using RK.Common.Common;
 using RK.Common.Const;
 using RK.Common.Host;
+using RK.Common.Net.TCP;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
@@ -44,6 +45,7 @@ namespace RK.Win.Controls
 
         private GameMap _map;
         private GameHost _host;
+        private TCPClient _tcpClient;
 
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
@@ -188,7 +190,7 @@ namespace RK.Win.Controls
             {
                 if (_host != null)
                 {
-                    _host.GameHostResponse -= GameHostResponse;
+                    _tcpClient.Dispose();
                 }
                 _host = value;
                 ConnectToHost();
@@ -275,8 +277,6 @@ namespace RK.Win.Controls
                 return;
             }
 
-            _host.GameHostResponse += GameHostResponse;
-
             try
             {
                 if (_host.World.FirstMap == null)
@@ -284,39 +284,29 @@ namespace RK.Win.Controls
                     _host.World.LoadMap();
                 }
 
+                _tcpClient = new TCPClient("127.0.0.1", 15051);
+                _tcpClient.Connect();
+
+                _tcpClient.DataReceived += TCPClientDataReceived;
+
                 if (_sessionToken != 0)
                 {
-                    _host.ProcessPacket(new PUserLogout
+                    TCPClientDataSend(new PUserLogout
                     {
                         SessionToken = _sessionToken
                     });
                 }
 
-                RUserLogin userLogin = _host.ProcessPacket(new PUserLogin
-                {
-                    UserName = "PsychoTeras",
-                    Password = "password"
-                }).As<RUserLogin>();
-                _sessionToken = userLogin.SessionToken;
+                LoadMap(_host.World.FirstMap);
 
                 _players.Clear();
                 _playersEx.Clear();
-                RPlayerEnter playerEnter = _host.ProcessPacket(new PPlayerEnter
-                {
-                    SessionToken = _sessionToken
-                }).As<RPlayerEnter>();
-                foreach (Player p in playerEnter.PlayersOnLocation)
-                {
-                    _players.Add(p.Id, p);
-                    _playersEx.Add(p.Id, new PlayerEx(p));
-                }
-                _myPlayer = _players[playerEnter.MyPlayerId];
 
-                LoadMap(_host.World.FirstMap);
-
-                CenterTo((int) (_myPlayer.Position.X * _scaleFactor),
-                         (int) (_myPlayer.Position.Y * _scaleFactor),
-                         true);
+                TCPClientDataSend(new PUserLogin
+                {
+                    UserName = "PsychoTeras",
+                    Password = "password"
+                });
             }
             catch (Exception ex)
             {
@@ -399,7 +389,7 @@ namespace RK.Win.Controls
                 float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
                 if (angle != _myPlayer.Angle)
                 {
-                    _host.ProcessPacket(new PPlayerRotate
+                    TCPClientDataSend(new PPlayerRotate
                     {
                         SessionToken = _sessionToken,
                         Angle = angle
@@ -422,6 +412,10 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
+                if (_tcpClient != null)
+                {
+                    _tcpClient.Dispose();
+                }
                 Application.RemoveMessageFilter(this);
                 _threadRenderer.Abort();
                 _threadRenderer.Join();
@@ -1196,7 +1190,7 @@ namespace RK.Win.Controls
         {
             if (_myPlayer != null && _myPlayer.Direction != direction)
             {
-                _host.ProcessPacket(new PPlayerMove
+                TCPClientDataSend(new PPlayerMove
                 {
                     SessionToken = _sessionToken,
                     X =  _myPlayer.Position.X,
@@ -1214,6 +1208,28 @@ namespace RK.Win.Controls
         {
             switch (e.Type)
             {
+                case PacketType.UserLogin:
+                    RUserLogin userLogin = (RUserLogin) e;
+                    _sessionToken = userLogin.SessionToken;
+                    TCPClientDataSend(new PPlayerEnter
+                    {
+                        SessionToken = _sessionToken
+                    });
+                    break;
+
+                case PacketType.PlayerEnter:
+                    RPlayerEnter playerEnter = (RPlayerEnter) e;
+                    foreach (Player p in playerEnter.PlayersOnLocation)
+                    {
+                        _players.Add(p.Id, p);
+                        _playersEx.Add(p.Id, new PlayerEx(p));
+                    }
+                    _myPlayer = _players[playerEnter.MyPlayerId];
+                    CenterTo((int) (_myPlayer.Position.X*_scaleFactor),
+                        (int) (_myPlayer.Position.Y*_scaleFactor),
+                        true);
+                    break;
+
                 case PacketType.PlayerRotate:
                     RPlayerRotate rPlayerRotate = (RPlayerRotate) e;
                     _players[rPlayerRotate.PlayerId].Angle = rPlayerRotate.Angle;
@@ -1229,6 +1245,23 @@ namespace RK.Win.Controls
                     playerEx.MovingStartTime = DateTime.Now;
                     playerEx.MovingStartedPoint = player.Position;
                     break;
+            }
+        }
+
+#endregion
+
+#region TCP
+
+        private void TCPClientDataSend(BasePacket packet)
+        {
+            _tcpClient.SendData(packet);
+        }
+
+        private void TCPClientDataReceived(IList<BaseResponse> packets)
+        {
+            foreach (BaseResponse packet in packets)
+            {
+                GameHostResponse(packet);
             }
         }
 

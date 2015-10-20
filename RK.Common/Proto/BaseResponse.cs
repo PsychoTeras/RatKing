@@ -6,7 +6,7 @@ using RK.Common.Proto.Responses;
 
 namespace RK.Common.Proto
 {
-    public unsafe class BaseResponse : ISerializable
+    public unsafe class BaseResponse : ITransferable
     {
 
 #region Constants
@@ -171,19 +171,19 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BaseResponse Deserialize(byte[] data, out int responseSize)
+        public static BaseResponse Deserialize(byte[] data, int pos, out int responseSize)
         {
-            int dataLength = data.Length;
+            int dataLength = data.Length - pos;
             if (dataLength < BASE_SIZE)
             {
                 responseSize = -1;
                 return null;
             }
 
-            fixed (byte* bData = data)
+            fixed (byte* bData = &data[pos])
             {
                 responseSize = *((int*)bData);
-                if (responseSize < dataLength)
+                if (dataLength < responseSize)
                 {
                     return null;
                 }
