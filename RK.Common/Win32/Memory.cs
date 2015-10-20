@@ -27,17 +27,17 @@ namespace RK.Common.Win32
             void* information, uint informationLength);
 
         [DllImport("kernel32", EntryPoint = "RtlZeroMemory")]
-        public static extern void ZeroMemory(void* dest, int size);
+        public static extern void Zero(void* dest, int size);
 
-        [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* MemCopy(void* dest, void* src, int count);
+        [DllImport("kernel32", EntryPoint = "CopyMemory")]
+        public static extern void* Copy(void* dest, void* src, int count);
 
         [DllImport("msvcrt.dll", EntryPoint = "memmove", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* MemMove(void* dest, void* src, int count);
+        public static extern void* Move(void* dest, void* src, int count);
 
         private static int _ph = GetProcessHeap();
 
-        public static void* Alloc(int size, bool zeroMem = true)
+        public static void* HeapAlloc(int size, bool zeroMem = true)
         {
             void* result = HeapAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, size);
             if (result == null)
@@ -47,7 +47,7 @@ namespace RK.Common.Win32
             return result;
         }
 
-        public static void Free(void* block)
+        public static void HeapFree(void* block)
         {
             if (block != null && !HeapFree(_ph, 0, block))
             {
@@ -55,7 +55,7 @@ namespace RK.Common.Win32
             }
         }
 
-        public static void* ReAlloc(void* block, int size)
+        public static void* HeapReAlloc(void* block, int size)
         {
             void* result = HeapReAlloc(_ph, HEAP_ZERO_MEMORY, block, size);
             if (result == null)
@@ -65,7 +65,7 @@ namespace RK.Common.Win32
             return result;
         }
 
-        public static int SizeOf(void* block)
+        public static int HeapSizeOf(void* block)
         {
             int result = HeapSize(_ph, 0, block);
             if (result == -1)
@@ -75,7 +75,7 @@ namespace RK.Common.Win32
             return result;
         }
 
-        public static void Copy(void* src, void* dst, int count)
+        public static void HeapCopy(void* src, void* dst, int count)
         {
             byte* ps = (byte*)src;
             byte* pd = (byte*)dst;

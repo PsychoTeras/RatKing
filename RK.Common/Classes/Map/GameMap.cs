@@ -120,9 +120,9 @@ namespace RK.Common.Classes.Map
         {
             if (_tiles != null)
             {
-                Memory.Free(_tiles);
+                Memory.HeapFree(_tiles);
             }
-            _tiles = (Tile*)Memory.Alloc((_width = width) * (_height = height) * Tile.SizeOf);
+            _tiles = (Tile*)Memory.HeapAlloc((_width = width) * (_height = height) * Tile.SizeOf);
         }
 
         private void DetectAreas()
@@ -261,7 +261,7 @@ namespace RK.Common.Classes.Map
 
                     for (int i = 0; i < tilesCnt; i++)
                     {
-                        Memory.Copy(&tile, &Map._tiles[curTilePos++], Tile.SizeOf);
+                        Memory.HeapCopy(&tile, &Map._tiles[curTilePos++], Tile.SizeOf);
                     }
                 }
                 return true;
@@ -404,7 +404,7 @@ namespace RK.Common.Classes.Map
         {
             if (!disposing)
             {
-                Memory.Free(_tiles);
+                Memory.HeapFree(_tiles);
                 _tiles = null;
             }
         }

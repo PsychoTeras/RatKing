@@ -254,7 +254,7 @@ namespace RK.Win.Forms
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadWrite, bitmap.PixelFormat);
 
-            byte* pRoughMap = (byte*)Memory.Alloc(width * height);
+            byte* pRoughMap = (byte*)Memory.HeapAlloc(width * height);
             Parallel.For(0, height, y =>
             {
                 int* row = (int*) data.Scan0 + (y*data.Stride)/4;
@@ -273,7 +273,7 @@ namespace RK.Win.Forms
             {
                 map.SaveToFile("RK.save");
             }
-            Memory.Free(pRoughMap);
+            Memory.HeapFree(pRoughMap);
 
             bitmap.UnlockBits(data);
             pbLabyrinth.Image = bitmap;

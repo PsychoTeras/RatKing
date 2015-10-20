@@ -21,7 +21,7 @@ namespace RK.Console
 
 #if UNSAFE_ARRAY
             int sizeOfTile = Marshal.SizeOf(typeof(Tile));
-            Tile* pTiles = (Tile*)Memory.Alloc(count * sizeOfTile);
+            Tile* pTiles = (Tile*)Memory.HeapAlloc(count * sizeOfTile);
 #else
             Tile[,] aTiles = new Tile[width, height];
 #endif
@@ -40,7 +40,7 @@ namespace RK.Console
             }
             System.Console.WriteLine(timer.StopWatch());
 #if UNSAFE_ARRAY
-            Memory.Free(pTiles);
+            Memory.HeapFree(pTiles);
 #endif
 
             using (GameMap map = new GameMap(width, height, 0))
