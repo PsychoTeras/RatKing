@@ -51,7 +51,7 @@ namespace RK.Common.Classes.Units
         public int SizeOf()
         {
             return
-                Serializer.StringLength(Name) + //Name 
+                Serializer.Length(Name) + //Name 
 
                 sizeof (TinySize) + //Size
                 sizeof (ushort) + //Health
@@ -63,42 +63,30 @@ namespace RK.Common.Classes.Units
         }
 
         // ReSharper disable once RedundantAssignment
-        public int Serialize(byte* bData, int pos)
+        public void Serialize(byte* bData, ref int pos)
         {
-            int newPos = pos;
+            Serializer.Write(bData, Name, ref pos);
 
-            int sLen = Serializer.WriteString(bData, Name, newPos);
+            Serializer.Write(bData, Size, ref pos);
+            Serializer.Write(bData, Health, ref pos);
+            Serializer.Write(bData, Speed, ref pos);
 
-            (*(TinySize*)&bData[newPos += sLen]) = Size;
-            (*(ushort*)&bData[newPos += sizeof(TinySize)]) = Health;
-            (*(float*)&bData[newPos += sizeof(ushort)]) = Speed;
-
-            (*(float*)&bData[newPos += sizeof(float)]) = Angle;
-            (*(Point*)&bData[newPos += sizeof(float)]) = Position;
-            (*(Direction*)&bData[newPos += sizeof(Point)]) = Direction;
-
-            newPos += sizeof(Direction);
-
-            return newPos - pos;
+            Serializer.Write(bData, Angle, ref pos);
+            Serializer.Write(bData, Position, ref pos);
+            Serializer.Write(bData, Direction, ref pos);
         }
 
-        public int Deserialize(byte* bData, int pos)
+        public void Deserialize(byte* bData, ref int pos)
         {
-            int newPos = pos;
+            Serializer.Read(bData, out Name, ref pos);
 
-            int sLen = Serializer.ReadString(bData, out Name, newPos);
+            Serializer.Read(bData, out Size, ref pos);
+            Serializer.Read(bData, out Health, ref pos);
+            Serializer.Read(bData, out Speed, ref pos);
 
-            Size = (*(TinySize*) &bData[newPos += sLen]);
-            Health = (*(ushort*)&bData[newPos += sizeof(TinySize)]);
-            Speed = (*(float*)&bData[newPos += sizeof(ushort)]);
-
-            Angle = (*(float*)&bData[newPos += sizeof(float)]);
-            Position = (*(Point*)&bData[newPos += sizeof(float)]);
-            Direction = (*(Direction*)&bData[newPos += sizeof(Point)]);
-
-            newPos += sizeof(Direction);
-
-            return newPos - pos;
+            Serializer.Read(bData, out Angle, ref pos);
+            Serializer.Read(bData, out Position, ref pos);
+            Serializer.Read(bData, out Direction, ref pos);
         }
 
 #endregion

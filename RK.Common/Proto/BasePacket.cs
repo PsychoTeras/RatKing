@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using RK.Common.Proto.Packets;
+using RK.Common.Win32;
 
 namespace RK.Common.Proto
 {
@@ -13,7 +14,7 @@ namespace RK.Common.Proto
         public const int ERR_INVALID_PACKET_SIZE = -1;
         public const int ERR_INVALID_PACKET_TYPE = -2;
 
-        protected const int BASE_SIZE = 22;
+        protected const int BASE_SIZE = 24;
 
 #endregion
 
@@ -73,7 +74,6 @@ namespace RK.Common.Proto
                 (*(long*)&bData[4]) = Id;
                 (*(long*)&bData[8]) = SessionToken;
                 (*(long*)&bData[16]) = TimeStamp;
-
                 SerializeToMemory(bData, BASE_SIZE);
             }
             return data;
@@ -120,7 +120,7 @@ namespace RK.Common.Proto
 
             fixed (byte* bData = data)
             {
-                packetSize = *((short*)bData);
+                packetSize = *((short*) bData);
                 if (packetSize <= 0)
                 {
                     packetSize = ERR_INVALID_PACKET_SIZE;
@@ -133,7 +133,7 @@ namespace RK.Common.Proto
                     return null;
                 }
 
-                PacketType packetType = (PacketType)(*(short*)&bData[2]);
+                PacketType packetType = (PacketType) (*(short*) &bData[2]);
                 BasePacket packet = AllocNew(packetType);
                 if (packet == null)
                 {
@@ -141,9 +141,9 @@ namespace RK.Common.Proto
                     return null;
                 }
 
-                packet.Id = *(int*)&bData[4];
-                packet.SessionToken = *(long*)&bData[8];
-                packet.TimeStamp = *(long*)&bData[16];
+                packet.Id = *(int*) &bData[4];
+                packet.SessionToken = *(long*) &bData[8];
+                packet.TimeStamp = *(long*) &bData[16];
 
                 packet.DeserializeFromMemory(bData, BASE_SIZE);
 

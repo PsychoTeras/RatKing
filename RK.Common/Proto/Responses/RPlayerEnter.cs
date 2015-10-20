@@ -12,20 +12,21 @@ namespace RK.Common.Proto.Responses
         internal override void InitializeFromMemory(byte* bData)
         {
             MyPlayerId = *(int*)&bData[BASE_SIZE];
-            Serializer.ReadCollection<Player, List<Player>>(bData, out PlayersOnLocation, BASE_SIZE + 4);
+//            Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, BASE_SIZE + 4);
             base.InitializeFromMemory(bData);
         }
 
         public override byte[] Serialize()
         {
             int pSize = BASE_SIZE + 4 +
-                Serializer.CollectionLength(PlayersOnLocation);
+                Serializer.Length(PlayersOnLocation);
             byte[] data = new byte[pSize];
             fixed (byte* bData = data)
             {
                 SerializeHeader(bData, pSize);
                 (*(int*)&bData[BASE_SIZE]) = MyPlayerId;
-                Serializer.WriteCollection(PlayersOnLocation, bData, BASE_SIZE + 4);
+//                Serializer.Write(bData, PlayersOnLocation, BASE_SIZE + 4);
+//                Serializer.Write(bData, PlayersOnLocation, ref pSize);
             }
             return data;
         }

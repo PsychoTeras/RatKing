@@ -17,21 +17,21 @@ namespace RK.Common.Proto.Packets
             get
             {
                 return BASE_SIZE +
-                       Serializer.StringLength(UserName) +
-                       Serializer.StringLength(Password);
+                       Serializer.Length(UserName) +
+                       Serializer.Length(Password);
             }
         }
 
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            pos += Serializer.ReadString(bData, out UserName, pos);
-            Serializer.ReadString(bData, out Password, pos);
+            Serializer.Read(bData, out UserName, ref pos);
+            Serializer.Read(bData, out Password, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
         {
-            pos += Serializer.WriteString(bData, UserName, pos);
-            Serializer.WriteString(bData, Password, pos);
+            Serializer.Write(bData, UserName, ref pos);
+            Serializer.Write(bData, Password, ref pos);
         }
     }
 }
