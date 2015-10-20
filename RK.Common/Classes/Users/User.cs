@@ -1,5 +1,5 @@
 ﻿using System;
-using RK.Common.Classes.Common;
+using RK.Common.Common;
 
 namespace RK.Common.Classes.Users
 {

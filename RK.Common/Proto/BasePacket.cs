@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Threading;
+using RK.Common.Common;
 using RK.Common.Proto.Packets;
 
 namespace RK.Common.Proto
 {
-    public unsafe abstract class BasePacket
+    public unsafe abstract class BasePacket : ISerializable
     {
 
 #region Constants

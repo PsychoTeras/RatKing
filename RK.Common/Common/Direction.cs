@@ -1,4 +1,4 @@
-﻿namespace RK.Common.Classes.Common
+﻿namespace RK.Common.Common
 {
     public enum Direction : byte
     {

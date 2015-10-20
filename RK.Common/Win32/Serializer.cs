@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using RK.Common.Classes.Common;
+using RK.Common.Common;
 using RK.Common.Proto;
 
 namespace RK.Common.Win32
@@ -16,7 +16,7 @@ namespace RK.Common.Win32
 
         // ReSharper disable once PossibleNullReferenceException
         public static int Length<T>(IList<T> col) 
-            where T : ISerializable
+            where T : ITranserable
         {
             const int iSize = sizeof(int);
             int elsCount = (short)(col == null ? -1 : col.Count), elsSize = 0;
@@ -97,7 +97,7 @@ namespace RK.Common.Win32
         }
 
         public static void Read<T, TC>(byte* bData, out TC col, ref int pos)
-            where T : ISerializable, new() where TC: class, IList<T>, new()
+            where T : ITranserable, new() where TC: class, IList<T>, new()
         {
             int elsCount = *(int*)&bData[pos];
             pos += sizeof (int);
@@ -186,7 +186,7 @@ namespace RK.Common.Win32
 
         // ReSharper disable once PossibleNullReferenceException
         public static void Write<T>(byte* bData, IList<T> col, ref int pos)
-            where T : ISerializable
+            where T : ITranserable
         {
             int elsCount = col == null ? -1 : col.Count;
             (*(int*)&bData[pos]) = elsCount;

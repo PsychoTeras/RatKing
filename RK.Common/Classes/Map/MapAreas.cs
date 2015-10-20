@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using RK.Common.Classes.Common;
+using RK.Common.Common;
 
 namespace RK.Common.Classes.Map
 {

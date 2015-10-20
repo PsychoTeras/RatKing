@@ -64,11 +64,12 @@
   <ItemGroup>
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
-    <Compile Include="Classes\Common\DbObject.cs" />
-    <Compile Include="Classes\Common\Direction.cs" />
-    <Compile Include="Classes\Common\ISerializable.cs" />
-    <Compile Include="Classes\Common\ShortPoint.cs" />
-    <Compile Include="Classes\Common\TinySize.cs" />
+    <Compile Include="Common\DbObject.cs" />
+    <Compile Include="Common\Direction.cs" />
+    <Compile Include="Common\ISerializable.cs" />
+    <Compile Include="Common\ITranserable.cs" />
+    <Compile Include="Common\ShortPoint.cs" />
+    <Compile Include="Common\TinySize.cs" />
     <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />
     <Compile Include="Classes\Map\GameMap.cs" />

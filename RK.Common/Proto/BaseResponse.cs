@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Text;
+using RK.Common.Common;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.Responses;
 
 namespace RK.Common.Proto
 {
-    public unsafe class BaseResponse
+    public unsafe class BaseResponse : ISerializable
     {
 
 #region Constants

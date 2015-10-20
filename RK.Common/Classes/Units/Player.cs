@@ -1,10 +1,10 @@
 ﻿using System.Drawing;
-using RK.Common.Classes.Common;
+using RK.Common.Common;
 using RK.Common.Win32;
 
 namespace RK.Common.Classes.Units
 {
-    public unsafe class Player : DbObject, ISerializable
+    public unsafe class Player : DbObject, ITranserable
     {
 
 #region Public fields

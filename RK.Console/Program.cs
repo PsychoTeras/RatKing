@@ -1,5 +1,6 @@
 ﻿#define UNSAFE_ARRAY
 
+using System.Threading.Tasks;
 using RK.Common.Classes.Map;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
@@ -69,10 +70,11 @@ namespace RK.Console
             };
             p.Setup();
             byte[] ps = p.Serialize();
-            p = (PUserLogin)BasePacket.Deserialize(ps, out psize);
+            BasePacket.Deserialize(ps, out psize);
 
             HRTimer timer = HRTimer.CreateAndStart();
 
+            //Parallel.For(0, 1000000, i =>
             for (int i = 0; i < 1000000; i++)
             {
                 p = new PUserLogin
@@ -82,8 +84,9 @@ namespace RK.Console
                 };
                 p.Setup();
                 ps = p.Serialize();
-                p = (PUserLogin)BasePacket.Deserialize(ps, out psize);
+                p = (PUserLogin) BasePacket.Deserialize(ps, out psize);
             }
+//            });
 
             System.Console.WriteLine(timer.StopWatch());
         }

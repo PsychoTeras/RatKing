@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using RK.Common.Classes.Common;
+using RK.Common.Common;
 using RK.Common.Win32;
 
 namespace RK.Common.Classes.Map

@@ -1,4 +1,4 @@
-﻿using RK.Common.Classes.Common;
+﻿using RK.Common.Common;
 using RK.Common.Win32;
 
 namespace RK.Common.Proto.Packets

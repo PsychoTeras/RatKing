@@ -1,6 +1,6 @@
-﻿namespace RK.Common.Classes.Common
+﻿namespace RK.Common.Common
 {
-    public unsafe interface ISerializable
+    public unsafe interface ITranserable
     {
         int SizeOf();
         void Serialize(byte* bData, ref int pos);
