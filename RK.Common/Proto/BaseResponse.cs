@@ -174,7 +174,7 @@ namespace RK.Common.Proto
         public static BaseResponse Deserialize(byte[] data, int dataSize, int pos, 
             out int responseSize)
         {
-            dataSize = dataSize - pos;
+            dataSize -= pos;
             if (dataSize < BASE_SIZE)
             {
                 responseSize = -1;

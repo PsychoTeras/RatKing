@@ -112,7 +112,7 @@ namespace RK.Common.Proto
         public static BasePacket Deserialize(byte[] data, int dataSize, int pos, 
             out short packetSize)
         {
-            dataSize = data.Length - pos;
+            dataSize -= pos;
             if (dataSize < BASE_SIZE)
             {
                 packetSize = 0;

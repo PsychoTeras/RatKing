@@ -198,6 +198,12 @@ namespace RK.Win.Controls
         }
 
         [Browsable(false)]
+        public IEnumerable<Player> Players
+        {
+            get { return _sessionToken != 0 ? _players.Values : null; }
+        }
+
+        [Browsable(false)]
         public GameMap Map
         {
             get { return _map; }
@@ -223,6 +229,9 @@ namespace RK.Win.Controls
 
         [Browsable(true)]
         public event MapEvent TilesChanged;
+
+        [Browsable(true)]
+        public event MapEvent ObjectChanged;
 
 #endregion
 
@@ -284,7 +293,7 @@ namespace RK.Win.Controls
                     _host.World.LoadMap();
                 }
 
-                _tcpClient = new TCPClient("127.0.0.1", 15051);
+                _tcpClient = new TCPClient("192.168.1.114", 15051);
                 _tcpClient.Connect();
 
                 _tcpClient.DataReceived += TCPClientDataReceived;
@@ -816,6 +825,8 @@ namespace RK.Win.Controls
 
                         Invoke(new Action(CheckMyPlayerRotate));
                     }
+
+                    ThreadPool.QueueUserWorkItem(o => ObjectChanged(this));
                 }
             }
         }

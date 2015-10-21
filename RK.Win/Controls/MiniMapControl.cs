@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Map;
+using RK.Common.Classes.Units;
 using RK.Common.Const;
 
 namespace RK.Win.Controls
@@ -30,6 +31,7 @@ namespace RK.Win.Controls
 
         private Pen _mapWindowPen;
         private Brush _mapWallsBrush;
+        private Brush _mapPlayersBrush;
 
         private Point? _mousePos;
         private bool _dragScroll;
@@ -85,8 +87,9 @@ namespace RK.Win.Controls
                 {
                     _map.MapLoaded -= MapLoaded;
                     _map.TilesChanged -= MapTilesChanged;
-                    _map.ScaleFactorChanged -= MapScaleFactorChanged;
-                    _map.PositionChanged -= MapPositionChanged;
+                    _map.ScaleFactorChanged -= MapObjectChanged;
+                    _map.PositionChanged -= MapObjectChanged;
+                    _map.ObjectChanged -= MapObjectChanged;
                 }
                 _map = value;
                 if (!DesignMode)
@@ -95,8 +98,9 @@ namespace RK.Win.Controls
                     {
                         _map.MapLoaded += MapLoaded;
                         _map.TilesChanged += MapTilesChanged;
-                        _map.ScaleFactorChanged += MapScaleFactorChanged;
-                        _map.PositionChanged += MapPositionChanged;
+                        _map.ScaleFactorChanged += MapObjectChanged;
+                        _map.PositionChanged += MapObjectChanged;
+                        _map.ObjectChanged += MapObjectChanged;
                     }
                     NeedRepaint(true);
                 }
@@ -124,6 +128,7 @@ namespace RK.Win.Controls
                 SetStyle(ControlStyles.Selectable, false);
 
                 _mapWallsBrush = new SolidBrush(Color.Black);
+                _mapPlayersBrush = new SolidBrush(Color.Orange);
                 _mapWindowPen = new Pen(Color.LightSteelBlue);
 
                 MouseDown += MiniMapControlMouseDown;
@@ -155,12 +160,7 @@ namespace RK.Win.Controls
             NeedRepaint(true);
         }
 
-        private void MapPositionChanged(object sender)
-        {
-            NeedRepaint(false);
-        }
-
-        private void MapScaleFactorChanged(object sender)
+        private void MapObjectChanged(object sender)
         {
             NeedRepaint(false);
         }
@@ -263,6 +263,16 @@ namespace RK.Win.Controls
 
                 _buffer.DrawImage(_miniMapBitmap, 0, 0);
                 _buffer.DrawRectangle(_mapWindowPen, x1, y1, w1, h1);
+
+                if (_map.Width > 0 && _map.Height > 0)
+                {
+                    foreach (Player player in _map.Players)
+                    {
+                        int px = (int) (Width*((float) player.Position.X/(_map.Map.Width*ConstMap.PIXEL_SIZE)));
+                        int py = (int) (Height*((float) player.Position.Y/(_map.Map.Height*ConstMap.PIXEL_SIZE)));
+                        _buffer.FillRectangle(_mapPlayersBrush, px, py, 1, 1);
+                    }
+                }
             }
         }
 

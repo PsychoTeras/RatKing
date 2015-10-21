@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using RK.Common.Common;
 using RK.Common.Proto;
 
@@ -294,6 +295,15 @@ namespace RK.Common.Net.TCP
                 return false;
             }
             return SendData(tcpClient, packet);
+        }
+
+        public bool SendAll(ITransferable packet, object userData = null)
+        {
+            lock (_clientsData)
+            {
+                Parallel.ForEach(_connectedClients.Values, c => SendData(c, packet, userData));
+                return true;
+            }
         }
 
         public bool SendData(TCPClientEx tcpClient, ITransferable packet, object userData = null)

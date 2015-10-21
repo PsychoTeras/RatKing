@@ -49,10 +49,13 @@ namespace RK.Common.Host
 
         public GameHost()
         {
-            _netServer = new TCPServer(15051);
-            _netServer.ClientConnected += TCPClientConnected;
-            _netServer.ClientDataReceived += TCPClientDataReceived;
-            _netServer.Start();
+            if (Environment.CommandLine.Trim().Split(new [] {' '}).Length == 1)
+            {
+                _netServer = new TCPServer(15051);
+                _netServer.ClientConnected += TCPClientConnected;
+                _netServer.ClientDataReceived += TCPClientDataReceived;
+                _netServer.Start();
+            }
 
             _loggedPlayers = new Dictionary<long, int>();
             _tcpClients = new Dictionary<long, long>();
@@ -230,9 +233,7 @@ namespace RK.Common.Host
 
 #region TCP
 
-        private void TCPClientConnected(TCPClientEx tcpClient)
-        {
-        }
+        private void TCPClientConnected(TCPClientEx tcpClient) { }
 
         private void TCPClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets)
         {
@@ -241,7 +242,7 @@ namespace RK.Common.Host
                 BaseResponse response = ProcessPacket(tcpClient, packet);
                 if (response != null)
                 {
-                    _netServer.SendData(tcpClient, response);
+                    _netServer.SendAll(response);
                 }
             }
         }
