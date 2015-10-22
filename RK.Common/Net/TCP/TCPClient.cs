@@ -162,6 +162,11 @@ namespace RK.Common.Net.TCP
 
         public bool SendData(ITransferable packet, object userData = null)
         {
+            if (_connected == 0)
+            {
+                return false;
+            }
+
             try
             {
                 //Send data

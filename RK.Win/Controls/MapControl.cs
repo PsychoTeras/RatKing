@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -67,20 +69,23 @@ namespace RK.Win.Controls
         private long _sessionToken;
         private Dictionary<int, Player> _players;
         private Dictionary<int, PlayerEx> _playersEx;
+        private ReadOnlyCollection<Player> _playersRo;
 
         private Player _myPlayer;
         private PlayerEx _myPlayerEx;
 
         private Thread _threadWorld;
+        private Thread _threadRenderer;
         private Thread _threadObjectChanged;
 
-        private Thread _threadRenderer;
         private DateTime _lastFrameRenderTime;
         private volatile bool _somethingChanged;
 
         private byte[] _fpsCounterData;
         private int _fpsCounterArrIdx;
         private Brush _fpsFontBrush;
+
+        private volatile bool _terminating;
 
 #endregion
 
@@ -199,9 +204,9 @@ namespace RK.Win.Controls
         }
 
         [Browsable(false)]
-        public IEnumerable<Player> Players
+        public ReadOnlyCollection<Player> Players
         {
-            get { return _sessionToken != 0 ? _players.Values : null; }
+            get { return _sessionToken != 0 ? _playersRo : null; }
         }
 
         [Browsable(false)]
@@ -296,8 +301,12 @@ namespace RK.Win.Controls
 
                 LoadMap(_host.World.FirstMap);
 
-                _players.Clear();
-                _playersEx.Clear();
+                lock (_players)
+                {
+                    _players.Clear();
+                    _playersEx.Clear();
+                    _playersRo = new ReadOnlyCollection<Player>(new Player[] {});
+                }
 
                 if (_sessionToken != 0)
                 {
@@ -306,6 +315,7 @@ namespace RK.Win.Controls
                         SessionToken = _sessionToken
                     });
                     _tcpClient.Dispose();
+                    _sessionToken = 0;
                 }
 
                 _tcpClient = new TCPClient("192.168.1.114", 15051);
@@ -405,24 +415,23 @@ namespace RK.Win.Controls
 
         public new void Dispose()
         {
-            if (!DesignMode)
+            if (!DesignMode && !IsDisposed)
             {
+                _terminating = true;
+
                 if (_tcpClient != null)
                 {
                     _tcpClient.Dispose();
                 }
-                Application.RemoveMessageFilter(this);
 
-                _threadObjectChanged.Abort();
-                _threadObjectChanged.Join();
-
-                _threadWorld.Abort();
-                _threadWorld.Join();
-
+                _threadObjectChanged.Join(100);
+                _threadWorld.Join(100);
                 _threadRenderer.Abort();
-                _threadRenderer.Join();
+                _threadRenderer.Join(100);
 
                 DestroyGraphics();
+
+                Application.RemoveMessageFilter(this);
             }
             base.Dispose();
         }
@@ -852,7 +861,7 @@ namespace RK.Win.Controls
 
         private void WorldProcessingProc()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (!_terminating && !IsDisposed)
             {
                 UpdatePlayersPosition();
                 Thread.Sleep(1);
@@ -861,9 +870,8 @@ namespace RK.Win.Controls
 
         private void ObjectChangedProc()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (!_terminating && !IsDisposed)
             {
-
                 if (_somethingChanged && ObjectChanged != null)
                 {
                     ObjectChanged(this);
@@ -877,32 +885,30 @@ namespace RK.Win.Controls
 
 #region Renderer
 
-        private void CheckMyPlayerPosition()
-        {
-            if (_myPlayer != null && _myPlayerEx.NeedUpdatePosition)
-            {
-                _myPlayerEx.NeedUpdatePosition = false;
-                CheckMyPlayerRotation();
-                UpdateScreenPosByPlayerPos(_myPlayer);
-            }
-        }
-
         private void RendererProc()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (!_terminating && !IsDisposed)
             {
                 DateTime prewFrameRenderTime = _lastFrameRenderTime;
 
-                Invoke(new Action(() =>
+                try
                 {
-                    CheckMyPlayerPosition();
-                    Repaint();
-                }));
+                    Invoke(new Action(() =>
+                    {
+                        CheckMyPlayerPosition();
+                        Repaint();
+                    }));
+                }
+                catch
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
 
                 _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
                     ? _fpsCounterArrIdx + 1
                     : 0;
-                _fpsCounterData[_fpsCounterArrIdx] = (byte)_lastFrameRenderTime.
+                _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
                     Subtract(prewFrameRenderTime).TotalMilliseconds;
 
                 Thread.Sleep(5);
@@ -1024,6 +1030,16 @@ namespace RK.Win.Controls
             }
         }
 
+        private void CheckMyPlayerPosition()
+        {
+            if (_myPlayer != null && _myPlayerEx.NeedUpdatePosition)
+            {
+                _myPlayerEx.NeedUpdatePosition = false;
+                CheckMyPlayerRotation();
+                UpdateScreenPosByPlayerPos(_myPlayer);
+            }
+        }
+
         private void DrawFps()
         {
             int sum = 0;
@@ -1031,8 +1047,8 @@ namespace RK.Win.Controls
             {
                 sum += rec;
             }
-            int avg = sum/_fpsCounterData.Length;
-            int curFps = (int) Math.Ceiling(1000f/avg);
+            int avg = sum / _fpsCounterData.Length;
+            int curFps = (int)Math.Ceiling(1000f / avg);
             string fps = string.Format("{0} FPS", curFps);
             _buffer.DrawString(fps, Font, _fpsFontBrush, 10, 10);
         }
@@ -1189,7 +1205,7 @@ namespace RK.Win.Controls
 
         private void DoScrollToPos()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (!_terminating && !IsDisposed)
             {
                 lock (_syncScroll)
                 {
@@ -1301,6 +1317,7 @@ namespace RK.Win.Controls
                         }
                         _myPlayer = _players[userEnter.MyPlayerId];
                         _myPlayerEx = _playersEx[userEnter.MyPlayerId];
+                        _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
                     }
                     CenterTo((int) (_myPlayer.Position.X*_scaleFactor),
                              (int) (_myPlayer.Position.Y*_scaleFactor),
@@ -1316,6 +1333,7 @@ namespace RK.Win.Controls
                         {
                             _players.Add(playerEnter.Player.Id, playerEnter.Player);
                             _playersEx.Add(playerEnter.Player.Id, new PlayerEx(playerEnter.Player));
+                            _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
                             _somethingChanged = true;
                         }
                     }
@@ -1330,6 +1348,7 @@ namespace RK.Win.Controls
                         {
                             _players.Remove(playerExit.PlayerId);
                             _playersEx.Remove(playerExit.PlayerId);
+                            _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
                             _somethingChanged = true;
                         }
                     }
@@ -1365,7 +1384,10 @@ namespace RK.Win.Controls
 
         private void TCPClientDataSend(BasePacket packet)
         {
-            _tcpClient.SendData(packet);
+            if (_sessionToken != 0 || packet.Type == PacketType.UserLogin)
+            {
+                _tcpClient.SendData(packet);
+            }
         }
 
         private void TCPClientDataReceived(IList<BaseResponse> packets)

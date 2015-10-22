@@ -308,6 +308,11 @@ namespace RK.Common.Net.TCP
 
         public bool SendData(TCPClientEx tcpClient, ITransferable packet, object userData = null)
         {
+            if (!tcpClient.Connected)
+            {
+                return false;
+            }
+
             try
             {
                 //Send data

@@ -248,9 +248,7 @@ namespace RK.Win.Forms
         private void FrmMainFormClosing(object sender, FormClosingEventArgs e)
         {
             mapCtrl.Dispose();
-            mapCtrl = null;
             miniMapCtrl.Dispose();
-            miniMapCtrl = null;
             _host.Dispose();
         }
 

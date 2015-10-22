@@ -35,6 +35,8 @@ namespace RK.Win.Controls
 
         private Point? _mousePos;
         private bool _dragScroll;
+
+        private volatile bool _terminating;
         
 #endregion
 
@@ -222,7 +224,7 @@ namespace RK.Win.Controls
 
         private void RendererProc()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (!_terminating && !IsDisposed)
             {
                 if (_needRepaint)
                 {
@@ -354,8 +356,9 @@ namespace RK.Win.Controls
 
         public new void Dispose()
         {
-            if (!DesignMode)
+            if (!DesignMode && !IsDisposed)
             {
+                _terminating = true;
                 _threadRenderer.Abort();
                 _threadRenderer.Join();
                 DestroyGraphics();
