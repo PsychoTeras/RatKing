@@ -7,10 +7,16 @@ namespace RK.Common.Win32
 {
     public unsafe static class Serializer
     {
+        public static int Length(byte[] data)
+        {
+            const int iSize = sizeof(int);
+            return data != null ? iSize + data.Length : iSize;
+        }
+
         public static int Length(string str)
         {
-            const int sSize = sizeof(short);
-            short strLen = (short)(str == null ? -1 : str.Length * sizeof(char));
+            const int sSize = sizeof(int);
+            int strLen = str == null ? -1 : str.Length * sizeof(char);
             return strLen > 0 ? sSize + strLen : sSize;
         }
 
@@ -25,7 +31,7 @@ namespace RK.Common.Win32
             where T : ISerializable
         {
             const int iSize = sizeof(int);
-            int elsCount = (short)(collection == null ? -1 : collection.Count), elsSize = 0;
+            int elsCount = collection == null ? -1 : collection.Count, elsSize = 0;
             for (int i = 0; i < elsCount; i++)
             {
                 elsSize += collection[i].SizeOf();
@@ -55,6 +61,12 @@ namespace RK.Common.Win32
         {
             val = *(ushort*)&bData[pos];
             pos += sizeof(ushort);
+        }
+
+        public static void Read(byte* bData, out byte val, ref int pos)
+        {
+            val = *&bData[pos];
+            pos += sizeof(byte);
         }
 
         public static void Read(byte* bData, out float val, ref int pos)
@@ -87,10 +99,27 @@ namespace RK.Common.Win32
             pos += sizeof(Direction);
         }
 
+        public static void Read(byte* bData, out byte[] data, ref int pos)
+        {
+            int size = *(int*)&bData[pos];
+            pos += sizeof(int);
+            if (size == -1)
+                data = null;
+            else
+            {
+                data = new byte[size];
+                if (size > 0)
+                {
+                    fixed (byte* d = data) Memory.Copy(&bData[pos], d, size);
+                }
+                pos += size;
+            }
+        }
+
         public static void Read(byte* bData, out string str, ref int pos)
         {
-            short strLen = *(short*)&bData[pos];
-            pos += sizeof(short);
+            int strLen = *(int*)&bData[pos];
+            pos += sizeof(int);
             if (strLen == -1)
                 str = null;
             else if (strLen == 0)
@@ -159,6 +188,12 @@ namespace RK.Common.Win32
             pos += sizeof(ushort);
         }
 
+        public static void Write(byte* bData, byte val, ref int pos)
+        {
+            *&bData[pos] = val;
+            pos += sizeof(byte);
+        }
+
         public static void Write(byte* bData, float val, ref int pos)
         {
             (*(float*)&bData[pos]) = val;
@@ -189,17 +224,26 @@ namespace RK.Common.Win32
             pos += sizeof(Direction);
         }
 
+        public static void Write(byte* bData, byte[] data, ref int pos)
+        {
+            int size = data == null ? -1 : data.Length;
+            (*(int*)&bData[pos]) = size;
+            pos += sizeof(int);
+            if (size > 0)
+            {
+                fixed (byte* d = data) Memory.Copy(d, &bData[pos], size);
+                pos += size;
+            }
+        }
+
         public static void Write(byte* bData, string str, ref int pos)
         {
-            short strLen = (short)(str == null ? -1 : str.Length * sizeof(char));
-            (*(short*)&bData[pos]) = strLen;
-            pos += sizeof(short);
+            int strLen = str == null ? -1 : str.Length * sizeof(char);
+            (*(int*)&bData[pos]) = strLen;
+            pos += sizeof(int);
             if (strLen > 0)
             {
-                fixed (char* c = str)
-                {
-                    Memory.Copy(&bData[pos], c, strLen);
-                }
+                fixed (char* c = str) Memory.Copy(&bData[pos], c, strLen);
                 pos += strLen;
             }
         }
