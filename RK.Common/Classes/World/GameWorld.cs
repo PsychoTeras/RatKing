@@ -153,7 +153,7 @@ namespace RK.Common.Classes.World
                     if (p.MapId == player.MapId &&
                         p.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE_SIZE))
                     {
-                        players.Add(player);
+                        players.Add(p);
                     }
                 }
                 return players;

@@ -92,64 +92,6 @@ namespace RK.Win.Forms
             return direction;
         }
 
-        private void FrmMainPreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {
-            Direction direction = Direction.None;
-
-            switch (e.KeyCode)
-            {
-                case Keys.W:
-                case Keys.S:
-                case Keys.A:
-                case Keys.D:
-                    if (tcMain.SelectedTab == tpMap)
-                        direction = GetPlayerMoveDirection();
-                    break;
-                case Keys.C:
-                    if (tcMain.SelectedTab == tpMap)
-                        mapCtrl.CenterPlayer();
-                    break;
-                case Keys.Space:
-                {
-                    if (tcMain.SelectedTab == tpLabyrinthGenerator)
-                    {
-                        BtnGenerateLabyrinthClick(null, null);
-                    }
-                    if (tcMain.SelectedTab == tpMap)
-                    {
-                        BtnLoadLabyrinthClick(null, null);
-                    }
-                    break;
-                }
-            }
-
-            if (tcMain.SelectedTab == tpMap)
-            {
-                mapCtrl.PlayerMove(direction);
-            }
-        }
-
-        private void FrmMainKeyUp(object sender, KeyEventArgs e)
-        {
-            Direction direction = Direction.None;
-
-            switch (e.KeyCode)
-            {
-                case Keys.W:
-                case Keys.S:
-                case Keys.A:
-                case Keys.D:
-                    if (tcMain.SelectedTab == tpMap)
-                        direction = GetPlayerMoveDirection();
-                    break;
-            }
-
-            if (tcMain.SelectedTab == tpMap)
-            {
-                mapCtrl.PlayerMove(direction);
-            }
-        }
-
         private void MapMouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && ModifierKeys == Keys.Control)
@@ -310,6 +252,64 @@ namespace RK.Win.Forms
             miniMapCtrl.Dispose();
             miniMapCtrl = null;
             _host.Dispose();
+        }
+
+        private void EventsProviderKeyDown(object sender, KeyEventArgs e)
+        {
+            Direction direction = Direction.None;
+
+            switch (e.KeyCode)
+            {
+                case Keys.W:
+                case Keys.S:
+                case Keys.A:
+                case Keys.D:
+                    if (tcMain.SelectedTab == tpMap)
+                        direction = GetPlayerMoveDirection();
+                    break;
+                case Keys.C:
+                    if (tcMain.SelectedTab == tpMap)
+                        mapCtrl.CenterPlayer();
+                    break;
+                case Keys.Space:
+                    {
+                        if (tcMain.SelectedTab == tpLabyrinthGenerator)
+                        {
+                            BtnGenerateLabyrinthClick(null, null);
+                        }
+                        if (tcMain.SelectedTab == tpMap)
+                        {
+                            BtnLoadLabyrinthClick(null, null);
+                        }
+                        break;
+                    }
+            }
+
+            if (tcMain.SelectedTab == tpMap)
+            {
+                mapCtrl.PlayerMove(direction);
+            }
+        }
+
+        private void EventsProviderKeyUp(object sender, KeyEventArgs e)
+        {
+            Direction direction = Direction.None;
+
+            switch (e.KeyCode)
+            {
+                case Keys.W:
+                case Keys.S:
+                case Keys.A:
+                case Keys.D:
+                    if (tcMain.SelectedTab == tpMap)
+                        direction = GetPlayerMoveDirection();
+                    break;
+            }
+
+            if (tcMain.SelectedTab == tpMap)
+            {
+                mapCtrl.PlayerMove(direction);
+            }
         }
     }
 

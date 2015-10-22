@@ -198,11 +198,18 @@ namespace RK.Win.Controls
             {
                 _miniMapBitmap = new Bitmap(Width, Height);
                 _miniMapBitmapBuffer = Graphics.FromImage(_miniMapBitmap);
+                _miniMapBitmapBuffer.InterpolationMode = InterpolationMode.Low;
+                _miniMapBitmapBuffer.SmoothingMode = SmoothingMode.HighSpeed;
+
                 _bufferBitmap = new Bitmap(Width, Height);
+                
                 _buffer = Graphics.FromImage(_bufferBitmap);
                 _buffer.InterpolationMode = InterpolationMode.Low;
                 _buffer.SmoothingMode = SmoothingMode.HighSpeed;
+                
                 _controlGraphics = Graphics.FromHwnd(Handle);
+                _controlGraphics.InterpolationMode = InterpolationMode.Low;
+                _controlGraphics.SmoothingMode = SmoothingMode.HighSpeed;
 
                 if (_threadRenderer == null)
                 {
@@ -222,7 +229,7 @@ namespace RK.Win.Controls
                     _needRepaint = false;
                     Invoke(new Action(Repaint));
                 }
-                Thread.Sleep(1);
+                Thread.Sleep(10);
             }
         }
 
@@ -264,7 +271,7 @@ namespace RK.Win.Controls
                 _buffer.DrawImage(_miniMapBitmap, 0, 0);
                 _buffer.DrawRectangle(_mapWindowPen, x1, y1, w1, h1);
 
-                if (_map.Width > 0 && _map.Height > 0)
+                if (_map.Width > 0 && _map.Height > 0 && _map.Players != null)
                 {
                     foreach (Player player in _map.Players)
                     {

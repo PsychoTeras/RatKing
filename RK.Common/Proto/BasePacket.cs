@@ -94,8 +94,8 @@ namespace RK.Common.Proto
                     return new PUserLogout();
 
                     //Player
-                case PacketType.PlayerEnter:
-                    return new PPlayerEnter();
+                case PacketType.UserEnter:
+                    return new PUserEnter();
                 case PacketType.PlayerMove:
                     return new PPlayerMove();
                 case PacketType.PlayerRotate:

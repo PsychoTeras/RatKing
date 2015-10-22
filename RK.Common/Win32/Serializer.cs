@@ -14,15 +14,21 @@ namespace RK.Common.Win32
             return strLen > 0 ? sSize + strLen : sSize;
         }
 
+        public static int Length(ISerializable obj)
+        {
+            const int bNotNull = sizeof(bool);
+            return obj != null ? bNotNull + obj.SizeOf() : bNotNull;
+        }
+
         // ReSharper disable once PossibleNullReferenceException
-        public static int Length<T>(IList<T> col) 
+        public static int Length<T>(IList<T> collection) 
             where T : ISerializable
         {
             const int iSize = sizeof(int);
-            int elsCount = (short)(col == null ? -1 : col.Count), elsSize = 0;
+            int elsCount = (short)(collection == null ? -1 : collection.Count), elsSize = 0;
             for (int i = 0; i < elsCount; i++)
             {
-                elsSize += col[i].SizeOf();
+                elsSize += collection[i].SizeOf();
             }
             return iSize + elsSize;
         }
@@ -96,21 +102,35 @@ namespace RK.Common.Win32
             }
         }
 
-        public static void Read<T, TC>(byte* bData, out TC col, ref int pos)
+        public static void Read<T>(byte* bData, out T obj, ref int pos)
+            where T : class, ISerializable, new()
+        {
+            bool bNotNull = *(bool*)&bData[pos];
+            pos += sizeof(bool);
+            if (bNotNull)
+            {
+                obj = new T();
+                obj.Deserialize(bData, ref pos);
+            }
+            else
+                obj = null;
+        }
+
+        public static void Read<T, TC>(byte* bData, out TC collection, ref int pos)
             where T : ISerializable, new() where TC: class, IList<T>, new()
         {
             int elsCount = *(int*)&bData[pos];
             pos += sizeof (int);
             if (elsCount == -1)
-                col = null;
+                collection = null;
             else
             {
-                col = new TC();
+                collection = new TC();
                 for (int i = 0; i < elsCount; i++)
                 {
                     T obj = new T();
                     obj.Deserialize(bData, ref pos);
-                    col.Add(obj);
+                    collection.Add(obj);
                 }
             }
         }
@@ -184,16 +204,28 @@ namespace RK.Common.Win32
             }
         }
 
+        public static void Write<T>(byte* bData, T obj, ref int pos)
+            where T : class, ISerializable
+        {
+            bool bNotNull = obj != null;
+            (*(bool*)&bData[pos]) = bNotNull;
+            pos += sizeof(bool);
+            if (bNotNull)
+            {
+                obj.Serialize(bData, ref pos);
+            }
+        }
+
         // ReSharper disable once PossibleNullReferenceException
-        public static void Write<T>(byte* bData, IList<T> col, ref int pos)
+        public static void Write<T>(byte* bData, IList<T> collection, ref int pos)
             where T : ISerializable
         {
-            int elsCount = col == null ? -1 : col.Count;
+            int elsCount = collection == null ? -1 : collection.Count;
             (*(int*)&bData[pos]) = elsCount;
             pos += sizeof(int);
             for (int i = 0; i < elsCount; i++)
             {
-                col[i].Serialize(bData, ref pos);
+                collection[i].Serialize(bData, ref pos);
             }
         }
     }

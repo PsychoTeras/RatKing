@@ -35,7 +35,7 @@ namespace RK.Common.Host
         private List<BaseValidator> _validators;
 
         private Dictionary<long, int> _loggedPlayers;
-        private Dictionary<long, long> _tcpClients;
+        private Dictionary<TCPClientEx, long> _tcpClients;
 
 #endregion
 
@@ -54,18 +54,19 @@ namespace RK.Common.Host
                 _netServer = new TCPServer(15051);
                 _netServer.ClientConnected += TCPClientConnected;
                 _netServer.ClientDataReceived += TCPClientDataReceived;
+                _netServer.ClientDisonnected += TCPClientDisonnected;
                 _netServer.Start();
             }
 
             _loggedPlayers = new Dictionary<long, int>();
-            _tcpClients = new Dictionary<long, long>();
+            _tcpClients = new Dictionary<TCPClientEx, long>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
             {
                 {PacketType.UserLogin, Login},
+                {PacketType.UserEnter, Enter},
                 {PacketType.UserLogout, Logout},
 
-                {PacketType.PlayerEnter, PlayerEnter},
                 {PacketType.PlayerRotate, PlayerRotate},
                 {PacketType.PlayerMove, PlayerMove},
             };
@@ -96,63 +97,77 @@ namespace RK.Common.Host
 
         private BaseResponse Login(TCPClientEx tcpClient, BasePacket packet)
         {
-            lock (_loggedPlayers)
+            PUserLogin pUserLogin = (PUserLogin) packet;
+
+            User user = new User(pUserLogin.UserName, pUserLogin.Password);
+            pUserLogin.SessionToken = BasePacket.NewSessionToken(user.Id);
+
+            Player player = Player.Create(user.UserName);
+            ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
+            if (!startPoint.HasValue)
             {
-                PUserLogin pUserLogin = (PUserLogin)packet;
+                BaseResponse.Throw("Cannot get start point for player", ECGeneral.ServerError);
+                return null;
+            }
+            player.Position = startPoint.Value.ToPoint(ConstMap.PIXEL_SIZE);
 
-                User user = new User(pUserLogin.UserName, pUserLogin.Password);
-                pUserLogin.SessionToken = BasePacket.NewSessionToken(user.Id);
+            World.PlayerAdd(pUserLogin.SessionToken, player);
 
-                Player player = Player.Create(user.UserName);
-                ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
-                if (!startPoint.HasValue)
-                {
-                    BaseResponse.Throw("Cannot get start point for player", ECGeneral.ServerError);
-                    return null;
-                }
-                player.Position = startPoint.Value.ToPoint(ConstMap.PIXEL_SIZE);
-
-                World.PlayerAdd(pUserLogin.SessionToken, player);
-
+            lock (_loggedPlayers) lock (_tcpClients)
+            {
                 _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
-                _tcpClients.Add(pUserLogin.SessionToken, tcpClient.Id);
-
+                _tcpClients.Add(tcpClient, pUserLogin.SessionToken);
                 return new RUserLogin(pUserLogin);
             }
         }
 
-        private BaseResponse Logout(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse Enter(TCPClientEx tcpClient, BasePacket packet)
         {
-            lock (_loggedPlayers)
-            {
-                if (!_loggedPlayers.ContainsKey(packet.SessionToken))
-                {
-                    ThrowSessionError(packet.Type, packet.SessionToken);
-                }
-                _loggedPlayers.Remove(packet.SessionToken);
-                World.PlayerRemove(packet.SessionToken);
-            }
-            return BaseResponse.Successful(packet);
-        }
+            PUserEnter pUserEnter = (PUserEnter)packet;
 
-#endregion
-
-#region Player methods
-
-        private BaseResponse PlayerEnter(TCPClientEx tcpClient, BasePacket packet)
-        {
-            PPlayerEnter pPlayerEnter = (PPlayerEnter) packet;
-
-            Player player = World.PlayerGet(pPlayerEnter.SessionToken);
+            Player player = World.PlayerGet(pUserEnter.SessionToken);
             if (player == null)
             {
                 ThrowSessionError(packet.Type, packet.SessionToken);
                 return null;
             }
 
+            SendResponse(new RPlayerEnter(player));
+
             List<Player> playersOnLocation = World.PlayersGetNearest(player);
-            return new RPlayerEnter(player.Id, playersOnLocation, pPlayerEnter);
+            return new RUserEnter(player.Id, playersOnLocation, pUserEnter);
         }
+
+        private BaseResponse Logout(TCPClientEx tcpClient, BasePacket packet)
+        {
+            return Logout(tcpClient, packet.SessionToken);
+        }
+
+        private BaseResponse Logout(TCPClientEx tcpClient, long sessionToken)
+        {
+            lock (_loggedPlayers)
+            {
+                int playerId;
+                if (_loggedPlayers.TryGetValue(sessionToken, out playerId))
+                {
+                    _loggedPlayers.Remove(sessionToken);
+
+                    lock (_tcpClients)
+                    {
+                        _tcpClients.Remove(tcpClient);
+                    }
+
+                    World.PlayerRemove(sessionToken);
+
+                    SendResponse(new RPlayerExit(playerId));
+                }
+            }
+            return null;
+        }
+
+#endregion
+
+#region Player methods
 
         private BaseResponse PlayerRotate(TCPClientEx tcpClient, BasePacket packet)
         {
@@ -167,7 +182,6 @@ namespace RK.Common.Host
             if (player.Angle != pPlayerRotate.Angle)
             {
                 player.Angle = pPlayerRotate.Angle;
-
                 return new RPlayerRotate(player.Id, pPlayerRotate);
             }
 
@@ -189,7 +203,6 @@ namespace RK.Common.Host
             {
                 player.Position = new Point(pPlayerMove.X, pPlayerMove.Y);
                 player.Direction = pPlayerMove.D;
-
                 return new RPlayerMove(player.Id, pPlayerMove);
             }
 
@@ -226,7 +239,10 @@ namespace RK.Common.Host
 
         public void Dispose()
         {
-            _netServer.Dispose();
+            if (_netServer != null)
+            {
+                _netServer.Dispose();
+            }
         }
 
 #endregion
@@ -235,6 +251,30 @@ namespace RK.Common.Host
 
         private void TCPClientConnected(TCPClientEx tcpClient) { }
 
+        private void TCPClientDisonnected(TCPClientEx tcpClient)
+        {
+            lock (_tcpClients)
+            {
+                long sessionToken;
+                if (_tcpClients.TryGetValue(tcpClient, out sessionToken))
+                {
+                    Logout(tcpClient, sessionToken);
+                }
+            }
+        }
+
+        private void SendResponse(BaseResponse response, TCPClientEx tcpClient = null)
+        {
+            if (response.Private)
+            {
+                _netServer.SendData(tcpClient, response);
+            }
+            else
+            {
+                _netServer.SendAll(response);
+            }
+        }
+
         private void TCPClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets)
         {
             foreach (BasePacket packet in packets)
@@ -242,7 +282,7 @@ namespace RK.Common.Host
                 BaseResponse response = ProcessPacket(tcpClient, packet);
                 if (response != null)
                 {
-                    _netServer.SendAll(response);
+                    SendResponse(response, tcpClient);
                 }
             }
         }

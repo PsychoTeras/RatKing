@@ -69,9 +69,14 @@ namespace RK.Win.Controls
         private Dictionary<int, PlayerEx> _playersEx;
 
         private Player _myPlayer;
+        private PlayerEx _myPlayerEx;
+
+        private Thread _threadWorld;
+        private Thread _threadObjectChanged;
 
         private Thread _threadRenderer;
         private DateTime _lastFrameRenderTime;
+        private volatile bool _somethingChanged;
 
         private byte[] _fpsCounterData;
         private int _fpsCounterArrIdx;
@@ -188,10 +193,6 @@ namespace RK.Win.Controls
             get { return _host; }
             set
             {
-                if (_host != null)
-                {
-                    _tcpClient.Dispose();
-                }
                 _host = value;
                 ConnectToHost();
             }
@@ -293,10 +294,10 @@ namespace RK.Win.Controls
                     _host.World.LoadMap();
                 }
 
-                _tcpClient = new TCPClient("192.168.1.114", 15051);
-                _tcpClient.Connect();
+                LoadMap(_host.World.FirstMap);
 
-                _tcpClient.DataReceived += TCPClientDataReceived;
+                _players.Clear();
+                _playersEx.Clear();
 
                 if (_sessionToken != 0)
                 {
@@ -304,12 +305,12 @@ namespace RK.Win.Controls
                     {
                         SessionToken = _sessionToken
                     });
+                    _tcpClient.Dispose();
                 }
 
-                LoadMap(_host.World.FirstMap);
-
-                _players.Clear();
-                _playersEx.Clear();
+                _tcpClient = new TCPClient("192.168.1.114", 15051);
+                _tcpClient.DataReceived += TCPClientDataReceived;
+                _tcpClient.Connect();
 
                 TCPClientDataSend(new PUserLogin
                 {
@@ -333,6 +334,14 @@ namespace RK.Win.Controls
 
             _players = new Dictionary<int, Player>();
             _playersEx = new Dictionary<int, PlayerEx>();
+
+            _threadWorld = new Thread(WorldProcessingProc);
+            _threadWorld.IsBackground = true;
+            _threadWorld.Start();
+
+            _threadObjectChanged = new Thread(ObjectChangedProc);
+            _threadObjectChanged.IsBackground = true;
+            _threadObjectChanged.Start();
         }
 
         private void OnScaleFactorChanged()
@@ -384,37 +393,14 @@ namespace RK.Win.Controls
             return false;
         }
 
-        private void CheckMyPlayerRotate()
-        {
-            if (_myPlayer != null)
-            {
-                float pSizeWh = _myPlayer.Size.Width * _scaleFactor / 2;
-                float pSizeHh = _myPlayer.Size.Height * _scaleFactor / 2;
-
-                Point mouseLocation = PointToClient(Cursor.Position);
-                Point p1 = new Point((int)(_myPlayer.Position.X * _scaleFactor + pSizeWh),
-                                     (int)(_myPlayer.Position.Y * _scaleFactor + pSizeHh));
-                Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
-                float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
-                if (angle != _myPlayer.Angle)
-                {
-                    TCPClientDataSend(new PPlayerRotate
-                    {
-                        SessionToken = _sessionToken,
-                        Angle = angle
-                    });
-                }
-            }
-        }
-
         private void MapControlMouseMove(object sender, MouseEventArgs e)
         {
-            CheckMyPlayerRotate();
+            CheckMyPlayerRotation();
         }
 
         private void MapControlMouseWheel(object sender, int delta)
         {
-            CheckMyPlayerRotate();
+            CheckMyPlayerRotation();
         }
 
         public new void Dispose()
@@ -426,8 +412,16 @@ namespace RK.Win.Controls
                     _tcpClient.Dispose();
                 }
                 Application.RemoveMessageFilter(this);
+
+                _threadObjectChanged.Abort();
+                _threadObjectChanged.Join();
+
+                _threadWorld.Abort();
+                _threadWorld.Join();
+
                 _threadRenderer.Abort();
                 _threadRenderer.Join();
+
                 DestroyGraphics();
             }
             base.Dispose();
@@ -435,14 +429,20 @@ namespace RK.Win.Controls
 
 #endregion
 
-#region Renderer
+#region World
 
         private int CalculatePlayerTraveledDistance(Player player, PlayerEx playerEx)
         {
             double moveTimeElapsed = DateTime.Now.Subtract(playerEx.MovingStartTime).
                 TotalMilliseconds;
-            playerEx.MovingStartTime = DateTime.Now;
-            return (int)Math.Ceiling(moveTimeElapsed / player.Speed);
+            float fDistance = ((float)moveTimeElapsed / player.Speed) + playerEx.MovingDistanceRest;
+            int traveled = (int)Math.Floor(fDistance);
+            if (traveled > 0)
+            {
+                playerEx.MovingDistanceRest = fDistance - traveled;
+                playerEx.MovingStartTime = DateTime.Now;
+            }
+            return traveled;
         }
 
         private Point CalculateNewPlayerPos(Player player, PlayerEx playerEx, int traveled)
@@ -541,293 +541,349 @@ namespace RK.Win.Controls
             switch (player.Direction)
             {
                 case Direction.N:
-                {
-                    for (int y = cellTs; y >= cellTe; y--)
                     {
-                        if (y < 0 || y >= mapHeight || stop) break;
-                        for (int x = cellL; x <= cellR; x++)
+                        for (int y = cellTs; y >= cellTe; y--)
                         {
-                            if (x < 0 || x >= mapWidth) continue;
-                            if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
+                            if (y < 0 || y >= mapHeight || stop) break;
+                            for (int x = cellL; x <= cellR; x++)
                             {
-                                newPos.Y = y*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                stop = true;
-                                break;
+                                if (x < 0 || x >= mapWidth) continue;
+                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                {
+                                    newPos.Y = y * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                    stop = true;
+                                    break;
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.NW:
-                {
-                    int tTotalDist = cellTs - cellTe;
-                    int lTotalDist = cellLs - cellLe;
-                    int maxTotalDist = Math.Max(tTotalDist, lTotalDist);
-
-                    for (int i = 1; i <= maxTotalDist; i++)
                     {
-                        if (xStop && yStop) break;
+                        int tTotalDist = cellTs - cellTe;
+                        int lTotalDist = cellLs - cellLe;
+                        int maxTotalDist = Math.Max(tTotalDist, lTotalDist);
 
-                        cellT--; cellB--; cellL--; cellR--;
-
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int i = 1; i <= maxTotalDist; i++)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
+                            if (xStop && yStop) break;
 
-                            //Y
-                            if (y == cellT && i <= tTotalDist)
+                            cellT--; cellB--; cellL--; cellR--;
+
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                for (int x = cellL; x <= cellR; x++)
+                                if (y < 0 || y >= mapHeight) continue;
+
+                                //Y
+                                if (y == cellT && i <= tTotalDist)
                                 {
-                                    if (x < 0 || x >= mapWidth) continue;
-                                    if (!yStop && (*_map[(ushort) (x + 1), (ushort) cellT]).Type != TileType.Nothing)
+                                    for (int x = cellL; x <= cellR; x++)
                                     {
-                                        newPos.Y = cellT*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                        yStop = true;
-                                        break;
+                                        if (x < 0 || x >= mapWidth) continue;
+                                        if (!yStop && (*_map[(ushort)(x + 1), (ushort)cellT]).Type != TileType.Nothing)
+                                        {
+                                            newPos.Y = cellT * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                            yStop = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            //X
-                            if (!xStop && i <= lTotalDist &&
-                                (*_map[(ushort) cellL, (ushort) (y + 1)]).Type != TileType.Nothing)
-                            {
-                                newPos.X = cellL*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                xStop = true;
-                                break;
-                            }
+                                //X
+                                if (!xStop && i <= lTotalDist &&
+                                    (*_map[(ushort)cellL, (ushort)(y + 1)]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = cellL * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                    xStop = true;
+                                    break;
+                                }
 
-                            if (xStop && yStop) break;
+                                if (xStop && yStop) break;
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.NE:
-                {
-                    int tTotalDist = cellTs - cellTe;
-                    int rTotalDist = cellRe - cellRs;
-                    int maxTotalDist = Math.Max(tTotalDist, rTotalDist);
-
-                    for (int i = 1; i <= maxTotalDist; i++)
                     {
-                        if (xStop && yStop) break;
+                        int tTotalDist = cellTs - cellTe;
+                        int rTotalDist = cellRe - cellRs;
+                        int maxTotalDist = Math.Max(tTotalDist, rTotalDist);
 
-                        cellT--; cellB--; cellL++; cellR++;
-
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int i = 1; i <= maxTotalDist; i++)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
+                            if (xStop && yStop) break;
 
-                            //Y
-                            if (y == cellT && i <= tTotalDist)
+                            cellT--; cellB--; cellL++; cellR++;
+
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                for (int x = cellL; x <= cellR; x++)
+                                if (y < 0 || y >= mapHeight) continue;
+
+                                //Y
+                                if (y == cellT && i <= tTotalDist)
                                 {
-                                    if (x < 0 || x >= mapWidth) continue;
-                                    if (!yStop && (*_map[(ushort) (x - 1), (ushort) cellT]).Type != TileType.Nothing)
+                                    for (int x = cellL; x <= cellR; x++)
                                     {
-                                        newPos.Y = cellT*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                        yStop = true;
-                                        break;
+                                        if (x < 0 || x >= mapWidth) continue;
+                                        if (!yStop && (*_map[(ushort)(x - 1), (ushort)cellT]).Type != TileType.Nothing)
+                                        {
+                                            newPos.Y = cellT * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                            yStop = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            //X
-                            if (!xStop && i <= rTotalDist &&
-                                (*_map[(ushort) cellR, (ushort) (y + 1)]).Type != TileType.Nothing)
-                            {
-                                newPos.X = cellR*ConstMap.PIXEL_SIZE - size.Width;
-                                xStop = true;
-                                break;
-                            }
+                                //X
+                                if (!xStop && i <= rTotalDist &&
+                                    (*_map[(ushort)cellR, (ushort)(y + 1)]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = cellR * ConstMap.PIXEL_SIZE - size.Width;
+                                    xStop = true;
+                                    break;
+                                }
 
-                            if (xStop && yStop) break;
+                                if (xStop && yStop) break;
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.S:
-                {
-                    for (int y = cellBs; y <= cellBe; y++)
                     {
-                        if (y < 0 || y >= mapHeight || stop) break;
-                        for (int x = cellL; x <= cellR; x++)
+                        for (int y = cellBs; y <= cellBe; y++)
                         {
-                            if (x < 0 || x >= mapWidth) continue;
-                            if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
+                            if (y < 0 || y >= mapHeight || stop) break;
+                            for (int x = cellL; x <= cellR; x++)
                             {
-                                newPos.Y = y*ConstMap.PIXEL_SIZE - size.Height;
-                                stop = true;
-                                break;
+                                if (x < 0 || x >= mapWidth) continue;
+                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                {
+                                    newPos.Y = y * ConstMap.PIXEL_SIZE - size.Height;
+                                    stop = true;
+                                    break;
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.SW:
-                {
-                    int bTotalDist = cellBe - cellBs;
-                    int lTotalDist = cellLs - cellLe;
-                    int maxTotalDist = Math.Max(bTotalDist, lTotalDist);
-
-                    for (int i = 1; i <= maxTotalDist; i++)
                     {
-                        if (xStop && yStop) break;
+                        int bTotalDist = cellBe - cellBs;
+                        int lTotalDist = cellLs - cellLe;
+                        int maxTotalDist = Math.Max(bTotalDist, lTotalDist);
 
-                        cellT++; cellB++; cellL--; cellR--;
-
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int i = 1; i <= maxTotalDist; i++)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
+                            if (xStop && yStop) break;
 
-                            //Y
-                            if (y == cellT && i <= bTotalDist)
+                            cellT++; cellB++; cellL--; cellR--;
+
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                for (int x = cellL; x <= cellR; x++)
+                                if (y < 0 || y >= mapHeight) continue;
+
+                                //Y
+                                if (y == cellT && i <= bTotalDist)
                                 {
-                                    if (x < 0 || x >= mapWidth) continue;
-                                    if (!yStop && (*_map[(ushort) (x + 1), (ushort) cellB]).Type != TileType.Nothing)
+                                    for (int x = cellL; x <= cellR; x++)
                                     {
-                                        newPos.Y = cellB*ConstMap.PIXEL_SIZE - size.Height;
-                                        yStop = true;
-                                        break;
+                                        if (x < 0 || x >= mapWidth) continue;
+                                        if (!yStop && (*_map[(ushort)(x + 1), (ushort)cellB]).Type != TileType.Nothing)
+                                        {
+                                            newPos.Y = cellB * ConstMap.PIXEL_SIZE - size.Height;
+                                            yStop = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            //X
-                            if (!xStop && i <= lTotalDist &&
-                                (*_map[(ushort) cellL, (ushort) (y - 1)]).Type != TileType.Nothing)
-                            {
-                                newPos.X = cellL*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                xStop = true;
-                                break;
-                            }
+                                //X
+                                if (!xStop && i <= lTotalDist &&
+                                    (*_map[(ushort)cellL, (ushort)(y - 1)]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = cellL * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                    xStop = true;
+                                    break;
+                                }
 
-                            if (xStop && yStop) break;
+                                if (xStop && yStop) break;
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.SE:
-                {
-                    int bTotalDist = cellBe - cellBs;
-                    int rTotalDist = cellRe - cellRs;
-                    int maxTotalDist = Math.Max(bTotalDist, rTotalDist);
-
-                    for (int i = 1; i <= maxTotalDist; i++)
                     {
-                        if (xStop && yStop) break;
+                        int bTotalDist = cellBe - cellBs;
+                        int rTotalDist = cellRe - cellRs;
+                        int maxTotalDist = Math.Max(bTotalDist, rTotalDist);
 
-                        cellT++; cellB++; cellL++; cellR++;
-
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int i = 1; i <= maxTotalDist; i++)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
+                            if (xStop && yStop) break;
 
-                            //Y
-                            if (y == cellT && i <= bTotalDist)
+                            cellT++; cellB++; cellL++; cellR++;
+
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                for (int x = cellL; x <= cellR; x++)
+                                if (y < 0 || y >= mapHeight) continue;
+
+                                //Y
+                                if (y == cellT && i <= bTotalDist)
                                 {
-                                    if (x < 0 || x >= mapWidth) continue;
-                                    if (!yStop && (*_map[(ushort) (x - 1), (ushort) cellB]).Type != TileType.Nothing)
+                                    for (int x = cellL; x <= cellR; x++)
                                     {
-                                        newPos.Y = cellB*ConstMap.PIXEL_SIZE - size.Height;
-                                        yStop = true;
-                                        break;
+                                        if (x < 0 || x >= mapWidth) continue;
+                                        if (!yStop && (*_map[(ushort)(x - 1), (ushort)cellB]).Type != TileType.Nothing)
+                                        {
+                                            newPos.Y = cellB * ConstMap.PIXEL_SIZE - size.Height;
+                                            yStop = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            //X
-                            if (!xStop && i <= rTotalDist &&
-                                (*_map[(ushort) cellR, (ushort) (y - 1)]).Type != TileType.Nothing)
-                            {
-                                newPos.X = cellR*ConstMap.PIXEL_SIZE - size.Width;
-                                xStop = true;
-                                break;
-                            }
+                                //X
+                                if (!xStop && i <= rTotalDist &&
+                                    (*_map[(ushort)cellR, (ushort)(y - 1)]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = cellR * ConstMap.PIXEL_SIZE - size.Width;
+                                    xStop = true;
+                                    break;
+                                }
 
-                            if (xStop && yStop) break;
+                                if (xStop && yStop) break;
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.W:
-                {
-                    for (int x = cellLs; x >= cellLe; x--)
                     {
-                        if (x < 0 || x >= mapWidth || stop) break;
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int x = cellLs; x >= cellLe; x--)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
-                            if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
+                            if (x < 0 || x >= mapWidth || stop) break;
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                newPos.X = x*ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
-                                stop = true;
-                                break;
+                                if (y < 0 || y >= mapHeight) continue;
+                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = x * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
+                                    stop = true;
+                                    break;
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
                 case Direction.E:
-                {
-                    for (int x = cellRs; x <= cellRe; x++)
                     {
-                        if (x < 0 || x >= mapWidth || stop) break;
-                        for (int y = cellT; y <= cellB; y++)
+                        for (int x = cellRs; x <= cellRe; x++)
                         {
-                            if (y < 0 || y >= mapHeight) continue;
-                            if ((*_map[(ushort) x, (ushort) y]).Type != TileType.Nothing)
+                            if (x < 0 || x >= mapWidth || stop) break;
+                            for (int y = cellT; y <= cellB; y++)
                             {
-                                newPos.X = x*ConstMap.PIXEL_SIZE - size.Width;
-                                stop = true;
-                                break;
+                                if (y < 0 || y >= mapHeight) continue;
+                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                {
+                                    newPos.X = x * ConstMap.PIXEL_SIZE - size.Width;
+                                    stop = true;
+                                    break;
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
             }
         }
 
         private void UpdatePlayersPosition()
         {
-            foreach (int playerId in _players.Keys)
+            lock (_players)
             {
-                Player player = _players[playerId];
-                if (player.Direction == Direction.None)
+                foreach (int playerId in _players.Keys)
                 {
-                    continue;
-                }
-
-                PlayerEx playerEx = _playersEx[playerId];
-                
-                int traveled = CalculatePlayerTraveledDistance(player, playerEx);
-                
-                Point newPos = CalculateNewPlayerPos(player, playerEx, traveled);
-                
-                if (player.Id == _myPlayer.Id)
-                {
-                    PlayerPosProcessCollision(player, ref newPos);
-                }
-                
-                if (player.Position != newPos)
-                {
-                    player.Position = newPos;
-                    if (player.Id == _myPlayer.Id)
+                    Player player = _players[playerId];
+                    if (player.Direction == Direction.None)
                     {
-                        UpdateScreenPosByPlayerPos(player);
-
-                        Invoke(new Action(CheckMyPlayerRotate));
+                        continue;
                     }
 
-                    ThreadPool.QueueUserWorkItem(o => ObjectChanged(this));
+                    PlayerEx playerEx = _playersEx[playerId];
+
+                    int traveled = CalculatePlayerTraveledDistance(player, playerEx);
+
+                    Point newPos = CalculateNewPlayerPos(player, playerEx, traveled);
+
+                    if (player.Id == _myPlayer.Id)
+                    {
+                        PlayerPosProcessCollision(player, ref newPos);
+                    }
+
+                    if (player.Position != newPos)
+                    {
+                        player.Position = newPos;
+                        _somethingChanged = playerEx.NeedUpdatePosition = true;
+                    }
                 }
+            }
+        }
+
+        private void CheckMyPlayerRotation()
+        {
+            if (_myPlayer != null)
+            {
+                float pSizeWh = _myPlayer.Size.Width * _scaleFactor / 2;
+                float pSizeHh = _myPlayer.Size.Height * _scaleFactor / 2;
+
+                Point mouseLocation = PointToClient(Cursor.Position);
+                Point p1 = new Point((int)(_myPlayer.Position.X * _scaleFactor + pSizeWh),
+                                     (int)(_myPlayer.Position.Y * _scaleFactor + pSizeHh));
+                Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
+                float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
+                if (angle != _myPlayer.Angle)
+                {
+                    TCPClientDataSend(new PPlayerRotate
+                    {
+                        SessionToken = _sessionToken,
+                        Angle = angle
+                    });
+                }
+            }
+        }
+
+        private void WorldProcessingProc()
+        {
+            while (Thread.CurrentThread.IsAlive)
+            {
+                UpdatePlayersPosition();
+                Thread.Sleep(1);
+            }
+        }
+
+        private void ObjectChangedProc()
+        {
+            while (Thread.CurrentThread.IsAlive)
+            {
+
+                if (_somethingChanged && ObjectChanged != null)
+                {
+                    ObjectChanged(this);
+                }
+                _somethingChanged = false;
+                Thread.Sleep(1);
+            }
+        }
+
+#endregion
+
+#region Renderer
+
+        private void CheckMyPlayerPosition()
+        {
+            if (_myPlayer != null && _myPlayerEx.NeedUpdatePosition)
+            {
+                _myPlayerEx.NeedUpdatePosition = false;
+                CheckMyPlayerRotation();
+                UpdateScreenPosByPlayerPos(_myPlayer);
             }
         }
 
@@ -837,9 +893,11 @@ namespace RK.Win.Controls
             {
                 DateTime prewFrameRenderTime = _lastFrameRenderTime;
 
-                UpdatePlayersPosition();
-
-                Invoke(new Action(Repaint));
+                Invoke(new Action(() =>
+                {
+                    CheckMyPlayerPosition();
+                    Repaint();
+                }));
 
                 _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
                     ? _fpsCounterArrIdx + 1
@@ -847,7 +905,7 @@ namespace RK.Win.Controls
                 _fpsCounterData[_fpsCounterArrIdx] = (byte)_lastFrameRenderTime.
                     Subtract(prewFrameRenderTime).TotalMilliseconds;
 
-                Thread.Sleep(1);
+                Thread.Sleep(5);
             }
         }
 
@@ -869,14 +927,9 @@ namespace RK.Win.Controls
                 _bufferBitmap.Dispose();
                 _controlGraphics.Dispose();
                 _playerBitmap.Dispose();
+                _playerRotatedBitmap.Dispose();
+                _playerRotated.Dispose();
                 _bufferBitmap = null;
-
-                if (_playerRotatedBitmap != null)
-                {
-                    _playerRotatedBitmap.Dispose();
-                    _playerRotated.Dispose();
-                    _playerRotatedBitmap = null;
-                }
             }
         }
 
@@ -887,16 +940,20 @@ namespace RK.Win.Controls
                 _playerBitmap = Image.FromFile(@"Resources\player_s.png");
 
                 _playerRotatedBitmap = new Bitmap(_playerBitmap.Width, _playerBitmap.Height);
+                
                 _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
                 _playerRotated.InterpolationMode = InterpolationMode.Low;
                 _playerRotated.SmoothingMode = SmoothingMode.HighSpeed;
 
                 _bufferBitmap = new Bitmap(Width, Height);
+                
                 _buffer = Graphics.FromImage(_bufferBitmap);
                 _buffer.InterpolationMode = InterpolationMode.Low;
                 _buffer.SmoothingMode = SmoothingMode.HighSpeed;
 
                 _controlGraphics = Graphics.FromHwnd(Handle);
+                _controlGraphics.InterpolationMode = InterpolationMode.Low;
+                _controlGraphics.SmoothingMode = SmoothingMode.HighSpeed;
 
                 if (_threadRenderer == null)
                 {
@@ -938,29 +995,32 @@ namespace RK.Win.Controls
 
         private void PlayersPaint()
         {
-            foreach (int playerId in _players.Keys)
+            lock (_players)
             {
-                Player player = _players[playerId];
-                float pSizeW = player.Size.Width*_scaleFactor,
-                      pSizeHw = (float) player.Size.Width/2;
-                float pSizeH = player.Size.Height*_scaleFactor,
-                      pSizeHh = (float) player.Size.Height/2;
+                foreach (int playerId in _players.Keys)
+                {
+                    Player player = _players[playerId];
+                    float pSizeW = player.Size.Width*_scaleFactor,
+                        pSizeHw = (float) player.Size.Width/2;
+                    float pSizeH = player.Size.Height*_scaleFactor,
+                        pSizeHh = (float) player.Size.Height/2;
 
-                _playerRotated.ResetTransform();
+                    _playerRotated.ResetTransform();
 //                _playerRotated.Clear(Color.FromArgb(255, 255, 157, 0));
-                _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
+                    _playerRotated.Clear(Color.FromArgb(0, 0, 0, 0));
 
-                _playerRotated.TranslateTransform(pSizeHw, pSizeHh);
-                _playerRotated.RotateTransform(player.Angle);
-                _playerRotated.TranslateTransform(-pSizeHw, -pSizeHh);
-                _playerRotated.DrawImage(_playerBitmap, 0, 0);
+                    _playerRotated.TranslateTransform(pSizeHw, pSizeHh);
+                    _playerRotated.RotateTransform(player.Angle);
+                    _playerRotated.TranslateTransform(-pSizeHw, -pSizeHh);
+                    _playerRotated.DrawImage(_playerBitmap, 0, 0);
 
-                _buffer.DrawImage(_playerRotatedBitmap,
-                    new RectangleF((player.Position.X * _scaleFactor - _posX),
-                                   (player.Position.Y * _scaleFactor - _posY),
-                                   pSizeW, pSizeH),
-                    new RectangleF(0, 0, _playerBitmap.Width, _playerBitmap.Height), 
-                    GraphicsUnit.Pixel);
+                    _buffer.DrawImage(_playerRotatedBitmap,
+                        new RectangleF((player.Position.X*_scaleFactor - _posX),
+                            (player.Position.Y*_scaleFactor - _posY),
+                            pSizeW, pSizeH),
+                        new RectangleF(0, 0, _playerBitmap.Width, _playerBitmap.Height),
+                        GraphicsUnit.Pixel);
+                }
             }
         }
 
@@ -1135,7 +1195,6 @@ namespace RK.Win.Controls
                 {
                     if (_scrollToPos == null)
                     {
-                        Invoke(new Action(CheckMyPlayerRotate));
                         return;
                     }
                     int xShift = (_scrollToPos.Value.X - _posX) / 2;
@@ -1222,39 +1281,80 @@ namespace RK.Win.Controls
                 case PacketType.UserLogin:
                     RUserLogin userLogin = (RUserLogin) e;
                     _sessionToken = userLogin.SessionToken;
-                    TCPClientDataSend(new PPlayerEnter
+                    TCPClientDataSend(new PUserEnter
                     {
                         SessionToken = _sessionToken
                     });
                     break;
 
-                case PacketType.PlayerEnter:
-                    RPlayerEnter playerEnter = (RPlayerEnter) e;
-                    foreach (Player p in playerEnter.PlayersOnLocation)
+                case PacketType.UserEnter:
+                    lock (_players)
                     {
-                        _players.Add(p.Id, p);
-                        _playersEx.Add(p.Id, new PlayerEx(p));
+                        RUserEnter userEnter = (RUserEnter) e;
+                        foreach (Player p in userEnter.PlayersOnLocation)
+                        {
+                            if (!_players.ContainsKey(p.Id))
+                            {
+                                _players.Add(p.Id, p);
+                                _playersEx.Add(p.Id, new PlayerEx(p));
+                            }
+                        }
+                        _myPlayer = _players[userEnter.MyPlayerId];
+                        _myPlayerEx = _playersEx[userEnter.MyPlayerId];
                     }
-                    _myPlayer = _players[playerEnter.MyPlayerId];
                     CenterTo((int) (_myPlayer.Position.X*_scaleFactor),
-                        (int) (_myPlayer.Position.Y*_scaleFactor),
-                        true);
+                             (int) (_myPlayer.Position.Y*_scaleFactor),
+                             true);
+                    break;
+
+                case PacketType.PlayerEnter:
+                    lock (_players)
+                    {
+                        RPlayerEnter playerEnter = (RPlayerEnter) e;
+                        if (!_players.ContainsKey(playerEnter.Player.Id) && _myPlayer != null &&
+                            playerEnter.Player.Id != _myPlayer.Id)
+                        {
+                            _players.Add(playerEnter.Player.Id, playerEnter.Player);
+                            _playersEx.Add(playerEnter.Player.Id, new PlayerEx(playerEnter.Player));
+                            _somethingChanged = true;
+                        }
+                    }
+                    break;
+
+                case PacketType.PlayerExit:
+                    lock (_players)
+                    {
+                        RPlayerExit playerExit = (RPlayerExit) e;
+                        if (_players.ContainsKey(playerExit.PlayerId) && _myPlayer != null &&
+                            playerExit.PlayerId != _myPlayer.Id)
+                        {
+                            _players.Remove(playerExit.PlayerId);
+                            _playersEx.Remove(playerExit.PlayerId);
+                            _somethingChanged = true;
+                        }
+                    }
                     break;
 
                 case PacketType.PlayerRotate:
-                    RPlayerRotate rPlayerRotate = (RPlayerRotate) e;
-                    _players[rPlayerRotate.PlayerId].Angle = rPlayerRotate.Angle;
+                    lock (_players)
+                    {
+                        RPlayerRotate playerRotate = (RPlayerRotate) e;
+                        _players[playerRotate.PlayerId].Angle = playerRotate.Angle;
+                    }
                     break;
 
                 case PacketType.PlayerMove:
-                    RPlayerMove rPlayerMove = (RPlayerMove) e;
-                    Player player = _players[rPlayerMove.PlayerId];
-                    player.Position = new Point(rPlayerMove.X, rPlayerMove.Y);
-                    player.Direction = rPlayerMove.D;
+                    lock (_players)
+                    {
+                        RPlayerMove playerMove = (RPlayerMove) e;
+                        Player player = _players[playerMove.PlayerId];
+                        player.Position = new Point(playerMove.X, playerMove.Y);
+                        player.Direction = playerMove.D;
 
-                    PlayerEx playerEx = _playersEx[rPlayerMove.PlayerId];
-                    playerEx.MovingStartTime = DateTime.Now;
-                    playerEx.MovingStartedPoint = player.Position;
+                        PlayerEx playerEx = _playersEx[playerMove.PlayerId];
+                        playerEx.MovingStartTime = DateTime.Now;
+                        playerEx.MovingStartedPoint = player.Position;
+                    }
                     break;
             }
         }

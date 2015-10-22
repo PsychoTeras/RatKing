@@ -8,6 +8,9 @@ namespace RK.Win.Classes.Ex
     {
         public Point MovingStartedPoint;
         public DateTime MovingStartTime;
+        public float MovingDistanceRest;
+
+        public bool NeedUpdatePosition;
 
         public PlayerEx(Player player)
         {

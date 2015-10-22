@@ -21,6 +21,8 @@ namespace RK.Common.Proto
         public PacketType Type;
         public short ErrorCode;
 
+        public bool Private;
+
 #endregion
 
 #region Properties
@@ -154,10 +156,14 @@ namespace RK.Common.Proto
                     //User
                 case PacketType.UserLogin:
                     return new RUserLogin();
+                case PacketType.UserEnter:
+                    return new RUserEnter();
 
                     //Player
                 case PacketType.PlayerEnter:
                     return new RPlayerEnter();
+                case PacketType.PlayerExit:
+                    return new RPlayerExit();
                 case PacketType.PlayerMove:
                     return new RPlayerMove();
                 case PacketType.PlayerRotate:

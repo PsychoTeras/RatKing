@@ -81,6 +81,7 @@
             this.tbLabyrinthAngle = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
             this.tbLabyrinthLacunarity = new System.Windows.Forms.ToolStripTextBox();
+            this.eventsProvider = new RK.Win.UserActivityMonitor.GlobalEventProvider();
             this.tcMain.SuspendLayout();
             this.tpMap.SuspendLayout();
             this.pMapCtrl.SuspendLayout();
@@ -104,7 +105,6 @@
             this.tcMain.SelectedIndex = 0;
             this.tcMain.Size = new System.Drawing.Size(735, 625);
             this.tcMain.TabIndex = 0;
-            this.tcMain.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.FrmMainPreviewKeyDown);
             // 
             // tpMap
             // 
@@ -561,8 +561,8 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "RKWin";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmMainFormClosing);
-            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FrmMainKeyUp);
-            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.FrmMainPreviewKeyDown);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.EventsProviderKeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.EventsProviderKeyUp);
             this.tcMain.ResumeLayout(false);
             this.tpMap.ResumeLayout(false);
             this.tpMap.PerformLayout();
@@ -639,6 +639,7 @@
         private System.Windows.Forms.ToolStripButton btnSaveLabyrinth;
         private System.Windows.Forms.Panel pMiniMap;
         private Controls.MiniMapControl miniMapCtrl;
+        private UserActivityMonitor.GlobalEventProvider eventsProvider;
 
     }
 }

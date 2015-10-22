@@ -91,6 +91,14 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserActivityMonitor\GlobalEventProvider.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UserActivityMonitor\HookManager.Callbacks.cs" />
+    <Compile Include="UserActivityMonitor\HookManager.cs" />
+    <Compile Include="UserActivityMonitor\HookManager.Structures.cs" />
+    <Compile Include="UserActivityMonitor\HookManager.Windows.cs" />
+    <Compile Include="UserActivityMonitor\MouseEventExtArgs.cs" />
     <EmbeddedResource Include="Controls\MapControl.resx">
       <DependentUpon>MapControl.cs</DependentUpon>
     </EmbeddedResource>

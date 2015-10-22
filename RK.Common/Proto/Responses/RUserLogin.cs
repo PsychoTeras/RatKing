@@ -32,6 +32,7 @@ namespace RK.Common.Proto.Responses
         public RUserLogin(PUserLogin rUserLogin) 
             : base(rUserLogin)
         {
+            Private = true;
             SessionToken = rUserLogin.SessionToken;
         }
     }

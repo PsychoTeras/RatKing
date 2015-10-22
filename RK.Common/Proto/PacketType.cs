@@ -7,10 +7,12 @@
 
         //0. User
         UserLogin = 0,
+        UserEnter,
         UserLogout,
 
         //100. Player
         PlayerEnter = 100,
+        PlayerExit,
         PlayerMove,
         PlayerRotate
     }
