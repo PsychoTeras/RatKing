@@ -442,20 +442,6 @@
     <None Include="Resources\atom.png" />
     <None Include="Resources\cubes.png" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\GMechanics.Core\GMechanics.Core.csproj">
-      <Project>{78BB568A-BB44-4596-90FF-9E73D0F5E839}</Project>
-      <Name>GMechanics.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Externals\GMechanics.Flowchart\GMechanics.Flowchart.csproj">
-      <Project>{0BD35500-AA6D-4D94-9E6C-879E4FE5B583}</Project>
-      <Name>GMechanics.Flowchart</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Externals\GMechanics.ScriptTextBox\GMechanics.ScriptTextBox.csproj">
-      <Project>{6DD14A85-CCFC-4774-BD26-0F5772512319}</Project>
-      <Name>GMechanics.ScriptTextBox</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
