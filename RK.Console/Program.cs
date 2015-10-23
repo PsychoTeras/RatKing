@@ -1,5 +1,6 @@
 ﻿#define UNSAFE_ARRAY
 
+using System.Threading;
 using System.Threading.Tasks;
 using RK.Common.Classes.Map;
 using RK.Common.Proto;
@@ -13,17 +14,19 @@ namespace RK.Console
 {
     unsafe class Program
     {
+        const ushort MapWidth = 1000, MapHeight = 1000;
+        private static Tile EmptyTile = new Tile();
+
         internal void TestGameMapPerf()
         {
-            ushort width = 10000, height = 10000;
-            int count = width * height;
+            int count = MapWidth * MapHeight;
             HRTimer timer = HRTimer.CreateAndStart();
 
 #if UNSAFE_ARRAY
             int sizeOfTile = Marshal.SizeOf(typeof(Tile));
             Tile* pTiles = (Tile*)Memory.HeapAlloc(count * sizeOfTile);
 #else
-            Tile[,] aTiles = new Tile[width, height];
+            Tile[,] aTiles = new Tile[MapWidth, MapHeight];
 #endif
             System.Console.WriteLine(timer.StopWatch());
 
@@ -43,16 +46,16 @@ namespace RK.Console
             Memory.HeapFree(pTiles);
 #endif
 
-            using (GameMap map = new GameMap(width, height, 0))
+            using (GameMap map = new GameMap(MapWidth, MapHeight, 0))
             {
                 timer = HRTimer.CreateAndStart();
 
-                for (ushort y = 0; y < height; y++)
+                for (ushort y = 0; y < MapHeight; y++)
                 {
-                    for (ushort x = 0; x < width; x++)
+                    for (ushort x = 0; x < MapWidth; x++)
                     {
                         Tile* tile = map[x, y];
-                        (*tile).Type = TileType.Undefined;
+                        (*tile).Type = TileType.Nothing;
                         (*tile).TypeIndex = 1;
                     }
                 }
@@ -60,7 +63,7 @@ namespace RK.Console
             }
         }
 
-        private static void TestProtoPacketsPerf()
+        internal static void TestProtoPacketsPerf()
         {
             short psize;
             PUserLogin p = new PUserLogin
@@ -91,9 +94,41 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
+        internal static void TestMapWindowgetPerf()
+        {
+            using (GameMap map = new GameMap(MapWidth, MapHeight, 0))
+            {
+                Parallel.For(0, MapHeight, y => Parallel.For(0, MapWidth, x =>
+                {
+                    Tile* tile = map[(ushort)x, (ushort)y];
+                    (*tile).Flags = x;
+                    (*tile).RTFlags = y;
+                }));
+                
+                HRTimer timer = HRTimer.CreateAndStart();
+                int tileSize = EmptyTile.SizeOf(), dataSize = MapWidth * MapHeight * tileSize;
+                
+                byte[] tilesData = new byte[sizeof(int) + dataSize];
+                fixed (byte* bTileData = tilesData)
+                {
+                    int pos = 0;
+                    byte* bData = bTileData;
+                    Serializer.Write(bData, dataSize, ref pos);
+                    Parallel.For(0, MapHeight, y => Parallel.For(0, MapWidth, x =>
+                    {
+                        pos = sizeof(int) + y*MapWidth + x;
+                        Tile* tile = map[(ushort)x, (ushort)y];
+                        (*tile).Serialize(&bData[pos], ref pos);
+                    }));
+                }
+
+                System.Console.WriteLine(timer.StopWatch());
+            }
+        }
+
         static void Main(string[] args)
         {
-            TestProtoPacketsPerf();
+            TestMapWindowgetPerf();
             System.Console.ReadKey();
         }
     }

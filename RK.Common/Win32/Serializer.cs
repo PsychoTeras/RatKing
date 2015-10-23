@@ -158,7 +158,7 @@ namespace RK.Common.Win32
         }
 
         public static void Read<T>(byte* bData, out T obj, ref int pos)
-            where T : class, ISerializable, new()
+            where T : ISerializable, new()
         {
             bool bNotNull = *(bool*)&bData[pos];
             pos += sizeof(bool);
@@ -168,7 +168,7 @@ namespace RK.Common.Win32
                 obj.Deserialize(bData, ref pos);
             }
             else
-                obj = null;
+                obj = default(T);
         }
 
         public static void Read<T, TC>(byte* bData, out TC collection, ref int pos)
@@ -299,7 +299,7 @@ namespace RK.Common.Win32
         }
 
         public static void Write<T>(byte* bData, T obj, ref int pos)
-            where T : class, ISerializable
+            where T : ISerializable
         {
             bool bNotNull = obj != null;
             (*(bool*)&bData[pos]) = bNotNull;
