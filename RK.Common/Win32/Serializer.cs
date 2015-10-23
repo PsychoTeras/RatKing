@@ -1,33 +1,35 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
+using RK.Common.Classes.Map;
 using RK.Common.Common;
 using RK.Common.Proto;
+using Direction = RK.Common.Common.Direction;
 
 namespace RK.Common.Win32
 {
     public unsafe static class Serializer
     {
-        public static int Length(byte[] data)
+        public static int SizeOf(byte[] data)
         {
             const int iSize = sizeof(int);
             return data != null ? iSize + data.Length : iSize;
         }
 
-        public static int Length(string str)
+        public static int SizeOf(string str)
         {
             const int sSize = sizeof(int);
             int strLen = str == null ? -1 : str.Length * sizeof(char);
             return strLen > 0 ? sSize + strLen : sSize;
         }
 
-        public static int Length(ISerializable obj)
+        public static int SizeOf(ISerializable obj)
         {
             const int bNotNull = sizeof(bool);
             return obj != null ? bNotNull + obj.SizeOf() : bNotNull;
         }
 
         // ReSharper disable once PossibleNullReferenceException
-        public static int Length<T>(IList<T> collection) 
+        public static int SizeOf<T>(IList<T> collection) 
             where T : ISerializable
         {
             const int iSize = sizeof(int);
@@ -75,6 +77,24 @@ namespace RK.Common.Win32
             pos += sizeof(float);
         }
 
+        public static void Read(byte* bData, out ShortPoint val, ref int pos)
+        {
+            val = *(ShortPoint*)&bData[pos];
+            pos += sizeof(ShortPoint);
+        }
+
+        public static void Read(byte* bData, out ShortRect val, ref int pos)
+        {
+            val = *(ShortRect*)&bData[pos];
+            pos += sizeof(ShortRect);
+        }
+
+        public static void Read(byte* bData, out ShortSize val, ref int pos)
+        {
+            val = *(ShortSize*)&bData[pos];
+            pos += sizeof(ShortSize);
+        }
+
         public static void Read(byte* bData, out TinySize val, ref int pos)
         {
             val = *(TinySize*)&bData[pos];
@@ -91,6 +111,12 @@ namespace RK.Common.Win32
         {
             val = *(PacketType*)&bData[pos];
             pos += sizeof(PacketType);
+        }
+
+        public static void Read(byte* bData, out TileType val, ref int pos)
+        {
+            val = *(TileType*)&bData[pos];
+            pos += sizeof(TileType);
         }
 
         public static void Read(byte* bData, out Direction val, ref int pos)
@@ -200,6 +226,24 @@ namespace RK.Common.Win32
             pos += sizeof(float);
         }
 
+        public static void Write(byte* bData, ShortPoint val, ref int pos)
+        {
+            (*(ShortPoint*)&bData[pos]) = val;
+            pos += sizeof(ShortPoint);
+        }
+
+        public static void Write(byte* bData, ShortRect val, ref int pos)
+        {
+            (*(ShortRect*)&bData[pos]) = val;
+            pos += sizeof(ShortRect);
+        }
+
+        public static void Write(byte* bData, ShortSize val, ref int pos)
+        {
+            (*(ShortSize*)&bData[pos]) = val;
+            pos += sizeof(ShortSize);
+        }
+
         public static void Write(byte* bData, TinySize val, ref int pos)
         {
             (*(TinySize*)&bData[pos]) = val;
@@ -216,6 +260,12 @@ namespace RK.Common.Win32
         {
             (*(PacketType*)&bData[pos]) = val;
             pos += sizeof(PacketType);
+        }
+
+        public static void Write(byte* bData, TileType val, ref int pos)
+        {
+            (*(TileType*)&bData[pos]) = val;
+            pos += sizeof(TileType);
         }
 
         public static void Write(byte* bData, Direction val, ref int pos)
@@ -261,8 +311,8 @@ namespace RK.Common.Win32
         }
 
         // ReSharper disable once PossibleNullReferenceException
-        public static void Write<T>(byte* bData, IList<T> collection, ref int pos)
-            where T : ISerializable
+        public static void Write<T, TC>(byte* bData, TC collection, ref int pos)
+            where T : ISerializable where TC : class, IList<T>
         {
             int elsCount = collection == null ? -1 : collection.Count;
             (*(int*)&bData[pos]) = elsCount;

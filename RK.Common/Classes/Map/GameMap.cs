@@ -122,7 +122,7 @@ namespace RK.Common.Classes.Map
             {
                 Memory.HeapFree(_tiles);
             }
-            _tiles = (Tile*)Memory.HeapAlloc((_width = width) * (_height = height) * Tile.SizeOf);
+            _tiles = (Tile*)Memory.HeapAlloc((_width = width) * (_height = height) * sizeof(Tile));
         }
 
         private void DetectAreas()
@@ -261,7 +261,7 @@ namespace RK.Common.Classes.Map
 
                     for (int i = 0; i < tilesCnt; i++)
                     {
-                        Memory.HeapCopy(&tile, &Map._tiles[curTilePos++], Tile.SizeOf);
+                        Memory.HeapCopy(&tile, &Map._tiles[curTilePos++], sizeof(Tile));
                     }
                 }
                 return true;

@@ -17,7 +17,7 @@ namespace RK.Common.Proto.Responses
                 return
                     BASE_SIZE +
                     sizeof (int) +
-                    Serializer.Length(PlayersOnLocation);
+                    Serializer.SizeOf(PlayersOnLocation);
             }
         }
 
@@ -30,7 +30,7 @@ namespace RK.Common.Proto.Responses
         protected override void SerializeToMemory(byte* bData, int pos)
         {
             Serializer.Write(bData, MyPlayerId, ref pos);
-            Serializer.Write(bData, (IList<Player>)PlayersOnLocation, ref pos);
+            Serializer.Write<Player, List<Player>>(bData, PlayersOnLocation, ref pos);
         }
 
         public RUserEnter() { }

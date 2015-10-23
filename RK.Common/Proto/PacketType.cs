@@ -14,6 +14,9 @@
         PlayerEnter = 100,
         PlayerExit,
         PlayerMove,
-        PlayerRotate
+        PlayerRotate,
+
+        //200. Map
+        MapBuffer = 200,
     }
 }

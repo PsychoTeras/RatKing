@@ -85,7 +85,7 @@ namespace RK.Common.Common
 
         public override string ToString()
         {
-            return string.Format("{0}x{1}", X, Y);
+            return string.Format("X = {0}, Y = {1}", X, Y);
         }
     }
 

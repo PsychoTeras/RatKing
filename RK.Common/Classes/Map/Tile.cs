@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using RK.Common.Common;
+using RK.Common.Win32;
 
 namespace RK.Common.Classes.Map
 {
@@ -11,14 +13,8 @@ namespace RK.Common.Classes.Map
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct Tile : IEquatable<Tile>
+    public unsafe struct Tile : IEquatable<Tile>, ISerializable
     {
-
-#region Static fields
-        
-        public static readonly int SizeOf = Marshal.SizeOf(typeof(Tile));
-
-#endregion
 
 #region Public fields
 
@@ -94,6 +90,34 @@ namespace RK.Common.Classes.Map
                 hashCode = (hashCode*397) ^ Flags.GetHashCode();
                 return hashCode;
             }
+        }
+
+#endregion
+
+#region ISerializable
+
+        public int SizeOf()
+        {
+            return sizeof (TileType) +
+                   sizeof (byte) +
+                   sizeof (int) +
+                   sizeof (int);
+        }
+
+        public void Serialize(byte* bData, ref int pos)
+        {
+            Serializer.Write(bData, Type, ref pos);
+            Serializer.Write(bData, TypeIndex, ref pos);
+            Serializer.Write(bData, Flags, ref pos);
+            Serializer.Write(bData, RTFlags, ref pos);
+        }
+
+        public void Deserialize(byte* bData, ref int pos)
+        {
+            Serializer.Read(bData, out Type, ref pos);
+            Serializer.Read(bData, out TypeIndex, ref pos);
+            Serializer.Read(bData, out Flags, ref pos);
+            Serializer.Read(bData, out RTFlags, ref pos);
         }
 
 #endregion

@@ -17,8 +17,8 @@ namespace RK.Common.Proto.Packets
             get
             {
                 return BASE_SIZE +
-                       Serializer.Length(UserName) +
-                       Serializer.Length(Password);
+                       Serializer.SizeOf(UserName) +
+                       Serializer.SizeOf(Password);
             }
         }
 

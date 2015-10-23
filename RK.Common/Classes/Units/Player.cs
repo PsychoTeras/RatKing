@@ -46,14 +46,14 @@ namespace RK.Common.Classes.Units
 
 #endregion
 
-#region Serializable
+#region ISerializable
 
         public int SizeOf()
         {
             return
                 sizeof (int) + //Id
 
-                Serializer.Length(Name) + //Name 
+                Serializer.SizeOf(Name) + //Name 
 
                 sizeof (TinySize) + //Size
                 sizeof (ushort) + //Health
