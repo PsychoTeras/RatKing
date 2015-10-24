@@ -55,9 +55,9 @@ namespace RK.Common.Win32
             }
         }
 
-        public static void* HeapReAlloc(void* block, int size)
+        public static void* HeapReAlloc(void* block, int size, bool zeroMem = true)
         {
-            void* result = HeapReAlloc(_ph, HEAP_ZERO_MEMORY, block, size);
+            void* result = HeapReAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, block, size);
             if (result == null)
             {
                 throw new OutOfMemoryException();

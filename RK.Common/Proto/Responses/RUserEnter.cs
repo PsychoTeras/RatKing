@@ -11,7 +11,7 @@ namespace RK.Common.Proto.Responses
         public int MyPlayerId;
         public List<Player> PlayersOnLocation;
 
-        public byte[] MapBuffer;
+        public byte[] MapData;
         public ShortRect MapWindow;
 
         public override PacketType Type
@@ -26,9 +26,14 @@ namespace RK.Common.Proto.Responses
                 return
                     sizeof (int) +
                     Serializer.SizeOf(PlayersOnLocation) +
-                    Serializer.SizeOf(MapBuffer) +
+                    Serializer.SizeOf(MapData) +
                     sizeof (ShortRect);
             }
+        }
+
+        protected override bool Compressed
+        {
+            get { return true; }
         }
 
         public override bool Private
@@ -41,7 +46,7 @@ namespace RK.Common.Proto.Responses
             Serializer.Read(bData, out MyPlayerId, ref pos);
             Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, ref pos);
 
-            Serializer.Read(bData, out MapBuffer, ref pos);
+            Serializer.Read(bData, out MapData, ref pos);
             Serializer.Read(bData, out MapWindow, ref pos);
         }
 
@@ -50,7 +55,7 @@ namespace RK.Common.Proto.Responses
             Serializer.Write(bData, MyPlayerId, ref pos);
             Serializer.Write<Player, List<Player>>(bData, PlayersOnLocation, ref pos);
 
-            Serializer.Write(bData, MapBuffer, ref pos);
+            Serializer.Write(bData, MapData, ref pos);
             Serializer.Write(bData, MapWindow, ref pos);
         }
 

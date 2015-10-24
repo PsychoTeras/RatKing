@@ -136,7 +136,7 @@ namespace RK.Common.Win32
                 data = new byte[size];
                 if (size > 0)
                 {
-                    fixed (byte* d = data) Memory.Copy(&bData[pos], d, size);
+                    fixed (byte* d = data) Memory.Copy(d, &bData[pos], size);
                 }
                 pos += size;
             }
@@ -281,7 +281,7 @@ namespace RK.Common.Win32
             pos += sizeof(int);
             if (size > 0)
             {
-                fixed (byte* d = data) Memory.Copy(d, &bData[pos], size);
+                fixed (byte* d = data) Memory.Copy(&bData[pos], d, size);
                 pos += size;
             }
         }

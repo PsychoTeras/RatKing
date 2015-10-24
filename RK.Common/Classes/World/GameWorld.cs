@@ -18,20 +18,20 @@ namespace RK.Common.Classes.World
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
         private const int NEAREST_AREA_HALF_SIZE_SIZE = 100 * ConstMap.PIXEL_SIZE;
 
-        private const float MAP_WINDOW_SCREEN_RES_COEF = 1.5f;
+        private const float MAP_WINDOW_RES_COEF = 2f;
 
 #endregion
 
 #region Private fields
 
-        private Dictionary<int, GameMap> _maps;
+        private Dictionary<int, ServerMap> _maps;
         private Dictionary<long, Player> _players;
 
 #endregion
 
 #region Properties
 
-        public GameMap FirstMap
+        public ServerMap FirstMap
         {
             get { return _maps.Values.FirstOrDefault(); }
         }
@@ -47,7 +47,7 @@ namespace RK.Common.Classes.World
 
         public GameWorld()
         {
-            _maps = new Dictionary<int, GameMap>();
+            _maps = new Dictionary<int, ServerMap>();
             _players = new Dictionary<long, Player>();
         }
 
@@ -57,14 +57,14 @@ namespace RK.Common.Classes.World
 
         public void LoadMap()
         {
-            foreach (GameMap map in _maps.Values)
+            foreach (ServerMap map in _maps.Values)
             {
                 map.Dispose();
             }
             _maps.Clear();
             if (File.Exists("RK.save"))
             {
-                GameMap map = GameMap.LoadFromFile("RK.save");
+                ServerMap map = ServerMap.LoadFromFile("RK.save");
                 _maps.Add(map.Id, map);
             }
         }
@@ -79,7 +79,7 @@ namespace RK.Common.Classes.World
             {
                 lock (_maps)
                 {
-                    foreach (GameMap map in _maps.Values)
+                    foreach (ServerMap map in _maps.Values)
                     {
                         map.Dispose();
                     }
@@ -158,32 +158,39 @@ namespace RK.Common.Classes.World
 
 #region Map
 
-        public GameMap MapGet(int mapId)
+        public ServerMap MapGet(int mapId)
         {
-            GameMap map;
+            ServerMap map;
             _maps.TryGetValue(mapId, out map);
             return map;
         }
 
         public ShortPoint? MapFindPlayerStartPoint(Player player)
         {
-            GameMap map;
+            ServerMap map;
             return _maps.TryGetValue(player.MapId, out map)
                 ? Geometry.FindPlayerStartPoint(map, player, MIN_FREE_AREA_SIZE)
                 : null;
         }
 
-        public byte[] MapGetWindow(Player player, ShortSize screenRes)
+        public byte[] MapWindowGet(Player player, ShortSize screenRes, out ShortRect mapWindow)
         {
-            GameMap map;
+            ServerMap map;
             if (_maps.TryGetValue(player.MapId, out map))
             {
-                int width = (int) (screenRes.Width*MAP_WINDOW_SCREEN_RES_COEF);
-                int height = (int) (screenRes.Height*MAP_WINDOW_SCREEN_RES_COEF);
-                int startX = player.Position.X - (width/2);
-                int startY = player.Position.Y - (height/2);
-                return map.GetWindow(startX, startY, width, height);
+                const float resCoef = MAP_WINDOW_RES_COEF/ConstMap.PIXEL_SIZE;
+                double width =
+                    Math.Min(Math.Ceiling(screenRes.Width * resCoef), map.Width);
+                double height =
+                    (int)Math.Min(Math.Ceiling(screenRes.Height * resCoef), map.Height);
+                int startX =
+                    (int) Math.Max(Math.Floor((float) player.Position.X/ConstMap.PIXEL_SIZE) - width/2, 0);
+                int startY =
+                    (int) Math.Max(Math.Floor((float) player.Position.Y/ConstMap.PIXEL_SIZE) - height/2, 0);
+                mapWindow = new ShortRect(startX, startY, (int) width, (int) height);
+                return map.GetWindow(startX, startY, mapWindow.Width, mapWindow.Height);
             }
+            mapWindow = ShortRect.Empty;
             return null;
         }
 

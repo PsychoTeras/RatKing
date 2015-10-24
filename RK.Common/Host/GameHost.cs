@@ -135,19 +135,27 @@ namespace RK.Common.Host
         {
             PUserEnter pUserEnter = (PUserEnter)packet;
 
+            LoggedUser user;
             Player player = World.PlayerGet(pUserEnter.SessionToken);
-            if (player == null)
+            if (player == null || !_loggedUsers.TryGetValue(pUserEnter.SessionToken, out user))
             {
                 ThrowSessionError(packet.Type, packet.SessionToken);
                 return null;
             }
 
-            SendResponse(new RPlayerEnter(player));
+            user.ScreenRes = pUserEnter.ScreenRes;
 
             List<Player> playersOnLocation = World.PlayersGetNearest(player);
+            ShortRect mapWindow;
+            byte[] mapData = World.MapWindowGet(player, user.ScreenRes, out mapWindow);
+
+            SendResponse(new RPlayerEnter(player));
+
             return new RUserEnter(player.Id, pUserEnter)
             {
-                PlayersOnLocation = playersOnLocation
+                PlayersOnLocation = playersOnLocation,
+                MapData = mapData,
+                MapWindow = mapWindow
             };
         }
 

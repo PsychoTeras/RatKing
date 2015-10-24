@@ -3,11 +3,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using RK.Common.Classes;
 using RK.Common.Classes.Map;
+using RK.Common.Common;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Win32;
@@ -63,7 +62,7 @@ namespace RK.Console
             Memory.HeapFree(pTiles);
 #endif
 
-            using (GameMap map = new GameMap(mapWidth, mapHeight, 0))
+            using (ServerMap map = new ServerMap(mapWidth, mapHeight, 0))
             {
                 timer = HRTimer.CreateAndStart();
 
@@ -83,7 +82,6 @@ namespace RK.Console
         internal static void TestProtoPacketsPerf()
         {
             short psize;
-            string text = File.ReadAllText(@"d:\DICOM files\DOT\DicomSender.txt");
             PUserLogin p = new PUserLogin
             {
                 UserName = "PsychoTeras",
@@ -91,7 +89,7 @@ namespace RK.Console
             };
             p.Setup();
             byte[] ps = p.Serialize();
-            var dd = BasePacket.Deserialize(ps, ps.Length, 0, out psize);
+            BasePacket.Deserialize(ps, ps.Length, 0, out psize);
 
             HRTimer timer = HRTimer.CreateAndStart();
 
@@ -107,15 +105,15 @@ namespace RK.Console
 
         internal static void TestMapWindowgetPerf()
         {
-            using (GameMap gameMap = GameMap.LoadFromFile("RK.save"))
+            using (ServerMap serverMap = ServerMap.LoadFromFile("RK.save"))
             {
-                GameMap map = gameMap;
+                ServerMap map = serverMap;
 
                 HRTimer timer = HRTimer.CreateAndStart();
 
                 int mapWidth = map.Width;
                 int startX = 0, startY = 0;
-                int wWidth = 150, wHeight = 150;
+                int wWidth = map.Width, wHeight = map.Height;
                 int endX = startX + wWidth, endY = startY + wHeight;
 
                 int smallSimilarsCnt = 0;
@@ -248,7 +246,7 @@ namespace RK.Console
 
         static void Main(string[] args)
         {
-            TestProtoPacketsPerf();
+            TestMapWindowgetPerf();
             System.Console.ReadKey();
         }
     }

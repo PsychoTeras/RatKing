@@ -174,7 +174,7 @@ namespace RK.Win.Controls
                 _bgBitmap.Dispose();
                 _bgBitmap = null;
             }
-            if (!DesignMode && _map != null && _map.IsMapLoaded)
+            if (!DesignMode && _map != null && _map.IsServerMapLoaded)
             {
                 _bgBitmap = Image.FromFile("Resources\\bg_minimap.png");
             }
@@ -237,7 +237,7 @@ namespace RK.Win.Controls
 
         private void PaintMiniMap()
         {
-            if (_map != null && _map.IsMapLoaded && _bgBitmap != null)
+            if (_map != null && _map.IsServerMapLoaded && _bgBitmap != null)
             {
                 _miniMapBitmapBuffer.DrawImage(_bgBitmap, ClientRectangle);
 
@@ -259,7 +259,7 @@ namespace RK.Win.Controls
 
         private void GeneralPaint()
         {
-            if (_map != null && _map.IsMapLoaded)
+            if (_map != null && _map.IsServerMapLoaded)
             {
                 float w = _map.Map.Width * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
                 float h = _map.Map.Height * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
@@ -330,7 +330,7 @@ namespace RK.Win.Controls
 
         private void MiniMapControlMouseDown(object sender, MouseEventArgs e)
         {
-            if (_map != null && _map.IsMapLoaded)
+            if (_map != null && _map.IsServerMapLoaded)
             {
                 _mousePos = e.Location;
                 SetMapPosition(e.Location, true);

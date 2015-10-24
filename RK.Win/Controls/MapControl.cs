@@ -45,9 +45,10 @@ namespace RK.Win.Controls
 
 #region Private fields
 
-        private GameMap _map;
+        private ServerMap _map;
         private GameHost _host;
         private TCPClient _tcpClient;
+        private ClientMap _clientMap;
 
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
@@ -210,13 +211,19 @@ namespace RK.Win.Controls
         }
 
         [Browsable(false)]
-        public GameMap Map
+        public ServerMap Map
         {
             get { return _map; }
         }
 
         [Browsable(false)]
-        public bool IsMapLoaded
+        public ClientMap ClientMap
+        {
+            get { return _clientMap; }
+        }
+
+        [Browsable(false)]
+        public bool IsServerMapLoaded
         {
             get { return _map != null; }
         }
@@ -337,6 +344,8 @@ namespace RK.Win.Controls
 
         private void InitializeEnvironment()
         {
+            _clientMap = new ClientMap();
+
             _syncScroll = new object();
 
             _fpsCounterData = new byte[10];
@@ -430,6 +439,8 @@ namespace RK.Win.Controls
                 _threadRenderer.Join(100);
 
                 DestroyGraphics();
+
+                _clientMap.Dispose();
 
                 Application.RemoveMessageFilter(this);
             }
@@ -529,7 +540,7 @@ namespace RK.Win.Controls
             TinySize size = player.Size;
             bool stop = false, xStop = false, yStop = false;
 
-            int mapWidth = _map.Width, mapHeight = _map.Height;
+            int mapWidth = _clientMap.Width, mapHeight = _clientMap.Height;
 
             int cellTs = (int)Math.Floor((float)pos.Y / ConstMap.PIXEL_SIZE);
             int cellTe = (int)Math.Floor((float)newPos.Y / ConstMap.PIXEL_SIZE);
@@ -557,7 +568,7 @@ namespace RK.Win.Controls
                             for (int x = cellL; x <= cellR; x++)
                             {
                                 if (x < 0 || x >= mapWidth) continue;
-                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                if ((*_clientMap[(ushort)x, (ushort)y]).Type != TileType.Nothing)
                                 {
                                     newPos.Y = y * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                     stop = true;
@@ -589,7 +600,7 @@ namespace RK.Win.Controls
                                     for (int x = cellL; x <= cellR; x++)
                                     {
                                         if (x < 0 || x >= mapWidth) continue;
-                                        if (!yStop && (*_map[(ushort)(x + 1), (ushort)cellT]).Type != TileType.Nothing)
+                                        if (!yStop && (*_clientMap[(ushort)(x + 1), (ushort)cellT]).Type != TileType.Nothing)
                                         {
                                             newPos.Y = cellT * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                             yStop = true;
@@ -600,7 +611,7 @@ namespace RK.Win.Controls
 
                                 //X
                                 if (!xStop && i <= lTotalDist &&
-                                    (*_map[(ushort)cellL, (ushort)(y + 1)]).Type != TileType.Nothing)
+                                    (*_clientMap[(ushort)cellL, (ushort)(y + 1)]).Type != TileType.Nothing)
                                 {
                                     newPos.X = cellL * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                     xStop = true;
@@ -634,7 +645,7 @@ namespace RK.Win.Controls
                                     for (int x = cellL; x <= cellR; x++)
                                     {
                                         if (x < 0 || x >= mapWidth) continue;
-                                        if (!yStop && (*_map[(ushort)(x - 1), (ushort)cellT]).Type != TileType.Nothing)
+                                        if (!yStop && (*_clientMap[(ushort)(x - 1), (ushort)cellT]).Type != TileType.Nothing)
                                         {
                                             newPos.Y = cellT * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                             yStop = true;
@@ -645,7 +656,7 @@ namespace RK.Win.Controls
 
                                 //X
                                 if (!xStop && i <= rTotalDist &&
-                                    (*_map[(ushort)cellR, (ushort)(y + 1)]).Type != TileType.Nothing)
+                                    (*_clientMap[(ushort)cellR, (ushort)(y + 1)]).Type != TileType.Nothing)
                                 {
                                     newPos.X = cellR * ConstMap.PIXEL_SIZE - size.Width;
                                     xStop = true;
@@ -665,7 +676,7 @@ namespace RK.Win.Controls
                             for (int x = cellL; x <= cellR; x++)
                             {
                                 if (x < 0 || x >= mapWidth) continue;
-                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                if ((*_clientMap[(ushort)x, (ushort)y]).Type != TileType.Nothing)
                                 {
                                     newPos.Y = y * ConstMap.PIXEL_SIZE - size.Height;
                                     stop = true;
@@ -697,7 +708,7 @@ namespace RK.Win.Controls
                                     for (int x = cellL; x <= cellR; x++)
                                     {
                                         if (x < 0 || x >= mapWidth) continue;
-                                        if (!yStop && (*_map[(ushort)(x + 1), (ushort)cellB]).Type != TileType.Nothing)
+                                        if (!yStop && (*_clientMap[(ushort)(x + 1), (ushort)cellB]).Type != TileType.Nothing)
                                         {
                                             newPos.Y = cellB * ConstMap.PIXEL_SIZE - size.Height;
                                             yStop = true;
@@ -708,7 +719,7 @@ namespace RK.Win.Controls
 
                                 //X
                                 if (!xStop && i <= lTotalDist &&
-                                    (*_map[(ushort)cellL, (ushort)(y - 1)]).Type != TileType.Nothing)
+                                    (*_clientMap[(ushort)cellL, (ushort)(y - 1)]).Type != TileType.Nothing)
                                 {
                                     newPos.X = cellL * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                     xStop = true;
@@ -742,7 +753,7 @@ namespace RK.Win.Controls
                                     for (int x = cellL; x <= cellR; x++)
                                     {
                                         if (x < 0 || x >= mapWidth) continue;
-                                        if (!yStop && (*_map[(ushort)(x - 1), (ushort)cellB]).Type != TileType.Nothing)
+                                        if (!yStop && (*_clientMap[(ushort)(x - 1), (ushort)cellB]).Type != TileType.Nothing)
                                         {
                                             newPos.Y = cellB * ConstMap.PIXEL_SIZE - size.Height;
                                             yStop = true;
@@ -753,7 +764,7 @@ namespace RK.Win.Controls
 
                                 //X
                                 if (!xStop && i <= rTotalDist &&
-                                    (*_map[(ushort)cellR, (ushort)(y - 1)]).Type != TileType.Nothing)
+                                    (*_clientMap[(ushort)cellR, (ushort)(y - 1)]).Type != TileType.Nothing)
                                 {
                                     newPos.X = cellR * ConstMap.PIXEL_SIZE - size.Width;
                                     xStop = true;
@@ -773,7 +784,7 @@ namespace RK.Win.Controls
                             for (int y = cellT; y <= cellB; y++)
                             {
                                 if (y < 0 || y >= mapHeight) continue;
-                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                if ((*_clientMap[(ushort)x, (ushort)y]).Type != TileType.Nothing)
                                 {
                                     newPos.X = x * ConstMap.PIXEL_SIZE + ConstMap.PIXEL_SIZE;
                                     stop = true;
@@ -791,7 +802,7 @@ namespace RK.Win.Controls
                             for (int y = cellT; y <= cellB; y++)
                             {
                                 if (y < 0 || y >= mapHeight) continue;
-                                if ((*_map[(ushort)x, (ushort)y]).Type != TileType.Nothing)
+                                if ((*_clientMap[(ushort)x, (ushort)y]).Type != TileType.Nothing)
                                 {
                                     newPos.X = x * ConstMap.PIXEL_SIZE - size.Width;
                                     stop = true;
@@ -1069,7 +1080,7 @@ namespace RK.Win.Controls
 
 #region Map
 
-        private void LoadMap(GameMap map)
+        private void LoadMap(ServerMap map)
         {
             _map = map;
             OnMapChanged();
@@ -1117,12 +1128,12 @@ namespace RK.Win.Controls
 
         public ShortPoint? CursorToTilePos(Point location)
         {
-            if (_map != null)
+            if (_clientMap != null)
             {
                 float pixelSize = ConstMap.PIXEL_SIZE * _scaleFactor;
                 int x = (int)Math.Floor((_posX + location.X) / pixelSize);
                 int y = (int)Math.Floor((_posY + location.Y) / pixelSize);
-                if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
+                if (x >= 0 && y >= 0 && x < _clientMap.Width && y < _clientMap.Height)
                 {
                     return new ShortPoint(x, y);
                 }
@@ -1137,9 +1148,9 @@ namespace RK.Win.Controls
                 return;
             }
 
-            if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
+            if (x >= 0 && y >= 0 && x < _clientMap.Width && y < _clientMap.Height)
             {
-                Tile* tile = _map[(ushort)x, (ushort)y];
+                Tile* tile = _clientMap[(ushort)x, (ushort)y];
                 (*tile).Type = type;
                 foreach (IMapRenderer renderer in _renderers)
                 {
@@ -1190,7 +1201,7 @@ namespace RK.Win.Controls
             ShortPoint? tilePos = CursorToTilePos(location);
             if (tilePos != null)
             {
-                Tile* tile = _map[tilePos.Value.X, tilePos.Value.Y];
+                Tile* tile = _clientMap[tilePos.Value.X, tilePos.Value.Y];
                 (*tile).Type = (*tile).Type == TileType.Wall ? TileType.Nothing : TileType.Wall;
                 foreach (IMapRenderer renderer in _renderers)
                 {
@@ -1313,6 +1324,9 @@ namespace RK.Win.Controls
                     lock (_players)
                     {
                         RUserEnter userEnter = (RUserEnter) e;
+
+                        _clientMap.AppendMapData(userEnter.MapData, userEnter.MapWindow);
+
                         foreach (Player p in userEnter.PlayersOnLocation)
                         {
                             if (!_players.ContainsKey(p.Id))

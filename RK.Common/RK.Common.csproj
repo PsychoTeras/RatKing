@@ -64,7 +64,8 @@
   <ItemGroup>
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
-    <Compile Include="Classes\Pair.cs" />
+    <Compile Include="Classes\Map\ClientMap.cs" />
+    <Compile Include="Common\Pair.cs" />
     <Compile Include="Classes\Users\LoggedUser.cs" />
     <Compile Include="Common\DbObject.cs" />
     <Compile Include="Common\Direction.cs" />
@@ -78,7 +79,7 @@
     <Compile Include="Win32\QuickLZ.cs" />
     <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />
-    <Compile Include="Classes\Map\GameMap.cs" />
+    <Compile Include="Classes\Map\ServerMap.cs" />
     <Compile Include="Classes\Map\MapAreas.cs" />
     <Compile Include="Classes\Map\Tile.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />

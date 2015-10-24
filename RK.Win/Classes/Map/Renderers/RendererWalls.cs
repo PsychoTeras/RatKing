@@ -30,14 +30,14 @@ namespace RK.Win.Classes.Map.Renderers
 
         public void Render(MapControl mapCtrl, Graphics buffer, Rectangle area)
         {
-            if (mapCtrl.Map == null)
+            if (mapCtrl.ClientMap == null)
             {
                 return;
             }
 
             float scale = mapCtrl.ScaleFactor;
             float pixelSize = ConstMap.PIXEL_SIZE * scale;
-            GameMap map = mapCtrl.Map;
+            ClientMap map = mapCtrl.ClientMap;
 
             ushort mapX1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosX / pixelSize - 1), 0);
             ushort mapY1 = (ushort)Math.Max(Math.Floor(mapCtrl.PosY / pixelSize - 1), 0);
@@ -48,8 +48,8 @@ namespace RK.Win.Classes.Map.Renderers
             {
                 for (ushort x = mapX1; x < mapX2; x++)
                 {
-                    Tile tile = *map[x, y];
-                    if (tile.Type == TileType.Wall)
+                    Tile* tile = map[x, y];
+                    if (tile != null && (*tile).Type == TileType.Wall)
                     {
                         float pixXToRealX = x * pixelSize - mapCtrl.PosX;
                         float pixXToRealY = y * pixelSize - mapCtrl.PosY;

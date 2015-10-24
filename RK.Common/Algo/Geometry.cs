@@ -32,7 +32,7 @@ namespace RK.Common.Algo
             return Math.Sqrt(Math.Abs(x * x + y * y));
         }
 
-        public static ShortPoint? FindPlayerStartPoint(GameMap map, Player player, 
+        public static ShortPoint? FindPlayerStartPoint(ServerMap map, Player player, 
             int minAreaSpace)
         {
             var areas = map.SpaceAreas;

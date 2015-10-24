@@ -19,7 +19,7 @@ namespace RK.Win.Classes.Map.Renderers
 
         public void Render(MapControl mapCtrl, Graphics buffer, Rectangle area)
         {
-            GameMap map = mapCtrl.Map;
+            ClientMap map = mapCtrl.ClientMap;
             if (map == null)
             {
                 return;
@@ -38,7 +38,7 @@ namespace RK.Win.Classes.Map.Renderers
                 for (ushort x = mapX1; x < mapX2; x++)
                 {
                     Tile* tile = map[x, y];
-                    if ((*tile).Type == TileType.Wall)
+                    if (tile != null && (*tile).Type == TileType.Wall)
                     {
                         float x1 = x*pixelSize - mapCtrl.PosX;
                         float y1 = y*pixelSize - mapCtrl.PosY;

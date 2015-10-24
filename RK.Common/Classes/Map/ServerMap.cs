@@ -4,19 +4,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using RK.Common.Common;
+using RK.Common.Const;
 using RK.Common.Win32;
 
 namespace RK.Common.Classes.Map
 {
-    public unsafe sealed class GameMap : DbObject, IDisposable
+    public unsafe sealed class ServerMap : DbObject, IDisposable
     {
 
 #region Constants
 
         private const short MAGICNUM = 0x4D47; //GM
         private const float VERSION = 0.1f;
-
-        private static int _tileSize = new Tile().SizeOf();
 
 #endregion
 
@@ -83,16 +82,16 @@ namespace RK.Common.Classes.Map
 
 #region Ctor
 
-        private GameMap()
+        private ServerMap()
         {
             InitializeGeneric();
             InitializeSections();
         }
 
-        public GameMap(ushort width, ushort height, short level)
+        public ServerMap(ushort width, ushort height, short level)
             : this(width, height, level, null) { }
 
-        public GameMap(ushort width, ushort height, short level, byte* pRoughMap) 
+        public ServerMap(ushort width, ushort height, short level, byte* pRoughMap) 
             : this()
         {
             SetNewId();
@@ -186,13 +185,15 @@ namespace RK.Common.Classes.Map
             }
 
             int tilesCount = tilesInfo.Count;
-            int dataSize = sizeof(byte) * smallSimilarsCnt +
-                           sizeof(ushort) * (tilesCount - smallSimilarsCnt) +
-                           _tileSize * tilesCount;
+            int dataSize = sizeof (int) +
+                           sizeof (byte)*smallSimilarsCnt +
+                           sizeof (ushort)*(tilesCount - smallSimilarsCnt) +
+                           ConstMap.TILE_SIZE_OF*tilesCount;
             byte[] tilesData = new byte[dataSize];
             fixed (byte* bData = tilesData)
             {
                 int pos = 0;
+                Serializer.Write(bData, tilesCount, ref pos);
                 foreach (Pair<Tile, ushort> tileInfo in tilesInfo)
                 {
                     if (tileInfo.Value <= smallSimilarCntLim)
@@ -218,9 +219,9 @@ namespace RK.Common.Classes.Map
 
         abstract class SectionBase
         {
-            protected GameMap Map;
+            protected ServerMap Map;
 
-            protected SectionBase(GameMap map)
+            protected SectionBase(ServerMap map)
             {
                 Map = map;
             }
@@ -232,7 +233,7 @@ namespace RK.Common.Classes.Map
 
         class HeaderSection : SectionBase
         {
-            public HeaderSection(GameMap map) : base(map) { }
+            public HeaderSection(ServerMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -249,7 +250,7 @@ namespace RK.Common.Classes.Map
 
         class MapSection : SectionBase
         {
-            public MapSection(GameMap map) : base(map) { }
+            public MapSection(ServerMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -272,7 +273,7 @@ namespace RK.Common.Classes.Map
 
         class TilesSection : SectionBase
         {
-            public TilesSection(GameMap map) : base(map) { }
+            public TilesSection(ServerMap map) : base(map) { }
 
             public override bool WriteSection(BinaryWriter bw)
             {
@@ -419,9 +420,9 @@ namespace RK.Common.Classes.Map
             return sectionBase.ReadSection(br, sectionSize);
         }
 
-        public static GameMap LoadFromMemory(byte[] data)
+        public static ServerMap LoadFromMemory(byte[] data)
         {
-            GameMap map = new GameMap();
+            ServerMap map = new ServerMap();
             using (MemoryStream ms = new MemoryStream(data))
             {
                 using (BinaryReader br = new BinaryReader(ms))
@@ -456,7 +457,7 @@ namespace RK.Common.Classes.Map
             return map;
         }
 
-        public static GameMap LoadFromFile(string fileName)
+        public static ServerMap LoadFromFile(string fileName)
         {
             byte[] data = File.ReadAllBytes(fileName);
             return LoadFromMemory(data);
@@ -466,7 +467,7 @@ namespace RK.Common.Classes.Map
 
 #region IDisposable
 
-        ~GameMap()
+        ~ServerMap()
         {
             Dispose(false);
         }

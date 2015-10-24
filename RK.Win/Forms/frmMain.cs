@@ -211,7 +211,7 @@ namespace RK.Win.Forms
                 });
             });
 
-            using (GameMap map = new GameMap(width, height, 0, pRoughMap))
+            using (ServerMap map = new ServerMap(width, height, 0, pRoughMap))
             {
                 map.SaveToFile("RK.save");
             }
@@ -237,7 +237,7 @@ namespace RK.Win.Forms
 
         private void BtnSaveLabyrinthClick(object sender, EventArgs e)
         {
-            if (mapCtrl.IsMapLoaded)
+            if (mapCtrl.IsServerMapLoaded)
             {
                 Cursor = Cursors.WaitCursor;
                 mapCtrl.Map.SaveToFile("RK.save");
