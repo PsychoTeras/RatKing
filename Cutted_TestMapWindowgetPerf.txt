@@ -1,0 +1,38 @@
+                int iEnd = wHeight * wWidth;
+                int mapHeight = map.Height;
+                int tilesCnt = mapWidth*mapHeight;
+
+                //ushort smallSimilarsCnt = 0;
+                //int smallSimilarCntLim = byte.MaxValue / 2;
+                //ArrayList tilesInfo = new ArrayList();
+                //for (int i = 0; i < iEnd; i++)
+                //{
+                //    ushort x = (ushort)(startX + (i % wWidth));
+                //    ushort y = (ushort)(startY + (i / wWidth));
+                //    Tile tile = *map[x, y];
+
+                //    //Find all similar tiles in a row
+                //    ushort similarTilesCnt = 1;
+                //    while (similarTilesCnt < short.MaxValue - 1)
+                //    {
+                //        ushort xn = (ushort)(startX + ((i + 1) % wWidth));
+                //        ushort yn = (ushort)(startY + ((i + 1) / wWidth));
+                //        if (yn == endY || *map[xn, yn] != tile)
+                //        {
+                //            break;
+                //        }
+
+                //        i++;
+                //        similarTilesCnt++;
+                //    }
+
+                //    if (similarTilesCnt <= smallSimilarCntLim)
+                //    {
+                //        smallSimilarsCnt++;
+                //    }
+
+                //    cnt += similarTilesCnt;
+
+                //    //Add tile
+                //    tilesInfo.Add(new Pair<Tile, ushort>(tile, similarTilesCnt));
+                //}

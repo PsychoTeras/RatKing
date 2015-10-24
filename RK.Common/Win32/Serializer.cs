@@ -299,7 +299,7 @@ namespace RK.Common.Win32
         }
 
         public static void Write<T>(byte* bData, T obj, ref int pos)
-            where T : ISerializable
+            where T : class, ISerializable
         {
             bool bNotNull = obj != null;
             (*(bool*)&bData[pos]) = bNotNull;

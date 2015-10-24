@@ -1,25 +1,35 @@
 ﻿#define UNSAFE_ARRAY
+#define MEM_TILES_COMPRESSION_
 
-using System.Threading;
+using System.Collections;
 using System.Threading.Tasks;
+using RK.Common.Classes;
 using RK.Common.Classes.Map;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
+using RK.Common.Win32;
+
 #if UNSAFE_ARRAY
 using System.Runtime.InteropServices;
 #endif
-using RK.Common.Win32;
+
+#if MEM_TILES_COMPRESSION
+using System.IO;
+using System.IO.Compression;
+using RK.Common.Compress;
+#endif
 
 namespace RK.Console
 {
     unsafe class Program
     {
-        const ushort MapWidth = 1000, MapHeight = 1000;
-        private static Tile EmptyTile = new Tile();
+        private static Tile _emptyTile = new Tile();
 
         internal void TestGameMapPerf()
         {
-            int count = MapWidth * MapHeight;
+            const ushort mapWidth = 1000, mapHeight = 1000;
+
+            int count = mapWidth * mapHeight;
             HRTimer timer = HRTimer.CreateAndStart();
 
 #if UNSAFE_ARRAY
@@ -46,13 +56,13 @@ namespace RK.Console
             Memory.HeapFree(pTiles);
 #endif
 
-            using (GameMap map = new GameMap(MapWidth, MapHeight, 0))
+            using (GameMap map = new GameMap(mapWidth, mapHeight, 0))
             {
                 timer = HRTimer.CreateAndStart();
 
-                for (ushort y = 0; y < MapHeight; y++)
+                for (ushort y = 0; y < mapHeight; y++)
                 {
-                    for (ushort x = 0; x < MapWidth; x++)
+                    for (ushort x = 0; x < mapWidth; x++)
                     {
                         Tile* tile = map[x, y];
                         (*tile).Type = TileType.Nothing;
@@ -77,8 +87,7 @@ namespace RK.Console
 
             HRTimer timer = HRTimer.CreateAndStart();
 
-            //Parallel.For(0, 1000000, i =>
-            for (int i = 0; i < 1000000; i++)
+            Parallel.For(0, 1000000, i =>
             {
                 p = new PUserLogin
                 {
@@ -87,40 +96,96 @@ namespace RK.Console
                 };
                 p.Setup();
                 ps = p.Serialize();
-                p = (PUserLogin)BasePacket.Deserialize(ps, ps.Length, 0, out psize);
-            }
-//            });
+                BasePacket.Deserialize(ps, ps.Length, 0, out psize);
+            });
 
             System.Console.WriteLine(timer.StopWatch());
         }
 
         internal static void TestMapWindowgetPerf()
         {
-            using (GameMap map = new GameMap(MapWidth, MapHeight, 0))
+            using (GameMap gameMap = GameMap.LoadFromFile("RK.save"))
             {
-                Parallel.For(0, MapHeight, y => Parallel.For(0, MapWidth, x =>
-                {
-                    Tile* tile = map[(ushort)x, (ushort)y];
-                    (*tile).Flags = x;
-                    (*tile).RTFlags = y;
-                }));
-                
+                GameMap map = gameMap;
+
                 HRTimer timer = HRTimer.CreateAndStart();
-                int tileSize = EmptyTile.SizeOf(), dataSize = MapWidth * MapHeight * tileSize;
-                
-                byte[] tilesData = new byte[sizeof(int) + dataSize];
-                fixed (byte* bTileData = tilesData)
+
+                int mapWidth = map.Width;
+                int startX = 0, startY = 0;
+                int wWidth = 150, wHeight = 150;
+                int endX = startX + wWidth, endY = startY + wHeight;
+
+                int smallSimilarsCnt = 0;
+                int smallSimilarCntLim = byte.MaxValue / 2;
+                ArrayList tilesInfo = new ArrayList();
+                for (int y = startY; y < endY; y++)
+                {
+                    for (int x = startX; x < endX; x++)
+                    {
+                        Tile tile = *map[y * mapWidth + x];
+
+                        //Find all similar tiles in a row
+                        ushort similarTilesCnt = 1;
+                        while (similarTilesCnt < short.MaxValue - 1)
+                        {
+                            int xn = x + 1, yn = y;
+                            if (xn == endX)
+                            {
+                                xn = startX;
+                                yn++;
+                            }
+                            if (yn == endY || *map[yn * mapWidth + xn] != tile) break;
+
+                            similarTilesCnt++;
+                            x = xn;
+                            y = yn;
+                        }
+
+                        if (similarTilesCnt <= smallSimilarCntLim)
+                        {
+                            smallSimilarsCnt++;
+                        }
+
+                        //Add tile info
+                        tilesInfo.Add(new Pair<Tile, ushort>(tile, similarTilesCnt));
+                    }
+                }
+
+                int tilesCount = tilesInfo.Count;
+                int dataSize = sizeof (byte)*smallSimilarsCnt +
+                               sizeof (ushort)*(tilesCount - smallSimilarsCnt) +
+                               _emptyTile.SizeOf()*tilesCount;
+                byte[] tilesData = new byte[dataSize];
+                fixed (byte* bData = tilesData)
                 {
                     int pos = 0;
-                    byte* bData = bTileData;
-                    Serializer.Write(bData, dataSize, ref pos);
-                    Parallel.For(0, MapHeight, y => Parallel.For(0, MapWidth, x =>
+                    foreach (Pair<Tile, ushort> tileInfo in tilesInfo)
                     {
-                        pos = sizeof(int) + y*MapWidth + x;
-                        Tile* tile = map[(ushort)x, (ushort)y];
-                        (*tile).Serialize(&bData[pos], ref pos);
-                    }));
+                        if (tileInfo.Value <= smallSimilarCntLim)
+                        {
+                            Serializer.Write(bData, (byte) tileInfo.Value, ref pos);
+                        }
+                        else
+                        {
+                            Serializer.Write(bData, tileInfo.Value, ref pos);
+                        }
+                        tileInfo.Key.Serialize(bData, ref pos);
+                    }
                 }
+
+#if MEM_TILES_COMPRESSION
+//                QuickLZ c = new QuickLZ();
+//                byte[] compressed = c.Compress(tilesData);
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (DeflateStream compressor = new DeflateStream(ms, CompressionLevel.Fastest))
+                    {
+                        compressor.Write(tilesData, 0, dataSize);
+                    }
+                    tilesData = ms.ToArray();
+                }
+#endif
 
                 System.Console.WriteLine(timer.StopWatch());
             }

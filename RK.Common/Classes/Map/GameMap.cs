@@ -56,6 +56,11 @@ namespace RK.Common.Classes.Map
             get { return _height; }
         }
 
+        public Tile* this[int idx]
+        {
+            get { return &_tiles[idx]; }
+        }
+
         public Tile* this[ushort x, ushort y]
         {
             get { return &_tiles[y * _width + x]; }
