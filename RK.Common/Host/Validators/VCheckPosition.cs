@@ -59,14 +59,14 @@ namespace RK.Common.Host.Validators
 
         public override void RegisterSession(long sessionToken)
         {
-            lock (_info)
+            if (!_info.ContainsKey(sessionToken))
             {
-                if (!_info.ContainsKey(sessionToken))
+                Player player = Host.World.PlayerGet(sessionToken);
+                if (player != null)
                 {
-                    Player player = Host.World.PlayerGet(sessionToken);
-                    if (player != null)
+                    ValidationInfo info = new ValidationInfo(player);
+                    lock (_info)
                     {
-                        ValidationInfo info = new ValidationInfo(player);
                         _info.Add(sessionToken, info);
                     }
                 }

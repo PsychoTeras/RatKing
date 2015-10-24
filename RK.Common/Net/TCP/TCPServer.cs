@@ -82,40 +82,39 @@ namespace RK.Common.Net.TCP
         {
             lock (_clientsData)
             {
-                RemoveConnectedClient(tcpClient);
-                _connectedClients.Add(tcpClient.Id, tcpClient);
+                long clietnId = tcpClient.Id;
+                RemoveConnectedClient(clietnId);
+                _connectedClients.Add(clietnId, tcpClient);
                 
                 MemoryStream data = new MemoryStream();
-                _clientsData.Add(tcpClient.Id, data);
+                _clientsData.Add(clietnId, data);
                 return data;
             }
         }
 
         public TCPClientEx GetConnectedClient(long clientId)
         {
-            lock (_clientsData)
-            {
-                return _connectedClients.ContainsKey(clientId)
-                           ? _connectedClients[clientId]
-                           : null;
-            }
+            TCPClientEx clientEx;
+            _connectedClients.TryGetValue(clientId, out clientEx);
+            return clientEx;
         }
 
-        private void RemoveConnectedClient(TCPClientEx tcpClient)
+        private void RemoveConnectedClient(long clientId)
         {
-            lock (_clientsData)
+            TCPClientEx tcpClient;
+            if (_connectedClients.TryGetValue(clientId, out tcpClient))
             {
-                if (_clientsData.ContainsKey(tcpClient.Id))
+                lock (_clientsData)
                 {
-                    TcpClient oldTcpClient = _connectedClients[tcpClient.Id];
+                    TcpClient oldTcpClient = tcpClient;
                     if (oldTcpClient.Connected)
                     {
                         oldTcpClient.Close();
                     }
-                    _connectedClients.Remove(tcpClient.Id);
-                    
-                    _clientsData[tcpClient.Id].Dispose();
-                    _clientsData.Remove(tcpClient.Id);
+                    _connectedClients.Remove(clientId);
+
+                    _clientsData[clientId].Dispose();
+                    _clientsData.Remove(clientId);
                 }
             }
         }
@@ -401,7 +400,7 @@ namespace RK.Common.Net.TCP
                 }
 
                 //Remove current client
-                RemoveConnectedClient(tcpClientEx);
+                RemoveConnectedClient(tcpClientEx.Id);
 
                 //Disconnect TCP client
                 if (tcpClientEx.Connected)

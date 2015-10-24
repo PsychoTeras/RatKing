@@ -7,12 +7,16 @@ namespace RK.Common.Proto.Responses
     {
         public long SessionToken;
 
+        public override PacketType Type
+        {
+            get { return PacketType.UserLogin; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof(long);
             }
         }
@@ -32,7 +36,6 @@ namespace RK.Common.Proto.Responses
         public RUserLogin(PUserLogin rUserLogin) 
             : base(rUserLogin)
         {
-            Private = true;
             SessionToken = rUserLogin.SessionToken;
         }
     }

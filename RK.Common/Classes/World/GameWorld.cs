@@ -18,6 +18,8 @@ namespace RK.Common.Classes.World
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
         private const int NEAREST_AREA_HALF_SIZE_SIZE = 100 * ConstMap.PIXEL_SIZE;
 
+        private const float MAP_WINDOW_SCREEN_RES_COEF = 1.5f;
+
 #endregion
 
 #region Private fields
@@ -68,15 +70,14 @@ namespace RK.Common.Classes.World
         }
 
 #endregion
-
         
 #region Class methods
 
         public void Dispose()
         {
-            lock (_maps)
+            if (_maps != null)
             {
-                if (_maps != null)
+                lock (_maps)
                 {
                     foreach (GameMap map in _maps.Values)
                     {
@@ -119,28 +120,21 @@ namespace RK.Common.Classes.World
 
         public bool PlayerChangeMap(long sessionToken, int mapId)
         {
-            lock (_players) lock (_maps)
+            Player player;
+            if (_players.TryGetValue(sessionToken, out player) &&
+                _maps.ContainsKey(mapId) && player.MapId != mapId)
             {
-                Player player;
-                if (_players.TryGetValue(sessionToken, out player) && 
-                    _maps.ContainsKey(mapId) &&
-                    player.MapId != mapId)
-                {
-                    player.MapId = mapId;
-                    return true;
-                }
-                return false;
+                player.MapId = mapId;
+                return true;
             }
+            return false;
         }
 
         public Player PlayerGet(long sessionToken)
         {
-            lock (_players)
-            {
-                Player player;
-                _players.TryGetValue(sessionToken, out player);
-                return player;
-            }
+            Player player;
+            _players.TryGetValue(sessionToken, out player);
+            return player;
         }
 
         public List<Player> PlayersGetNearest(Player player)
@@ -166,12 +160,9 @@ namespace RK.Common.Classes.World
 
         public GameMap MapGet(int mapId)
         {
-            lock (_maps)
-            {
-                GameMap map;
-                _maps.TryGetValue(mapId, out map);
-                return map;
-            }
+            GameMap map;
+            _maps.TryGetValue(mapId, out map);
+            return map;
         }
 
         public ShortPoint? MapFindPlayerStartPoint(Player player)
@@ -180,6 +171,20 @@ namespace RK.Common.Classes.World
             return _maps.TryGetValue(player.MapId, out map)
                 ? Geometry.FindPlayerStartPoint(map, player, MIN_FREE_AREA_SIZE)
                 : null;
+        }
+
+        public byte[] MapGetWindow(Player player, ShortSize screenRes)
+        {
+            GameMap map;
+            if (_maps.TryGetValue(player.MapId, out map))
+            {
+                int width = (int) (screenRes.Width*MAP_WINDOW_SCREEN_RES_COEF);
+                int height = (int) (screenRes.Height*MAP_WINDOW_SCREEN_RES_COEF);
+                int startX = player.Position.X - (width/2);
+                int startY = player.Position.Y - (height/2);
+                return map.GetWindow(startX, startY, width, height);
+            }
+            return null;
         }
 
 #endregion

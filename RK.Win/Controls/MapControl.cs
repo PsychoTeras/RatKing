@@ -318,7 +318,7 @@ namespace RK.Win.Controls
                     _sessionToken = 0;
                 }
 
-                _tcpClient = new TCPClient("192.168.1.114", 15051);
+                _tcpClient = new TCPClient("192.168.1.32", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 
@@ -1297,9 +1297,15 @@ namespace RK.Win.Controls
                 case PacketType.UserLogin:
                     RUserLogin userLogin = (RUserLogin) e;
                     _sessionToken = userLogin.SessionToken;
+                    ShortSize screenRes = new ShortSize
+                        (
+                        Screen.PrimaryScreen.Bounds.Width,
+                        Screen.PrimaryScreen.Bounds.Height
+                        );
                     TCPClientDataSend(new PUserEnter
                     {
-                        SessionToken = _sessionToken
+                        SessionToken = _sessionToken,
+                        ScreenRes = screenRes
                     });
                     break;
 

@@ -8,12 +8,16 @@ namespace RK.Common.Proto.Responses
         public int PlayerId;
         public float Angle;
 
+        public override PacketType Type
+        {
+            get { return PacketType.PlayerRotate; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof (int) +
                     sizeof (float);
             }
@@ -34,7 +38,6 @@ namespace RK.Common.Proto.Responses
         public RPlayerRotate() { }
 
         public RPlayerRotate(int playerId, PPlayerRotate pPlayerRotate) 
-            : base(PacketType.PlayerRotate)
         {
             PlayerId = playerId;
             Angle = pPlayerRotate.Angle;

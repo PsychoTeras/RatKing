@@ -19,7 +19,6 @@ namespace RK.Common.Proto.Packets
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof(int) +
                     sizeof(int) +
                     sizeof(Direction);

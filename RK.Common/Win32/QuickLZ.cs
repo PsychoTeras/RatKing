@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace RK.Common.Compress
+namespace RK.Common.Win32
 {
     public sealed class QuickLZ
     {

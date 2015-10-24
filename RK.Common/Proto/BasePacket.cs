@@ -2,6 +2,7 @@
 using System.Threading;
 using RK.Common.Common;
 using RK.Common.Proto.Packets;
+using RK.Common.Win32;
 
 namespace RK.Common.Proto
 {
@@ -14,7 +15,7 @@ namespace RK.Common.Proto
         public const int ERR_INVALID_PACKET_SIZE = -1;
         public const int ERR_INVALID_PACKET_TYPE = -2;
 
-        protected const int BASE_SIZE = 24;
+        private const int BASE_SIZE = 24;
 
 #endregion
 
@@ -39,7 +40,12 @@ namespace RK.Common.Proto
 
         protected virtual int SizeOf
         {
-            get { return BASE_SIZE; }
+            get { return 0; }
+        }
+
+        protected virtual bool Compressed 
+        {
+            get { return false; }
         }
 
 #endregion
@@ -65,16 +71,29 @@ namespace RK.Common.Proto
 
         public byte[] Serialize()
         {
-            int packetSize = SizeOf;
+            int packetSize = BASE_SIZE + SizeOf;
             byte[] data = new byte[packetSize];
             fixed (byte* bData = data)
             {
                 (*(short*)bData) = (short)packetSize;
-                (*(PacketType*)&bData[2]) = Type;
-                (*(long*)&bData[4]) = Id;
-                (*(long*)&bData[8]) = SessionToken;
-                (*(long*)&bData[16]) = TimeStamp;
+                (*(PacketType*) &bData[2]) = Type;
+                (*(long*) &bData[4]) = Id;
+                (*(long*) &bData[8]) = SessionToken;
+                (*(long*) &bData[16]) = TimeStamp;
                 SerializeToMemory(bData, BASE_SIZE);
+
+                if (Compressed)
+                {
+                    byte[] compressed = Compression.Compress(data, BASE_SIZE);
+                    int compressedLength = compressed.Length;
+                    packetSize = BASE_SIZE + compressedLength;
+                    Array.Resize(ref data, packetSize);
+                    Array.Copy(compressed, 0, data, BASE_SIZE, compressedLength);
+                    fixed (byte* bNewData = data)
+                    {
+                        (*(short*)bNewData) = (short)packetSize;
+                    }
+                }
             }
             return data;
         }
@@ -109,7 +128,7 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BasePacket Deserialize(byte[] data, int dataSize, int pos, 
+        public static BasePacket Deserialize(byte[] data, int dataSize, int pos,
             out short packetSize)
         {
             dataSize -= pos;
@@ -118,6 +137,8 @@ namespace RK.Common.Proto
                 packetSize = 0;
                 return null;
             }
+
+            BasePacket packet;
 
             fixed (byte* bData = &data[pos])
             {
@@ -135,7 +156,7 @@ namespace RK.Common.Proto
                 }
 
                 PacketType packetType = (PacketType) (*(short*) &bData[2]);
-                BasePacket packet = AllocNew(packetType);
+                packet = AllocNew(packetType);
                 if (packet == null)
                 {
                     packetSize = ERR_INVALID_PACKET_TYPE;
@@ -146,10 +167,23 @@ namespace RK.Common.Proto
                 packet.SessionToken = *(long*) &bData[8];
                 packet.TimeStamp = *(long*) &bData[16];
 
-                packet.DeserializeFromMemory(bData, BASE_SIZE);
-
-                return packet;
+                if (!packet.Compressed)
+                {
+                    packet.DeserializeFromMemory(bData, BASE_SIZE);
+                    return packet;
+                }
             }
+
+            if (packet.Compressed)
+            {
+                byte[] decompressed = Compression.Decompress(data, pos + BASE_SIZE);
+                fixed (byte* pDecompressed = decompressed)
+                {
+                    packet.DeserializeFromMemory(pDecompressed, 0);
+                }
+            }
+
+            return packet;
         }
 
 #endregion

@@ -12,12 +12,16 @@ namespace RK.Common.Proto.Responses
 
         public int PlayerId;
 
+        public override PacketType Type
+        {
+            get { return PacketType.PlayerMove; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof (int) +
                     sizeof (int) +
                     sizeof (Direction) +
@@ -44,7 +48,6 @@ namespace RK.Common.Proto.Responses
         public RPlayerMove() { } 
 
         public RPlayerMove(int playerId, PPlayerMove pPlayerMove)
-            : base(PacketType.PlayerMove)
         {
             X = pPlayerMove.X;
             Y = pPlayerMove.Y;

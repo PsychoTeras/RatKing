@@ -7,12 +7,16 @@ namespace RK.Common.Proto.Responses
     {
         public Player Player;
 
+        public override PacketType Type
+        {
+            get { return PacketType.PlayerEnter; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     Serializer.SizeOf(Player);
             }
         }
@@ -29,7 +33,7 @@ namespace RK.Common.Proto.Responses
 
         public RPlayerEnter() { }
 
-        public RPlayerEnter(Player player) : base(PacketType.PlayerEnter)
+        public RPlayerEnter(Player player)
         {
             Player = player;
         }

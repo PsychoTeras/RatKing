@@ -34,6 +34,7 @@ namespace RK.Common.Host
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
         private List<BaseValidator> _validators;
 
+        private Dictionary<long, LoggedUser> _loggedUsers;
         private Dictionary<long, int> _loggedPlayers;
         private Dictionary<TCPClientEx, long> _tcpClients;
 
@@ -58,6 +59,7 @@ namespace RK.Common.Host
                 _netServer.Start();
             }
 
+            _loggedUsers = new Dictionary<long, LoggedUser>();
             _loggedPlayers = new Dictionary<long, int>();
             _tcpClients = new Dictionary<TCPClientEx, long>();
 
@@ -101,6 +103,8 @@ namespace RK.Common.Host
 
             User user = new User(pUserLogin.UserName, pUserLogin.Password);
             pUserLogin.SessionToken = BasePacket.NewSessionToken(user.Id);
+            
+            LoggedUser loggedUser = new LoggedUser(user);
 
             Player player = Player.Create(user.UserName);
             ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
@@ -113,12 +117,18 @@ namespace RK.Common.Host
 
             World.PlayerAdd(pUserLogin.SessionToken, player);
 
-            lock (_loggedPlayers) lock (_tcpClients)
+            lock (_loggedPlayers)
             {
+                _loggedUsers.Add(pUserLogin.SessionToken, loggedUser);
                 _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
-                _tcpClients.Add(tcpClient, pUserLogin.SessionToken);
-                return new RUserLogin(pUserLogin);
             }
+
+            lock (_tcpClients)
+            {
+                _tcpClients.Add(tcpClient, pUserLogin.SessionToken);
+            }
+
+            return new RUserLogin(pUserLogin);
         }
 
         private BaseResponse Enter(TCPClientEx tcpClient, BasePacket packet)
@@ -135,7 +145,10 @@ namespace RK.Common.Host
             SendResponse(new RPlayerEnter(player));
 
             List<Player> playersOnLocation = World.PlayersGetNearest(player);
-            return new RUserEnter(player.Id, playersOnLocation, pUserEnter);
+            return new RUserEnter(player.Id, pUserEnter)
+            {
+                PlayersOnLocation = playersOnLocation
+            };
         }
 
         private BaseResponse Logout(TCPClientEx tcpClient, BasePacket packet)
@@ -233,7 +246,7 @@ namespace RK.Common.Host
             }
             catch (Exception ex)
             {
-                return BaseResponse.FromException<BaseResponse>(packet, ex);
+                return BaseResponse.FromException(packet, ex);
             }
         }
 
@@ -253,13 +266,10 @@ namespace RK.Common.Host
 
         private void TCPClientDisonnected(TCPClientEx tcpClient)
         {
-            lock (_tcpClients)
+            long sessionToken;
+            if (_tcpClients.TryGetValue(tcpClient, out sessionToken))
             {
-                long sessionToken;
-                if (_tcpClients.TryGetValue(tcpClient, out sessionToken))
-                {
-                    Logout(tcpClient, sessionToken);
-                }
+                Logout(tcpClient, sessionToken);
             }
         }
 

@@ -1,9 +1,7 @@
-﻿using System;
-using RK.Common.Common;
+﻿using RK.Common.Common;
 
 namespace RK.Common.Classes.Users
 {
-    [Serializable]
     public class User : DbObject
     {
 
@@ -25,11 +23,6 @@ namespace RK.Common.Classes.Users
             UserName = userName ?? string.Empty;
             Password = password ?? string.Empty;
             Email = email ?? string.Empty;
-        }
-
-        public static User Create()
-        {
-            return new User(string.Empty, string.Empty, string.Empty);
         }
 
 #endregion

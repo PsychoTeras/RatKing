@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using RK.Common.Classes.Units;
+using RK.Common.Common;
 using RK.Common.Proto.Packets;
 using RK.Common.Win32;
 
@@ -10,37 +11,55 @@ namespace RK.Common.Proto.Responses
         public int MyPlayerId;
         public List<Player> PlayersOnLocation;
 
+        public byte[] MapBuffer;
+        public ShortRect MapWindow;
+
+        public override PacketType Type
+        {
+            get { return PacketType.UserEnter; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof (int) +
-                    Serializer.SizeOf(PlayersOnLocation);
+                    Serializer.SizeOf(PlayersOnLocation) +
+                    Serializer.SizeOf(MapBuffer) +
+                    sizeof (ShortRect);
             }
+        }
+
+        public override bool Private
+        {
+            get { return true; }
         }
 
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
             Serializer.Read(bData, out MyPlayerId, ref pos);
             Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, ref pos);
+
+            Serializer.Read(bData, out MapBuffer, ref pos);
+            Serializer.Read(bData, out MapWindow, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
         {
             Serializer.Write(bData, MyPlayerId, ref pos);
             Serializer.Write<Player, List<Player>>(bData, PlayersOnLocation, ref pos);
+
+            Serializer.Write(bData, MapBuffer, ref pos);
+            Serializer.Write(bData, MapWindow, ref pos);
         }
 
         public RUserEnter() { }
 
-        public RUserEnter(int myPlayerId, List<Player> playersOnLocation, PUserEnter pUserEnter)
+        public RUserEnter(int myPlayerId, PUserEnter pUserEnter)
             : base(pUserEnter)
         {
-            Private = true;
             MyPlayerId = myPlayerId;
-            PlayersOnLocation = playersOnLocation;
         }
     }
 }

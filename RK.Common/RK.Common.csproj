@@ -65,6 +65,7 @@
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Classes\Pair.cs" />
+    <Compile Include="Classes\Users\LoggedUser.cs" />
     <Compile Include="Common\DbObject.cs" />
     <Compile Include="Common\Direction.cs" />
     <Compile Include="Common\ITransferable.cs" />
@@ -73,7 +74,8 @@
     <Compile Include="Common\ShortRect.cs" />
     <Compile Include="Common\ShortSize.cs" />
     <Compile Include="Common\TinySize.cs" />
-    <Compile Include="Compress\QuickLZ.cs" />
+    <Compile Include="Win32\Compression.cs" />
+    <Compile Include="Win32\QuickLZ.cs" />
     <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />
     <Compile Include="Classes\Map\GameMap.cs" />

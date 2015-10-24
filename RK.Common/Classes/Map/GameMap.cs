@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace RK.Common.Classes.Map
 
         private const short MAGICNUM = 0x4D47; //GM
         private const float VERSION = 0.1f;
+
+        private static int _tileSize = new Tile().SizeOf();
 
 #endregion
 
@@ -136,6 +139,75 @@ namespace RK.Common.Classes.Map
             TileBorders.ScanAndSetBorders(_wallAreas, TileType.Wall, this);
 
             _spaceAreas.Detect();
+        }
+
+        public byte[] GetWindow(int startX, int startY, int width, int height)
+        {
+            startX = Math.Max(startX, 0);
+            startY = Math.Max(startY, 0);
+            int endX = Math.Min(startX + width, _width);
+            int endY = Math.Min(startY + height, _height);
+
+            int smallSimilarsCnt = 0;
+            int smallSimilarCntLim = byte.MaxValue / 2;
+
+            ArrayList tilesInfo = new ArrayList();
+            for (int y = startY; y < endY; y++)
+            {
+                for (int x = startX; x < endX; x++)
+                {
+                    Tile tile = *this[y * _width + x];
+
+                    //Find all similar tiles in a row
+                    ushort similarTilesCnt = 1;
+                    while (similarTilesCnt < short.MaxValue - 1)
+                    {
+                        int xn = x + 1, yn = y;
+                        if (xn == endX)
+                        {
+                            xn = startX;
+                            yn++;
+                        }
+                        if (yn == endY || *this[yn * _width + xn] != tile) break;
+
+                        similarTilesCnt++;
+                        x = xn;
+                        y = yn;
+                    }
+
+                    if (similarTilesCnt <= smallSimilarCntLim)
+                    {
+                        smallSimilarsCnt++;
+                    }
+
+                    //Add tile info
+                    tilesInfo.Add(new Pair<Tile, ushort>(tile, similarTilesCnt));
+                }
+            }
+
+            int tilesCount = tilesInfo.Count;
+            int dataSize = sizeof(byte) * smallSimilarsCnt +
+                           sizeof(ushort) * (tilesCount - smallSimilarsCnt) +
+                           _tileSize * tilesCount;
+            byte[] tilesData = new byte[dataSize];
+            fixed (byte* bData = tilesData)
+            {
+                int pos = 0;
+                foreach (Pair<Tile, ushort> tileInfo in tilesInfo)
+                {
+                    if (tileInfo.Value <= smallSimilarCntLim)
+                    {
+                        Serializer.Write(bData, (byte)tileInfo.Value, ref pos);
+                    }
+                    else
+                    {
+                        Serializer.Write(bData, tileInfo.Value, ref pos);
+                    }
+                    tileInfo.Key.Serialize(bData, ref pos);
+                }
+            }
+
+            return tilesData;
         }
 
 #endregion

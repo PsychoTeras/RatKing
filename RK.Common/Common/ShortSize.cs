@@ -29,6 +29,17 @@ namespace RK.Common.Common
             get { return Math.Max(Width, Height); }
         }
 
+        public ShortSize(int width, int height)
+        {
+            if (width < 0 || width > ushort.MaxValue ||
+                height < 0 || height > ushort.MaxValue)
+            {
+                throw new Exception("Params are out of range");
+            }
+            Width = (ushort) width;
+            Height = (ushort) height;
+        }
+
         public ShortSize(ushort width, ushort height)
         {
             Width = width;

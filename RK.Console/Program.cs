@@ -2,6 +2,9 @@
 #define MEM_TILES_COMPRESSION_
 
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RK.Common.Classes;
 using RK.Common.Classes.Map;
@@ -23,6 +26,10 @@ namespace RK.Console
 {
     unsafe class Program
     {
+        private const int THREADS_COUNT = 8;
+        private const int ITERATIONS_COUNT = 100000;
+
+        private static WaitHandle[] _tEvents;
         private static Tile _emptyTile = new Tile();
 
         internal void TestGameMapPerf()
@@ -76,24 +83,20 @@ namespace RK.Console
         internal static void TestProtoPacketsPerf()
         {
             short psize;
+            string text = File.ReadAllText(@"d:\DICOM files\DOT\DicomSender.txt");
             PUserLogin p = new PUserLogin
             {
-                UserName = "psychoteras",
+                UserName = "PsychoTeras",
                 Password = "password"
             };
             p.Setup();
             byte[] ps = p.Serialize();
-            BasePacket.Deserialize(ps, ps.Length, 0, out psize);
+            var dd = BasePacket.Deserialize(ps, ps.Length, 0, out psize);
 
             HRTimer timer = HRTimer.CreateAndStart();
 
             Parallel.For(0, 1000000, i =>
             {
-                p = new PUserLogin
-                {
-                    UserName = "psychoteras",
-                    Password = "password"
-                };
                 p.Setup();
                 ps = p.Serialize();
                 BasePacket.Deserialize(ps, ps.Length, 0, out psize);
@@ -191,9 +194,61 @@ namespace RK.Console
             }
         }
 
+        private static void DoTestMultithreadDictionary(object obj)
+        {
+            int idx = (int)((object[])obj)[0];
+            var dict = (Dictionary<long, int>) ((object[]) obj)[1];
+            var ev = (EventWaitHandle)((object[])obj)[2];
+
+            if (idx%2 == 0)
+            {
+                for (int i = 0; i < ITERATIONS_COUNT; i++)
+                {
+                    lock (dict)
+                    {
+                        dict.Add(idx*ITERATIONS_COUNT + i, i);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < ITERATIONS_COUNT; i++)
+                {
+                    int key = (idx - 1)*ITERATIONS_COUNT + i;
+                    if (dict.ContainsKey(key))
+                    {
+                        int val;
+                        dict.TryGetValue(key, out val);
+                    }
+                }
+            }
+            ev.Set();
+        }
+
+        internal static void TestMultithreadDictionaryPerf()
+        {
+            var dict = new Dictionary<long, int>();
+
+            _tEvents = new WaitHandle[THREADS_COUNT];
+            for (int i = 0; i < THREADS_COUNT; i++)
+            {
+                _tEvents[i] = new ManualResetEvent(false);
+            }
+
+            HRTimer timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < THREADS_COUNT; i++)
+            {
+                object[] param = {i, dict, _tEvents[i]};
+                ThreadPool.QueueUserWorkItem(DoTestMultithreadDictionary, param);
+            }
+            WaitHandle.WaitAll(_tEvents);
+
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
         static void Main(string[] args)
         {
-            TestMapWindowgetPerf();
+            TestProtoPacketsPerf();
             System.Console.ReadKey();
         }
     }

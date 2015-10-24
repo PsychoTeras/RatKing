@@ -6,12 +6,16 @@ namespace RK.Common.Proto.Responses
     {
         public int PlayerId;
 
+        public override PacketType Type
+        {
+            get { return PacketType.PlayerExit; }
+        }
+
         protected override int SizeOf
         {
             get
             {
                 return
-                    BASE_SIZE +
                     sizeof(int);
             }
         }
@@ -28,7 +32,7 @@ namespace RK.Common.Proto.Responses
 
         public RPlayerExit() { }
 
-        public RPlayerExit(int playerId) : base(PacketType.PlayerExit)
+        public RPlayerExit(int playerId)
         {
             PlayerId = playerId;
         }

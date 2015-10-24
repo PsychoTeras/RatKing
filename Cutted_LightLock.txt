@@ -1,0 +1,17 @@
+                Label:
+                    if (_syncCounter != 0)
+                    {
+                        Thread.Sleep(0);
+                        goto Label;
+                    }
+                    _syncCounter = threadId;
+                    Interlocked.MemoryBarrier();
+                    if (_syncCounter != threadId)
+                    {
+                        Thread.Sleep(0);
+                        goto Label;
+                    }
+
+					...
+
+                    _syncCounter = 0;
