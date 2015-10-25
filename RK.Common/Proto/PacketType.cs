@@ -17,6 +17,6 @@
         PlayerRotate,
 
         //200. Map
-        MapBuffer = 200,
+        MapData = 200,
     }
 }

@@ -1395,6 +1395,11 @@ namespace RK.Win.Controls
                         playerEx.MovingStartedPoint = player.Position;
                     }
                     break;
+
+                case PacketType.MapData:
+                    RMapData mapData = (RMapData) e;
+                    _clientMap.AppendMapData(mapData.MapData, mapData.MapWindow);
+                    break;
             }
         }
 

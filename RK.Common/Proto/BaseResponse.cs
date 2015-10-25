@@ -169,8 +169,8 @@ namespace RK.Common.Proto
                     return new RPlayerRotate();
 
                     //Map
-                case PacketType.MapBuffer:
-                    return new RMapBuffer();
+                case PacketType.MapData:
+                    return new RMapData();
 
                     //Base
                 default:

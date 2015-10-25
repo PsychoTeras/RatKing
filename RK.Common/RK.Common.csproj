@@ -99,7 +99,7 @@
     <Compile Include="Proto\ErrorCodes\ECLogin.cs" />
     <Compile Include="Proto\ErrorCodes\ECLogout.cs" />
     <Compile Include="Proto\ErrorCodes\ECRegistration.cs" />
-    <Compile Include="Proto\Responses\RMapBuffer.cs" />
+    <Compile Include="Proto\Responses\RMapData.cs" />
     <Compile Include="Proto\Responses\RPlayerEnter.cs" />
     <Compile Include="Proto\Responses\RPlayerExit.cs" />
     <Compile Include="Proto\Responses\RPlayerMove.cs" />
