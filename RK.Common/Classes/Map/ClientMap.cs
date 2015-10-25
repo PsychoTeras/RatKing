@@ -10,7 +10,7 @@ namespace RK.Common.Classes.Map
 
 #region Constants
 
-        private const int TILES_LIST_DEF_CAPACITY = 2;
+        private const int TILES_LIST_DEF_CAPACITY = 20;
         private const float TILES_LIST_CAPACITY_INC = 1.5f;
 
 #endregion
@@ -88,16 +88,12 @@ namespace RK.Common.Classes.Map
                 if (_tiles == null)
                 {
                     _tilesListCapacity = TILES_LIST_DEF_CAPACITY;
-                    _tiles = (Tile*) Memory.HeapAlloc(_tilesListCapacity*sizeof(Tile), false);
+                    _tiles = (Tile*) Memory.HeapAlloc(_tilesListCapacity*sizeof (Tile), false);
                 }
                 else
                 {
-                    //!!!
                     _tilesListCapacity = (int) (_tilesListCapacity*TILES_LIST_CAPACITY_INC);
-                    Tile* newTiles = (Tile*)Memory.HeapAlloc(_tilesListCapacity * sizeof(Tile), false);
-                    Memory.HeapCopy(_tiles, newTiles, _tilesListCount * sizeof(Tile));
-                    Memory.HeapFree(_tiles);
-                    _tiles = newTiles;
+                    _tiles = (Tile*) Memory.HeapReAlloc(_tiles, _tilesListCapacity*sizeof (Tile), false);
                 }
             }
         }
