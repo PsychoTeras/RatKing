@@ -71,6 +71,7 @@
     <Compile Include="Classes\Map\Renderers\RendererBorders.cs" />
     <Compile Include="Classes\Map\Renderers\RendererPlayer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererWalls.cs" />
+    <Compile Include="Classes\Map\TileBorders.cs" />
     <Compile Include="Controls\MapControl.cs">
       <SubType>Component</SubType>
     </Compile>

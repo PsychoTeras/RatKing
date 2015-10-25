@@ -17,17 +17,18 @@ namespace RK.Common.Classes.Map
 
 #region Private fields
 
-        private int _top;
-        private int _left;
-        private int _height;
-        private int _width;
+        private ushort _top;
+        private ushort _left;
+        private ushort _height;
+        private ushort _width;
 
         private Tile* _tiles;
         private int _tilesListCount;
         private int _tilesListCapacity;
 
-        private Dictionary<long, int> _tilesSet;
+        private Dictionary<int, int> _tilesSet;
         private Dictionary<int, int> _map;
+        private Dictionary<int, int> _rtFlags;
 
         private bool _onceLoaded;
 
@@ -35,22 +36,22 @@ namespace RK.Common.Classes.Map
 
 #region Properties
 
-        public int Top
+        public ushort Top
         {
             get { return _top; }
         }
 
-        public int Left
+        public ushort Left
         {
             get { return _left; }
         }
 
-        public int Height
+        public ushort Height
         {
             get { return _height; }
         }
 
-        public int Width
+        public ushort Width
         {
             get { return _width; }
         }
@@ -73,8 +74,45 @@ namespace RK.Common.Classes.Map
 
         public ClientMap()
         {
-            _tilesSet = new Dictionary<long, int>();
+            _tilesSet = new Dictionary<int, int>();
             _map = new Dictionary<int, int>();
+            _rtFlags = new Dictionary<int, int>();
+        }
+
+#endregion
+
+#region RTFlags operations
+
+        //6 bits for wall borders. 0 - undefined. 1 - clear. 2 - left. 3 - right. 4. top. 5. bottom.
+        public int Borders(ushort x, ushort y)
+        {
+            int rtFlags;
+            int tileCoordMark = y << 16 | x;
+            if (_rtFlags.TryGetValue(tileCoordMark, out rtFlags))
+            {
+                return rtFlags & 0x000000FF;
+            }
+            return -1;
+        }
+
+        public void FlagClearBorders(ushort x, ushort y)
+        {
+            int rtFlags;
+            int tileCoordMark = y << 16 | x;
+            if (_rtFlags.TryGetValue(tileCoordMark, out rtFlags))
+            {
+                _rtFlags[tileCoordMark] = (int)(rtFlags & 0xFFFFFF00);
+            }
+        }
+
+        public void FlagSetBorders(ushort x, ushort y, byte borders)
+        {
+            int rtFlags;
+            int tileCoordMark = y << 16 | x;
+            if (_rtFlags.TryGetValue(tileCoordMark, out rtFlags))
+            {
+                _rtFlags[tileCoordMark] = (int)(rtFlags & 0xFFFFFF00 | borders);
+            }
         }
 
 #endregion
@@ -101,7 +139,7 @@ namespace RK.Common.Classes.Map
         private int AppendTile(ref Tile tile)
         {
             int tileIdx;
-            long tileMark = tile.Mark;
+            int tileMark = tile.GetHashCode();
             if (!_tilesSet.TryGetValue(tileMark, out tileIdx))
             {
                 CheckTilesListCapacity();
@@ -152,10 +190,12 @@ namespace RK.Common.Classes.Map
                         if (_map.ContainsKey(tileCoordMark))
                         {
                             _map[tileCoordMark] = tileIdx;
+                            FlagClearBorders(x, y);
                         }
                         else
                         {
                             _map.Add(tileCoordMark, tileIdx);
+                            _rtFlags.Add(tileCoordMark, 0);
                         }
                         curIdx++;
                     }
@@ -164,8 +204,8 @@ namespace RK.Common.Classes.Map
 
             _left = _onceLoaded ? Math.Min(window.X, _left) : window.X;
             _top = _onceLoaded ? Math.Min(window.Y, _top) : window.Y;
-            _height = _onceLoaded ? Math.Max(window.Height + window.Y, _height) : window.Height + window.Y;
-            _width = _onceLoaded ? Math.Max(window.Width + window.X, _width) : window.Width + window.X;
+            _height = (ushort) (_onceLoaded ? Math.Max(window.Height + window.Y, _height) : window.Height + window.Y);
+            _width = (ushort) (_onceLoaded ? Math.Max(window.Width + window.X, _width) : window.Width + window.X);
 
             _onceLoaded = true;
         }

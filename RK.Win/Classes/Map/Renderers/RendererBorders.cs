@@ -43,28 +43,38 @@ namespace RK.Win.Classes.Map.Renderers
                         float x1 = x*pixelSize - mapCtrl.PosX;
                         float y1 = y*pixelSize - mapCtrl.PosY;
 
-                        float x2, y2;
-                        int borders = (*tile).Borders;
-                        if ((borders | 1) == borders)
+                        int borders = map.Borders(x, y);
+                        if (borders == 0)
                         {
-                            y2 = y1 + pixelSize - 1;
-                            buffer.DrawLine(_borderPen, x1, y1, x1, y2);
+                            borders = TileBorders.ScanAndSetBorders(x, y, TileType.Wall, map);
                         }
+
+                        if (borders == 1)
+                        {
+                            continue;
+                        }
+
+                        float x2, y2;
                         if ((borders | 2) == borders)
                         {
-                            x2 = x1 + pixelSize - 1;
-                            y2 = y1 + pixelSize - 1;
-                            buffer.DrawLine(_borderPen, x2, y1, x2, y2);
+                            y2 = y1 + pixelSize - 0;
+                            buffer.DrawLine(_borderPen, x1, y1, x1, y2);
                         }
                         if ((borders | 4) == borders)
                         {
-                            x2 = x1 + pixelSize - 1;
-                            buffer.DrawLine(_borderPen, x1, y1, x2, y1);
+                            x2 = x1 + pixelSize - 0;
+                            y2 = y1 + pixelSize - 0;
+                            buffer.DrawLine(_borderPen, x2, y1, x2, y2);
                         }
                         if ((borders | 8) == borders)
                         {
-                            x2 = x1 + pixelSize - 1;
-                            y2 = y1 + pixelSize - 1;
+                            x2 = x1 + pixelSize - 0;
+                            buffer.DrawLine(_borderPen, x1, y1, x2, y1);
+                        }
+                        if ((borders | 16) == borders)
+                        {
+                            x2 = x1 + pixelSize - 0;
+                            y2 = y1 + pixelSize - 0;
                             buffer.DrawLine(_borderPen, x1, y2, x2, y2);
                         }
                     }

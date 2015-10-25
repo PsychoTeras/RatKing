@@ -37,7 +37,6 @@ namespace RK.Common.Classes.Map
         private short _level;
 
         private Tile* _tiles;
-        private MapAreas _wallAreas;
         private MapAreas _spaceAreas;
 
         private Dictionary<SectionType, SectionBase> _sections;
@@ -66,11 +65,6 @@ namespace RK.Common.Classes.Map
         public Tile* this[ushort x, ushort y]
         {
             get { return &_tiles[y * _width + x]; }
-        }
-
-        public MapAreas WallAreas
-        {
-            get { return _wallAreas; }
         }
 
         public MapAreas SpaceAreas
@@ -119,7 +113,6 @@ namespace RK.Common.Classes.Map
 
         private void InitializeGeneric()
         {
-            _wallAreas = new MapAreas(this, TileType.Wall);
             _spaceAreas = new MapAreas(this, TileType.Nothing);
         }
 
@@ -134,9 +127,6 @@ namespace RK.Common.Classes.Map
 
         private void DetectAreas()
         {
-            _wallAreas.Detect();
-            TileBorders.ScanAndSetBorders(_wallAreas, TileType.Wall, this);
-
             _spaceAreas.Detect();
         }
 
@@ -165,7 +155,7 @@ namespace RK.Common.Classes.Map
                             xn = startX;
                             yn++;
                         }
-                        if (yn == endY || !(*this[yn * _width + xn]).MarkEquals(ref tile)) break;
+                        if (yn == endY || *this[yn * _width + xn] != tile) break;
 
                         similarTilesCnt++;
                         x = xn;
