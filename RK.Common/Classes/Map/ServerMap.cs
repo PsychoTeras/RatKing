@@ -142,10 +142,8 @@ namespace RK.Common.Classes.Map
 
         public byte[] GetWindow(int startX, int startY, int width, int height)
         {
-            startX = Math.Max(startX, 0);
-            startY = Math.Max(startY, 0);
-            int endX = Math.Min(startX + width, _width);
-            int endY = Math.Min(startY + height, _height);
+            int endX = startX + width;
+            int endY = startY + height;
 
             int smallSimilarsCnt = 0;
             int smallSimilarCntLim = byte.MaxValue / 2;
@@ -167,7 +165,7 @@ namespace RK.Common.Classes.Map
                             xn = startX;
                             yn++;
                         }
-                        if (yn == endY || *this[yn * _width + xn] != tile) break;
+                        if (yn == endY || !(*this[yn * _width + xn]).MarkEquals(ref tile)) break;
 
                         similarTilesCnt++;
                         x = xn;

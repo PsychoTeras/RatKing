@@ -11,7 +11,7 @@ namespace RK.Common.Classes.Map
 
 #region Constants
 
-        private const int TILES_LIST_DEF_CAPACITY = 10;
+        private const int TILES_LIST_DEF_CAPACITY = 50;
         private const float TILES_LIST_CAPACITY_INC = 1.5f;
 
 #endregion
@@ -27,7 +27,7 @@ namespace RK.Common.Classes.Map
         private int _tilesListCount;
         private int _tilesListCapacity;
 
-        private Dictionary<int, int> _tilesSet;
+        private Dictionary<long, int> _tilesSet;
         private Dictionary<int, int> _map;
 
         private bool _onceLoaded;
@@ -74,7 +74,7 @@ namespace RK.Common.Classes.Map
 
         public ClientMap()
         {
-            _tilesSet = new Dictionary<int, int>();
+            _tilesSet = new Dictionary<long, int>();
             _map = new Dictionary<int, int>();
         }
 
@@ -93,8 +93,12 @@ namespace RK.Common.Classes.Map
                 }
                 else
                 {
+                    //!!!
                     _tilesListCapacity = (int) (_tilesListCapacity*TILES_LIST_CAPACITY_INC);
-                    _tiles = (Tile*) Memory.HeapReAlloc(_tiles, _tilesListCapacity*ConstMap.TILE_SIZE_OF, false);
+                    Tile* newTiles = (Tile*)Memory.HeapAlloc(_tilesListCapacity * ConstMap.TILE_SIZE_OF, false);
+                    Memory.HeapCopy(_tiles, newTiles, _tilesListCount * ConstMap.TILE_SIZE_OF);
+                    Memory.HeapFree(_tiles);
+                    _tiles = newTiles;
                 }
             }
         }
@@ -102,13 +106,13 @@ namespace RK.Common.Classes.Map
         private int AppendTile(ref Tile tile)
         {
             int tileIdx;
-            int tileHash = tile.GetHashCode();
-            if (!_tilesSet.TryGetValue(tileHash, out tileIdx))
+            long tileMark = tile.Mark;
+            if (!_tilesSet.TryGetValue(tileMark, out tileIdx))
             {
                 CheckTilesListCapacity();
                 tileIdx = _tilesListCount++;
                 (*&_tiles[tileIdx]) = tile;
-                _tilesSet.Add(tileHash, tileIdx);
+                _tilesSet.Add(tileMark, tileIdx);
             }
             return tileIdx;
         }

@@ -45,6 +45,21 @@ namespace RK.Common.Classes.Map
 
 #region Flags operations
 
+        public long Mark
+        {
+            get
+            {
+                unchecked
+                {
+                    int mark = (int) Type;
+                    mark = (mark * 0x18D) ^ TypeIndex;
+                    mark = (mark * 0x18D) ^ Flags;
+                    mark = (mark * 0x18D) ^ RTFlags;
+                    return mark;
+                }
+            }
+        }
+
         public void FlagClearBorders()
         {
             RTFlags = (int)(RTFlags & 0xFFFFFFF0);
@@ -69,6 +84,14 @@ namespace RK.Common.Classes.Map
             return !o1.Equals(o2);
         }
 
+        public bool MarkEquals(ref Tile other)
+        {
+            return other.Type == Type &&
+                   other.TypeIndex == TypeIndex &&
+                   other.Flags == Flags &&
+                   other.RTFlags == RTFlags;
+        }
+
         public bool Equals(Tile other)
         {
             return other.Type == Type &&
@@ -86,8 +109,8 @@ namespace RK.Common.Classes.Map
             unchecked
             {
                 int hashCode = Type.GetHashCode();
-                hashCode = (hashCode*397) ^ TypeIndex.GetHashCode();
-                hashCode = (hashCode*397) ^ Flags.GetHashCode();
+                hashCode = (hashCode*0x18D) ^ TypeIndex.GetHashCode();
+                hashCode = (hashCode*0x18D) ^ Flags.GetHashCode();
                 return hashCode;
             }
         }
