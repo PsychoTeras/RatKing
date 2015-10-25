@@ -97,14 +97,14 @@ namespace RK.Win.Classes.Map
         }
 
         public void InvalidateArea(Rectangle area, out int startTileX, out int startTileY,
-                                   out int tilesCntX, out int tilesCntY)
+            out int tilesCntX, out int tilesCntY)
         {
             Random rnd = new Random(Environment.TickCount);
 
-            startTileX = (int) Math.Floor((double) area.X/TileWidth);
-            startTileY = (int) Math.Floor((double) area.Y/TileHeight);
-            tilesCntX = (int) Math.Ceiling((double) area.Width/TileWidth) + 1;
-            tilesCntY = (int) Math.Ceiling((double) area.Height/TileHeight) + 1;
+            startTileX = (int) Math.Floor((float) area.X/TileWidth);
+            startTileY = (int) Math.Floor((float) area.Y/TileHeight);
+            tilesCntX = (int) Math.Ceiling((float) area.Width/TileWidth) + 1;
+            tilesCntY = (int) Math.Ceiling((float) area.Height/TileHeight) + 1;
 
             if (_startTileX != startTileX || _startTileY != startTileY ||
                 _tilesCntX != tilesCntX || _tilesCntY != tilesCntY)

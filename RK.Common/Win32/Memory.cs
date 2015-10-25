@@ -39,6 +39,7 @@ namespace RK.Common.Win32
 
         public static void* HeapAlloc(int size, bool zeroMem = true)
         {
+            //            return Marshal.AllocHGlobal(size).ToPointer();
             void* result = HeapAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, size);
             if (result == null)
             {

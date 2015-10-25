@@ -186,7 +186,7 @@ namespace RK.Common.Classes.Map
             int dataSize = sizeof (int) +
                            sizeof (byte)*smallSimilarsCnt +
                            sizeof (ushort)*(tilesCount - smallSimilarsCnt) +
-                           ConstMap.TILE_SIZE_OF*tilesCount;
+                           ConstMap.TILE_SERIALIZE_SIZE_OF*tilesCount;
             byte[] tilesData = new byte[dataSize];
             fixed (byte* bData = tilesData)
             {

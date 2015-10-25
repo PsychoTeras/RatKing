@@ -179,16 +179,25 @@ namespace RK.Common.Classes.World
             if (_maps.TryGetValue(player.MapId, out map))
             {
                 const float resCoef = MAP_WINDOW_RES_COEF/ConstMap.PIXEL_SIZE;
-                double width =
-                    Math.Min(Math.Ceiling(screenRes.Width * resCoef), map.Width);
-                double height =
-                    (int)Math.Min(Math.Ceiling(screenRes.Height * resCoef), map.Height);
-                int startX =
-                    (int) Math.Max(Math.Floor((float) player.Position.X/ConstMap.PIXEL_SIZE) - width/2, 0);
-                int startY =
-                    (int) Math.Max(Math.Floor((float) player.Position.Y/ConstMap.PIXEL_SIZE) - height/2, 0);
-                mapWindow = new ShortRect(startX, startY, (int) width, (int) height);
-                return map.GetWindow(startX, startY, mapWindow.Width, mapWindow.Height);
+
+                int mapWidth = map.Width, mapHeight = map.Height;
+
+                float dWidth = screenRes.Width*resCoef;
+                float dHeight = screenRes.Height * resCoef;
+                float dStartX = ((float)player.Position.X / ConstMap.PIXEL_SIZE) - dWidth / 2;
+                float dStartY = ((float)player.Position.Y / ConstMap.PIXEL_SIZE) - dHeight / 2;
+
+                ushort startX = (ushort) Math.Max(dStartX, 0);
+                ushort startY = (ushort) Math.Max(dStartY, 0);
+                ushort width = (ushort) Math.Ceiling(dStartX + dWidth > mapWidth
+                    ? dWidth - (dStartX + dWidth - mapWidth)
+                    : dWidth);
+                ushort height = (ushort) Math.Ceiling(dStartY + dHeight > mapHeight
+                    ? dHeight - (dStartY + dHeight - mapHeight)
+                    : dHeight);
+
+                mapWindow = new ShortRect(startX, startY, width, height);
+                return map.GetWindow(mapWindow.X, mapWindow.Y, mapWindow.Width, mapWindow.Height);
             }
             mapWindow = ShortRect.Empty;
             return null;

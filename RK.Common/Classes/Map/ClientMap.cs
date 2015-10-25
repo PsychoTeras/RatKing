@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using RK.Common.Common;
-using RK.Common.Const;
 using RK.Common.Win32;
 
 namespace RK.Common.Classes.Map
@@ -11,7 +10,7 @@ namespace RK.Common.Classes.Map
 
 #region Constants
 
-        private const int TILES_LIST_DEF_CAPACITY = 50;
+        private const int TILES_LIST_DEF_CAPACITY = 2;
         private const float TILES_LIST_CAPACITY_INC = 1.5f;
 
 #endregion
@@ -89,14 +88,14 @@ namespace RK.Common.Classes.Map
                 if (_tiles == null)
                 {
                     _tilesListCapacity = TILES_LIST_DEF_CAPACITY;
-                    _tiles = (Tile*) Memory.HeapAlloc(_tilesListCapacity*ConstMap.TILE_SIZE_OF, false);
+                    _tiles = (Tile*) Memory.HeapAlloc(_tilesListCapacity*sizeof(Tile), false);
                 }
                 else
                 {
                     //!!!
                     _tilesListCapacity = (int) (_tilesListCapacity*TILES_LIST_CAPACITY_INC);
-                    Tile* newTiles = (Tile*)Memory.HeapAlloc(_tilesListCapacity * ConstMap.TILE_SIZE_OF, false);
-                    Memory.HeapCopy(_tiles, newTiles, _tilesListCount * ConstMap.TILE_SIZE_OF);
+                    Tile* newTiles = (Tile*)Memory.HeapAlloc(_tilesListCapacity * sizeof(Tile), false);
+                    Memory.HeapCopy(_tiles, newTiles, _tilesListCount * sizeof(Tile));
                     Memory.HeapFree(_tiles);
                     _tiles = newTiles;
                 }
@@ -169,8 +168,8 @@ namespace RK.Common.Classes.Map
 
             _left = _onceLoaded ? Math.Min(window.X, _left) : window.X;
             _top = _onceLoaded ? Math.Min(window.Y, _top) : window.Y;
-            _height = _onceLoaded ? Math.Max(window.Height + _top, _height) : window.Height + _top;
-            _width = _onceLoaded ? Math.Max(window.Width + _left, _width) : window.Width + _left;
+            _height = _onceLoaded ? Math.Max(window.Height + window.Y, _height) : window.Height + window.Y;
+            _width = _onceLoaded ? Math.Max(window.Width + window.X, _width) : window.Width + window.X;
 
             _onceLoaded = true;
         }
