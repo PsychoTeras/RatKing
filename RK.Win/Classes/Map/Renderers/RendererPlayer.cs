@@ -1,5 +1,5 @@
 ﻿using System.Drawing;
-using RK.Common.Classes.Map;
+using RK.Common.Map;
 using RK.Win.Controls;
 
 namespace RK.Win.Classes.Map.Renderers

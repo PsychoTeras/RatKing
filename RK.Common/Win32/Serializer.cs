@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using RK.Common.Classes.Map;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
+using RK.Common.Map;
 using RK.Common.Proto;
-using Direction = RK.Common.Common.Direction;
+using Direction = RK.Common.Classes.Common.Direction;
 
 namespace RK.Common.Win32
 {

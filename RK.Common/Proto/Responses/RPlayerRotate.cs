@@ -34,13 +34,5 @@ namespace RK.Common.Proto.Responses
             Serializer.Write(bData, PlayerId, ref pos);
             Serializer.Write(bData, Angle, ref pos);
         }
-
-        public RPlayerRotate() { }
-
-        public RPlayerRotate(int playerId, PPlayerRotate pPlayerRotate) 
-        {
-            PlayerId = playerId;
-            Angle = pPlayerRotate.Angle;
-        }
     }
 }

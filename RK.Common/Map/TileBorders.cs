@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace RK.Common.Classes.Map
+﻿namespace RK.Common.Map
 {
     public static unsafe class TileBorders
     {

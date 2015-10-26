@@ -1,13 +1,13 @@
-﻿using RK.Common.Common;
+﻿using System.Drawing;
+using RK.Common.Classes.Common;
 using RK.Common.Win32;
 
 namespace RK.Common.Proto.Packets
 {
     public sealed unsafe class PPlayerMove : BasePacket
     {
-        public int X;
-        public int Y;
-        public Direction D;
+        public Point Position;
+        public Direction Direction;
 
         public override PacketType Type
         {
@@ -19,24 +19,21 @@ namespace RK.Common.Proto.Packets
             get
             {
                 return
-                    sizeof(int) +
-                    sizeof(int) +
+                    sizeof(Point) +
                     sizeof(Direction);
             }
         }
 
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
-            Serializer.Read(bData, out X, ref pos);
-            Serializer.Read(bData, out Y, ref pos);
-            Serializer.Read(bData, out D, ref pos);
+            Serializer.Read(bData, out Position, ref pos);
+            Serializer.Read(bData, out Direction, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
         {
-            Serializer.Write(bData, X, ref pos);
-            Serializer.Write(bData, Y, ref pos);
-            Serializer.Write(bData, D, ref pos);
+            Serializer.Write(bData, Position, ref pos);
+            Serializer.Write(bData, Direction, ref pos);
         }
     }
 }

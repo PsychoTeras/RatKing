@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace RK.Common.Common
+namespace RK.Common.Classes.Common
 {
     public abstract class DbObject
     {

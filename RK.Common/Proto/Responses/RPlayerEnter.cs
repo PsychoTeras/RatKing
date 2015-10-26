@@ -30,12 +30,5 @@ namespace RK.Common.Proto.Responses
         {
             Serializer.Write(bData, Player, ref pos);
         }
-
-        public RPlayerEnter() { }
-
-        public RPlayerEnter(Player player)
-        {
-            Player = player;
-        }
     }
 }

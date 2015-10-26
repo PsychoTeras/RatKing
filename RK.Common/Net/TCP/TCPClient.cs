@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP

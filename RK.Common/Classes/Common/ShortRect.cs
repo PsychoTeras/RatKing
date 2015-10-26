@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace RK.Common.Common
+namespace RK.Common.Classes.Common
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ShortRect : IEquatable<ShortRect>

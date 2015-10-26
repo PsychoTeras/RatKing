@@ -29,12 +29,5 @@ namespace RK.Common.Proto.Responses
         {
             Serializer.Write(bData, PlayerId, ref pos);
         }
-
-        public RPlayerExit() { }
-
-        public RPlayerExit(int playerId)
-        {
-            PlayerId = playerId;
-        }
     }
 }

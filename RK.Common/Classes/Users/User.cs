@@ -1,4 +1,4 @@
-﻿using RK.Common.Common;
+﻿using RK.Common.Classes.Common;
 
 namespace RK.Common.Classes.Users
 {

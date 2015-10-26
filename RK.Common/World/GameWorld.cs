@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using RK.Common.Algo;
-using RK.Common.Classes.Map;
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
-using RK.Common.Common;
 using RK.Common.Const;
+using RK.Common.Map;
 
-namespace RK.Common.Classes.World
+namespace RK.Common.World
 {
     public sealed class GameWorld : IDisposable
     {
@@ -18,28 +20,20 @@ namespace RK.Common.Classes.World
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
         private const int NEAREST_AREA_HALF_SIZE_SIZE = 100 * ConstMap.PIXEL_SIZE;
 
-        private const float MAP_WINDOW_RES_COEF = 2f;
+        private const float MAP_WINDOW_RES_COEF = 1.3f;
 
 #endregion
 
 #region Private fields
 
+        private Thread _worldEngine;
+
         private Dictionary<int, ServerMap> _maps;
-        private Dictionary<long, Player> _players;
 
-#endregion
+        private List<PlayerDataEx> _players;
+        private Dictionary<long, PlayerDataEx> _sessionPlayers;
 
-#region Properties
-
-        public ServerMap FirstMap
-        {
-            get { return _maps.Values.FirstOrDefault(); }
-        }
-
-        public Player FirstPlayer
-        {
-            get { return _players.Values.FirstOrDefault(); }
-        }
+        private volatile bool _disposing;
 
 #endregion
 
@@ -48,12 +42,23 @@ namespace RK.Common.Classes.World
         public GameWorld()
         {
             _maps = new Dictionary<int, ServerMap>();
-            _players = new Dictionary<long, Player>();
+
+            _players = new List<PlayerDataEx>();
+            _sessionPlayers = new Dictionary<long, PlayerDataEx>();
+            
+            _worldEngine = new Thread(WorldEngineProc);
+            _worldEngine.IsBackground = true;
+            _worldEngine.Start();
         }
 
 #endregion
 
 #region !!!Temporary
+
+        public ServerMap FirstMap
+        {
+            get { return _maps.Values.FirstOrDefault(); }
+        }
 
         public void LoadMap()
         {
@@ -77,14 +82,16 @@ namespace RK.Common.Classes.World
         {
             if (_maps != null)
             {
-                lock (_maps)
+                _disposing = true;
+
+                foreach (ServerMap map in _maps.Values)
                 {
-                    foreach (ServerMap map in _maps.Values)
-                    {
-                        map.Dispose();
-                    }
-                    _maps = null;
+                    map.Dispose();
                 }
+                _maps = null;
+
+                _worldEngine.Abort();
+                _worldEngine.Join(1000);
             }
         }
 
@@ -94,47 +101,63 @@ namespace RK.Common.Classes.World
 
         public bool PlayerAdd(long sessionToken, Player player)
         {
-            lock (_players)
+            if (!_sessionPlayers.ContainsKey(sessionToken))
             {
-                if (!_players.ContainsKey(sessionToken))
+                PlayerDataEx playerData = new PlayerDataEx(player, _maps);
+                lock (_sessionPlayers) lock (_players)
                 {
-                    _players.Add(sessionToken, player);
+                    _players.Add(playerData);
+                    _sessionPlayers.Add(sessionToken, playerData);
                     return true;
                 }
-                return false;
             }
+            return false;
         }
 
         public bool PlayerRemove(long sessionToken)
         {
-            lock (_players)
+            PlayerDataEx playerData;
+            if (_sessionPlayers.TryGetValue(sessionToken, out playerData))
             {
-                if (_players.ContainsKey(sessionToken))
+                lock (_sessionPlayers) lock (_players)
                 {
-                    _players.Remove(sessionToken);
+                    _players.Remove(playerData);
+                    _sessionPlayers.Remove(sessionToken);
                     return true;
                 }
-                return false;
             }
+            return false;
         }
 
         public bool PlayerChangeMap(long sessionToken, int mapId)
         {
-            Player player;
-            if (_players.TryGetValue(sessionToken, out player) &&
-                _maps.ContainsKey(mapId) && player.MapId != mapId)
+            ServerMap map;
+            PlayerDataEx playerData;
+            if (_sessionPlayers.TryGetValue(sessionToken, out playerData) &&
+                playerData.Player.MapId != mapId &&
+                _maps.TryGetValue(mapId, out map))
             {
-                player.MapId = mapId;
+                playerData.Map = map;
+                playerData.Player.MapId = mapId;
                 return true;
             }
             return false;
         }
 
+        internal PlayerDataEx PlayerDataGet(long sessionToken)
+        {
+            PlayerDataEx playerData;
+            return _sessionPlayers.TryGetValue(sessionToken, out playerData)
+                ? playerData
+                : null;
+        }
+
         public Player PlayerGet(long sessionToken)
         {
-            Player player;
-            _players.TryGetValue(sessionToken, out player);
-            return player;
+            PlayerDataEx playerData;
+            return _sessionPlayers.TryGetValue(sessionToken, out playerData)
+                ? playerData.Player
+                : null;
         }
 
         public List<Player> PlayersGetNearest(Player player)
@@ -142,12 +165,12 @@ namespace RK.Common.Classes.World
             lock (_players)
             {
                 List<Player> players = new List<Player>();
-                foreach (Player p in _players.Values)
+                foreach (PlayerDataEx p in _players)
                 {
-                    if (p.MapId == player.MapId &&
-                        p.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE_SIZE))
+                    if (p.Player.MapId == player.MapId &&
+                        p.Player.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE_SIZE))
                     {
-                        players.Add(p);
+                        players.Add(p.Player);
                     }
                 }
                 return players;
@@ -201,6 +224,31 @@ namespace RK.Common.Classes.World
             }
             mapWindow = ShortRect.Empty;
             return null;
+        }
+
+#endregion
+
+#region World engine
+
+        private void EngineCheckPlayerPosition(PlayerDataEx playerData)
+        {
+            Engine.ValidateNewPlayerPosition(playerData, playerData.Map);
+        }
+
+        private void WorldEngineProc()
+        {
+            while (Thread.CurrentThread.IsAlive && !_disposing)
+            {
+                lock (_players)
+                {
+                    Parallel.For(0, _players.Count, i =>
+                    {
+                        PlayerDataEx playerData = _players[i];
+                        EngineCheckPlayerPosition(playerData);
+                    });
+                }
+                Thread.Sleep(1);
+            }
         }
 
 #endregion

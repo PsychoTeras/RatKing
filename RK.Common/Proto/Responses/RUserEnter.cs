@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
-using RK.Common.Common;
 using RK.Common.Proto.Packets;
 using RK.Common.Win32;
 
@@ -61,10 +61,7 @@ namespace RK.Common.Proto.Responses
 
         public RUserEnter() { }
 
-        public RUserEnter(int myPlayerId, PUserEnter pUserEnter)
-            : base(pUserEnter)
-        {
-            MyPlayerId = myPlayerId;
-        }
+        public RUserEnter(PUserEnter pUserEnter)
+            : base(pUserEnter) { }
     }
 }

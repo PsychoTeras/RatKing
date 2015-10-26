@@ -3,13 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Const;
 using RK.Common.Win32;
 
-namespace RK.Common.Classes.Map
+namespace RK.Common.Map
 {
-    public unsafe sealed class ServerMap : DbObject, IDisposable
+    public unsafe sealed class ServerMap : DbObject, IBaseMap, IDisposable
     {
 
 #region Constants

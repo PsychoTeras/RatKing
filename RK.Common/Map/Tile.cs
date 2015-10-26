@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Win32;
 
-namespace RK.Common.Classes.Map
+namespace RK.Common.Map
 {
     public enum TileType : byte
     {

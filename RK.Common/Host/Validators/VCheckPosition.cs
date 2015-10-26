@@ -43,7 +43,8 @@ namespace RK.Common.Host.Validators
                     case PacketType.PlayerMove:
                     {
                         PPlayerMove p = (PPlayerMove) packet;
-                        AssertDistance(packet, Geometry.GetDistance(p.X, p.Y, _lastX, _lastY));
+                        AssertDistance(packet, Geometry.GetDistance(p.Position.X, p.Position.Y, 
+                                       _lastX, _lastY));
                         break;
                     }
                 }

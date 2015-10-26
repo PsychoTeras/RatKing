@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Drawing;
-using RK.Common.Classes.Map;
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
-using RK.Common.Common;
 using RK.Common.Const;
+using RK.Common.Map;
 
 namespace RK.Common.Algo
 {

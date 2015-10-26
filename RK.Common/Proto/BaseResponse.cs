@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.Responses;
 using RK.Common.Win32;

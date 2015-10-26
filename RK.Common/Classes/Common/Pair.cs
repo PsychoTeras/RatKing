@@ -1,4 +1,4 @@
-﻿namespace RK.Common.Common
+﻿namespace RK.Common.Classes.Common
 {
     public struct Pair<TK, TV>
     {

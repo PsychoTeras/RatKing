@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP

@@ -64,7 +64,6 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Classes\Ex\PlayerEx.cs" />
     <Compile Include="Classes\Map\MapBG.cs" />
     <Compile Include="Classes\Map\Renderers\IMapRenderer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererBG.cs" />
@@ -72,6 +71,7 @@
     <Compile Include="Classes\Map\Renderers\RendererPlayer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererWalls.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
+    <Compile Include="Classes\PlayerDataEx.cs" />
     <Compile Include="Controls\MapControl.cs">
       <SubType>Component</SubType>
     </Compile>

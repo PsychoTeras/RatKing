@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 
-namespace RK.Common.Classes.Map
+namespace RK.Common.Map
 {
     public unsafe class MapArea : List<ShortPoint>
     {

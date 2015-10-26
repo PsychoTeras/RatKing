@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using RK.Common.Classes.Map;
 using RK.Common.Const;
+using RK.Common.Map;
 using RK.Win.Controls;
 
 namespace RK.Win.Classes.Map.Renderers

@@ -1,4 +1,4 @@
-﻿using RK.Common.Classes.Map;
+﻿using RK.Common.Map;
 
 namespace RK.Win.Classes.Map
 {

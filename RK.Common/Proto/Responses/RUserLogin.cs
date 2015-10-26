@@ -34,9 +34,6 @@ namespace RK.Common.Proto.Responses
         public RUserLogin() { }
 
         public RUserLogin(PUserLogin rUserLogin) 
-            : base(rUserLogin)
-        {
-            SessionToken = rUserLogin.SessionToken;
-        }
+            : base(rUserLogin) { }
     }
 }

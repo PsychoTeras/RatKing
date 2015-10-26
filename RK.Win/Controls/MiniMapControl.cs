@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Threading;
 using System.Windows.Forms;
-using RK.Common.Classes.Map;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
+using RK.Common.Map;
 
 namespace RK.Win.Controls
 {

@@ -1,12 +1,15 @@
 ﻿#define UNSAFE_ARRAY
-#define MEM_TILES_COMPRESSION_
 
+using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using RK.Common.Classes.Map;
-using RK.Common.Common;
+using RK.Common.Classes.Units;
+using RK.Common.Map;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Win32;
@@ -15,21 +18,14 @@ using RK.Common.Win32;
 using System.Runtime.InteropServices;
 #endif
 
-#if MEM_TILES_COMPRESSION
-using System.IO;
-using System.IO.Compression;
-using RK.Common.Compress;
-#endif
-
 namespace RK.Console
 {
     unsafe class Program
     {
         private const int THREADS_COUNT = 8;
-        private const int ITERATIONS_COUNT = 100000;
+        private const int ITERATIONS_COUNT = 1000000;
 
         private static WaitHandle[] _tEvents;
-        private static Tile _emptyTile = new Tile();
 
         internal void TestGameMapPerf()
         {
@@ -93,7 +89,7 @@ namespace RK.Console
 
             HRTimer timer = HRTimer.CreateAndStart();
 
-            Parallel.For(0, 1000000, i =>
+            Parallel.For(0, ITERATIONS_COUNT, i =>
             {
                 p.Setup();
                 ps = p.Serialize();
@@ -103,7 +99,7 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
-        internal static void TestMapWindowgetPerf()
+        internal static void TestMapWindowGetPerf()
         {
             using (ServerMap serverMap = ServerMap.LoadFromFile("RK.save"))
             {
@@ -111,83 +107,12 @@ namespace RK.Console
 
                 HRTimer timer = HRTimer.CreateAndStart();
 
-                int mapWidth = map.Width;
-                int startX = 0, startY = 0;
-                int wWidth = map.Width, wHeight = map.Height;
-                int endX = startX + wWidth, endY = startY + wHeight;
-
-                int smallSimilarsCnt = 0;
-                int smallSimilarCntLim = byte.MaxValue / 2;
-                ArrayList tilesInfo = new ArrayList();
-                for (int y = startY; y < endY; y++)
+                for (int i = 0; i < 100; i++)
                 {
-                    for (int x = startX; x < endX; x++)
-                    {
-                        Tile tile = *map[y * mapWidth + x];
-
-                        //Find all similar tiles in a row
-                        ushort similarTilesCnt = 1;
-                        while (similarTilesCnt < short.MaxValue - 1)
-                        {
-                            int xn = x + 1, yn = y;
-                            if (xn == endX)
-                            {
-                                xn = startX;
-                                yn++;
-                            }
-                            if (yn == endY || *map[yn * mapWidth + xn] != tile) break;
-
-                            similarTilesCnt++;
-                            x = xn;
-                            y = yn;
-                        }
-
-                        if (similarTilesCnt <= smallSimilarCntLim)
-                        {
-                            smallSimilarsCnt++;
-                        }
-
-                        //Add tile info
-                        tilesInfo.Add(new Pair<Tile, ushort>(tile, similarTilesCnt));
-                    }
+                    int startX = 0, startY = 0;
+                    int wWidth = 150, wHeight = 150;
+                    map.GetWindow(startX, startY, wWidth, wHeight);
                 }
-
-                int tilesCount = tilesInfo.Count;
-                int dataSize = sizeof (byte)*smallSimilarsCnt +
-                               sizeof (ushort)*(tilesCount - smallSimilarsCnt) +
-                               _emptyTile.SizeOf()*tilesCount;
-                byte[] tilesData = new byte[dataSize];
-                fixed (byte* bData = tilesData)
-                {
-                    int pos = 0;
-                    foreach (Pair<Tile, ushort> tileInfo in tilesInfo)
-                    {
-                        if (tileInfo.Value <= smallSimilarCntLim)
-                        {
-                            Serializer.Write(bData, (byte) tileInfo.Value, ref pos);
-                        }
-                        else
-                        {
-                            Serializer.Write(bData, tileInfo.Value, ref pos);
-                        }
-                        tileInfo.Key.Serialize(bData, ref pos);
-                    }
-                }
-
-#if MEM_TILES_COMPRESSION
-//                QuickLZ c = new QuickLZ();
-//                byte[] compressed = c.Compress(tilesData);
-
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    using (DeflateStream compressor = new DeflateStream(ms, CompressionLevel.Fastest))
-                    {
-                        compressor.Write(tilesData, 0, dataSize);
-                    }
-                    tilesData = ms.ToArray();
-                }
-#endif
-
                 System.Console.WriteLine(timer.StopWatch());
             }
         }
@@ -236,7 +161,7 @@ namespace RK.Console
             HRTimer timer = HRTimer.CreateAndStart();
             for (int i = 0; i < THREADS_COUNT; i++)
             {
-                object[] param = {i, dict, _tEvents[i]};
+                object[] param = { i, dict, _tEvents[i] };
                 ThreadPool.QueueUserWorkItem(DoTestMultithreadDictionary, param);
             }
             WaitHandle.WaitAll(_tEvents);
@@ -244,9 +169,98 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
+        private static void DoTestMultithreadList(object obj)
+        {
+            int idx = (int)((object[])obj)[0];
+            var list = (List<Player>)((object[])obj)[1];
+            var ev = (EventWaitHandle)((object[])obj)[2];
+//            var sync = (ReaderWriterLockSlim)((object[])obj)[3];
+
+            if (idx % 2 == 0)
+            {
+                for (int i = 0; i < ITERATIONS_COUNT; i++)
+                {
+//                    sync.EnterWriteLock();
+                    lock (list)
+                    {
+                        list.Add(new Player {Id = idx*ITERATIONS_COUNT + i});
+                    }
+//                    sync.ExitWriteLock();
+                }
+            }
+            else
+            {
+                for (int i = 0; i < ITERATIONS_COUNT; i++)
+                {
+//                    sync.EnterReadLock();
+                    lock (list)
+                    {
+                        if (list.Count > i)
+                        {
+                            list[i].MapId++;
+                        }
+                    }
+//                    sync.ExitReadLock();
+                }
+            }
+            ev.Set();
+        }
+
+        internal static void TestMultithreadListPerf()
+        {
+            var list = new List<Player>();
+            var sync = new ReaderWriterLockSlim();
+
+            _tEvents = new WaitHandle[THREADS_COUNT];
+            for (int i = 0; i < THREADS_COUNT; i++)
+            {
+                _tEvents[i] = new ManualResetEvent(false);
+            }
+
+            HRTimer timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < THREADS_COUNT; i++)
+            {
+                object[] param = { i, list, _tEvents[i], sync };
+                ThreadPool.QueueUserWorkItem(DoTestMultithreadList, param);
+            }
+            WaitHandle.WaitAll(_tEvents);
+
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
+        internal static void TestCollectionsPerf()
+        {
+            var list = new List<Player>();
+
+            HRTimer timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < ITERATIONS_COUNT; i++)
+            {
+                lock (list)
+                {
+                    list.Add(new Player {Id = i});
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < list.Count; i++)
+            {
+                Player player = list[i];
+                if (player.Id != -1)
+                {
+                    player.Id++;
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            timer = HRTimer.CreateAndStart();
+            list.RemoveAll(p => p.Id > 0);
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
         static void Main(string[] args)
         {
-            TestMapWindowgetPerf();
+            TestCollectionsPerf();
             System.Console.ReadKey();
         }
     }

@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace RK.Common.Common
+namespace RK.Common.Classes.Common
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ShortPoint : IEquatable<ShortPoint>

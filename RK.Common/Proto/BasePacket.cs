@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using RK.Common.Common;
+using RK.Common.Classes.Common;
 using RK.Common.Proto.Packets;
 using RK.Common.Win32;
 
@@ -119,6 +119,10 @@ namespace RK.Common.Proto
                     return new PPlayerMove();
                 case PacketType.PlayerRotate:
                     return new PPlayerRotate();
+
+                    //Map
+                case PacketType.MapData:
+                    return new PMapData();
 
                     //Error
                 default:

@@ -1,4 +1,5 @@
-﻿using RK.Common.Common;
+﻿using RK.Common.Classes.Common;
+using RK.Common.Proto.Packets;
 using RK.Common.Win32;
 
 namespace RK.Common.Proto.Responses
@@ -28,6 +29,11 @@ namespace RK.Common.Proto.Responses
             get { return true; }
         }
 
+        public override bool Private
+        {
+            get { return true; }
+        }
+
         protected override void DeserializeFromMemory(byte* bData, int pos)
         {
             Serializer.Read(bData, out MapData, ref pos);
@@ -39,5 +45,10 @@ namespace RK.Common.Proto.Responses
             Serializer.Write(bData, MapData, ref pos);
             Serializer.Write(bData, MapWindow, ref pos);
         }
+
+        public RMapData() { }
+
+        public RMapData(PMapData pMapData) 
+            : base(pMapData) { }
     }
 }
