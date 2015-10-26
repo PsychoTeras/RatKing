@@ -260,20 +260,20 @@ namespace RK.Common.Map
 
                     //Find all similar tiles in a row
                     ushort similarsCnt = 1;
-                    while (similarsCnt < short.MaxValue - 1)
-                    {
-                        int xn = x + 1, yn = y;
-                        if (xn == endX)
-                        {
-                            xn = startX;
-                            yn++;
-                        }
-                        if (yn == endY || _tiles[yn*_width + xn] != tile) break;
+                    //while (similarsCnt < short.MaxValue - 1)
+                    //{
+                    //    int xn = x + 1, yn = y;
+                    //    if (xn == endX)
+                    //    {
+                    //        xn = startX;
+                    //        yn++;
+                    //    }
+                    //    if (yn == endY || _tiles[yn*_width + xn] != tile) break;
 
-                        similarsCnt++;
-                        x = xn;
-                        y = yn;
-                    }
+                    //    similarsCnt++;
+                    //    x = xn;
+                    //    y = yn;
+                    //}
 
                     if (similarsCnt <= smallSimilarsCntLim)
                     {
