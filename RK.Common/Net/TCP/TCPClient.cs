@@ -206,7 +206,7 @@ namespace RK.Common.Net.TCP
             do
             {
                 packet = BaseResponse.Deserialize(buf, dataSize, pos, out rSize);
-                if (rSize > 0)
+                if (rSize > 0 && packet != null)
                 {
                     packets.Add(packet);
                     pos += rSize;

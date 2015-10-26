@@ -20,7 +20,7 @@ namespace RK.Common.World
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
         private const int NEAREST_AREA_HALF_SIZE_SIZE = 100 * ConstMap.PIXEL_SIZE;
 
-        private const float MAP_WINDOW_RES_COEF = 1.3f;
+        private const float MAP_WINDOW_RES_COEF = 100f;
 
 #endregion
 
@@ -212,11 +212,11 @@ namespace RK.Common.World
 
                 ushort startX = (ushort) Math.Max(dStartX, 0);
                 ushort startY = (ushort) Math.Max(dStartY, 0);
-                ushort width = (ushort) Math.Ceiling(dStartX + dWidth > mapWidth
-                    ? dWidth - (dStartX + dWidth - mapWidth)
+                ushort width = (ushort)Math.Ceiling(startX + dWidth > mapWidth
+                    ? dWidth - (startX + dWidth - mapWidth)
                     : dWidth);
-                ushort height = (ushort) Math.Ceiling(dStartY + dHeight > mapHeight
-                    ? dHeight - (dStartY + dHeight - mapHeight)
+                ushort height = (ushort)Math.Ceiling(startY + dHeight > mapHeight
+                    ? dHeight - (startY + dHeight - mapHeight)
                     : dHeight);
 
                 mapWindow = new ShortRect(startX, startY, width, height);
