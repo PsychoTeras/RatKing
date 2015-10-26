@@ -172,7 +172,7 @@ namespace RK.Common.Map
                     {
                         byte rleMark2;
                         Serializer.Read(bData, out rleMark2, ref pos);
-                        seriesLength = (ushort)((rleMark & ~0x80) << 8 | rleMark2);
+                        seriesLength = (ushort)((rleMark2 & ~0x80) << 8 | rleMark);
                     }
                     else
                     {

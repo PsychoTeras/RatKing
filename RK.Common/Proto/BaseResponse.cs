@@ -12,7 +12,7 @@ namespace RK.Common.Proto
 
 #region Constants
 
-        private const int BASE_SIZE = 16;
+        private const int BASE_SIZE = 18;
 
 #endregion
 
@@ -122,7 +122,7 @@ namespace RK.Common.Proto
             byte[] data = new byte[packetSize];
             fixed (byte* bData = data)
             {
-                (*(short*)bData) = (short)packetSize;
+                (*(int*)bData) = packetSize;
                 (*(PacketType*)&bData[4]) = Type;
                 (*(long*)&bData[6]) = Id;
                 (*(short*)&bData[14]) = ErrorCode;
@@ -137,7 +137,7 @@ namespace RK.Common.Proto
                     Array.Copy(compressed, 0, data, BASE_SIZE, compressedLength);
                     fixed (byte* bNewData = data)
                     {
-                        (*(short*)bNewData) = (short)packetSize;
+                        (*(int*)bNewData) = packetSize;
                     }
                 }
             }
