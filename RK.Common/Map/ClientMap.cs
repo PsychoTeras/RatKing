@@ -17,8 +17,6 @@ namespace RK.Common.Map
 
 #region Private fields
 
-        private ushort _top;
-        private ushort _left;
         private ushort _height;
         private ushort _width;
 
@@ -26,25 +24,16 @@ namespace RK.Common.Map
         private int _tilesListCount;
         private int _tilesListCapacity;
 
+        private byte* _miniMapData;
+        private ShortSize _miniMapSize;
+
         private Dictionary<int, int> _tilesSet;
         private Dictionary<int, int> _map;
         private Dictionary<int, int> _rtFlags;
 
-        private bool _onceLoaded;
-
 #endregion
 
 #region Properties
-
-        public ushort Top
-        {
-            get { return _top; }
-        }
-
-        public ushort Left
-        {
-            get { return _left; }
-        }
 
         public ushort Height
         {
@@ -66,6 +55,11 @@ namespace RK.Common.Map
                     ? &_tiles[tileIdx]
                     : null;
             }
+        }
+
+        public ShortSize MiniMapSize
+        {
+            get { return _miniMapSize; }
         }
 
 #endregion
@@ -117,7 +111,13 @@ namespace RK.Common.Map
 
 #endregion
 
-#region Class methods
+#region Map
+
+        public void Setup(ShortSize mapSize)
+        {
+            _width = mapSize.Width;
+            _height = mapSize.Height;
+        }
 
         private void CheckTilesListCapacity()
         {
@@ -144,7 +144,7 @@ namespace RK.Common.Map
             {
                 CheckTilesListCapacity();
                 tileIdx = _tilesListCount++;
-                (*&_tiles[tileIdx]) = tile;
+                _tiles[tileIdx] = tile;
                 _tilesSet.Add(tileMark, tileIdx);
             }
             return tileIdx;
@@ -182,7 +182,8 @@ namespace RK.Common.Map
                     Tile tile = new Tile();
                     tile.Deserialize(bData, ref pos);
                     int tileIdx = AppendTile(ref tile);
-                    for (int j = 0; j < seriesLength; j++)
+                    int maxIdx = curIdx + seriesLength;
+                    for (; curIdx < maxIdx; curIdx++)
                     {
                         ushort x = (ushort)(startX + (curIdx % window.Width));
                         ushort y = (ushort)(startY + (curIdx / window.Width));
@@ -197,17 +198,62 @@ namespace RK.Common.Map
                             _map.Add(tileCoordMark, tileIdx);
                             _rtFlags.Add(tileCoordMark, 0);
                         }
-                        curIdx++;
                     }
                 }
             }
+        }
 
-            _left = _onceLoaded ? Math.Min(window.X, _left) : window.X;
-            _top = _onceLoaded ? Math.Min(window.Y, _top) : window.Y;
-            _height = (ushort) (_onceLoaded ? Math.Max(window.Height + window.Y, _height) : window.Height + window.Y);
-            _width = (ushort) (_onceLoaded ? Math.Max(window.Width + window.X, _width) : window.Width + window.X);
+#endregion
 
-            _onceLoaded = true;
+#region Minimap
+
+        public byte GetMiniMapPixel(ushort x, ushort y)
+        {
+            int idx = y*_miniMapSize.Width + x;
+            byte pxl = _miniMapData[idx/2];
+            return (byte) (idx%2 == 0 ? pxl >> 4 : pxl & 0x0F);
+        }
+
+        public void AppendMiniMapData(byte[] data, ShortSize size)
+        {
+            if (_miniMapData != null)
+            {
+                Memory.HeapFree(_miniMapData);
+            }
+
+            _miniMapSize = size;
+            int miniMapArea = size.Width*size.Height;
+            _miniMapData = (byte*) Memory.HeapAlloc(miniMapArea/2);
+
+            fixed (byte* bData = data)
+            {
+                int pos = 0, pxlCnt, curIdx = 0;
+                Serializer.Read(bData, out pxlCnt, ref pos);
+                for (int i = 0; i < pxlCnt; i++)
+                {
+                    byte rleMark;
+                    ushort seriesLength;
+                    Serializer.Read(bData, out rleMark, ref pos);
+                    if ((rleMark | 0x80) == rleMark)
+                    {
+                        byte rleMark2;
+                        Serializer.Read(bData, out rleMark2, ref pos);
+                        seriesLength = (ushort)((rleMark2 & ~0x80) << 8 | rleMark);
+                    }
+                    else
+                    {
+                        seriesLength = rleMark;
+                    }
+
+                    byte pxl;
+                    Serializer.Read(bData, out pxl, ref pos);
+                    int maxIdx = curIdx + seriesLength;
+                    for (; curIdx < maxIdx; curIdx++)
+                    {
+                        _miniMapData[curIdx] = pxl;
+                    }
+                }
+            }
         }
 
 #endregion

@@ -19,7 +19,7 @@ namespace RK.Win.Classes.Map.Renderers
 
         public void Render(MapControl mapCtrl, Graphics buffer, Rectangle area)
         {
-            ClientMap map = mapCtrl.ClientMap;
+            ClientMap map = mapCtrl.Map;
             if (map == null)
             {
                 return;

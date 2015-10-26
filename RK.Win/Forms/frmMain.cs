@@ -10,7 +10,6 @@ using RK.Common.Classes.Common;
 using RK.Common.Host;
 using RK.Common.Map;
 using RK.Common.Win32;
-using RK.Common.World;
 
 namespace RK.Win.Forms
 {
@@ -32,8 +31,10 @@ namespace RK.Win.Forms
         {
             InitializeComponent();
 
-            GameWorld world = new GameWorld();
-            _host = new GameHost(world);
+            if (Environment.CommandLine.Trim().Split(new[] {' '}).Length == 1)
+            {
+                _host = new GameHost();
+            }
 
             cbLabyrinthType.Items.AddRange(GetEnumValues(typeof(FractalType)));
             cbLabyrinthType.SelectedItem = FractalType.FBM;
@@ -191,7 +192,7 @@ namespace RK.Win.Forms
                 pbLabyrinth.Image.Dispose();
             }
 
-            ushort width = 1000, height = 1000;
+            ushort width = 700, height = 700;
             Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadWrite, bitmap.PixelFormat);
@@ -228,28 +229,14 @@ namespace RK.Win.Forms
             tcMain.Focus();
         }
 
-        private void BtnLoadLabyrinthClick(object sender, EventArgs e)
-        {
-            Cursor = Cursors.WaitCursor;
-            mapCtrl.Host = _host;
-            Cursor = DefaultCursor;
-        }
-
-        private void BtnSaveLabyrinthClick(object sender, EventArgs e)
-        {
-            if (mapCtrl.IsServerMapLoaded)
-            {
-                Cursor = Cursors.WaitCursor;
-                mapCtrl.Map.SaveToFile("RK.save");
-                Cursor = DefaultCursor;
-            }
-        }
-
         private void FrmMainFormClosing(object sender, FormClosingEventArgs e)
         {
             mapCtrl.Dispose();
             miniMapCtrl.Dispose();
-            _host.Dispose();
+            if (_host != null)
+            {
+                _host.Dispose();
+            }
         }
 
         private void EventsProviderKeyDown(object sender, KeyEventArgs e)
@@ -277,7 +264,7 @@ namespace RK.Win.Forms
                         }
                         if (tcMain.SelectedTab == tpMap)
                         {
-                            BtnLoadLabyrinthClick(null, null);
+                            BtnLoadLabyrinthClick(this, null);
                         }
                         break;
                     }
@@ -308,6 +295,14 @@ namespace RK.Win.Forms
             {
                 mapCtrl.PlayerMove(direction);
             }
+        }
+
+        private void BtnLoadLabyrinthClick(object sender, EventArgs e)
+        {
+            Cursor = Cursors.WaitCursor;
+            mapCtrl.DisconnectFromHost();
+            mapCtrl.ConnectToHost();
+            Cursor = DefaultCursor;
         }
     }
 

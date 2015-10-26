@@ -12,7 +12,6 @@ using RK.Common.Algo;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
-using RK.Common.Host;
 using RK.Common.Map;
 using RK.Common.Net.TCP;
 using RK.Common.Proto;
@@ -45,10 +44,8 @@ namespace RK.Win.Controls
 
 #region Private fields
 
-        private ServerMap _map;
-        private GameHost _host;
         private TCPClient _tcpClient;
-        private ClientMap _clientMap;
+        private ClientMap _map;
 
         private Graphics _buffer;
         private Bitmap _bufferBitmap;
@@ -194,39 +191,23 @@ namespace RK.Win.Controls
         public bool ShowTileNumber { get; set; }
 
         [Browsable(false)]
-        public GameHost Host
-        {
-            get { return _host; }
-            set
-            {
-                _host = value;
-                ConnectToHost();
-            }
-        }
-
-        [Browsable(false)]
         public ReadOnlyCollection<Player> Players
         {
             get { return _sessionToken != 0 ? _playersRo : null; }
         }
 
         [Browsable(false)]
-        public ServerMap Map
+        public ClientMap Map
         {
             get { return _map; }
         }
 
         [Browsable(false)]
-        public ClientMap ClientMap
-        {
-            get { return _clientMap; }
-        }
+        public bool IsMapLoaded { get; private set; }
 
-        [Browsable(false)]
-        public bool IsServerMapLoaded
-        {
-            get { return _map != null; }
-        }
+#endregion
+
+#region Events
 
         [Browsable(true)]
         public new event MouseWheel MouseWheel;
@@ -235,7 +216,7 @@ namespace RK.Win.Controls
         public event MapEvent ScaleFactorChanged;
 
         [Browsable(true)]
-        public event MapEvent MapLoaded;
+        public event MapEvent MapChanged;
 
         [Browsable(true)]
         public event MapEvent PositionChanged;
@@ -292,22 +273,28 @@ namespace RK.Win.Controls
 
 #region Class methods
 
-        private void ConnectToHost()
+        public void DisconnectFromHost()
         {
-            if (_host == null)
+            if (_sessionToken != 0)
             {
-                return;
+                TCPClientDataSend(new PUserLogout
+                {
+                    SessionToken = _sessionToken
+                });
+                if (_tcpClient != null)
+                {
+                    _tcpClient.Dispose();
+                    _tcpClient = null;
+                }
+                IsMapLoaded = false;
+                _sessionToken = 0;
             }
+        }
 
+        public void ConnectToHost()
+        {
             try
             {
-                if (_host.World.FirstMap == null)
-                {
-                    _host.World.LoadMap();
-                }
-
-                LoadMap(_host.World.FirstMap);
-
                 lock (_players)
                 {
                     _players.Clear();
@@ -315,17 +302,9 @@ namespace RK.Win.Controls
                     _playersRo = new ReadOnlyCollection<Player>(new Player[] {});
                 }
 
-                if (_sessionToken != 0)
-                {
-                    TCPClientDataSend(new PUserLogout
-                    {
-                        SessionToken = _sessionToken
-                    });
-                    _tcpClient.Dispose();
-                    _sessionToken = 0;
-                }
+                DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.114", 15051);
+                _tcpClient = new TCPClient("192.168.1.32", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 
@@ -344,7 +323,7 @@ namespace RK.Win.Controls
 
         private void InitializeEnvironment()
         {
-            _clientMap = new ClientMap();
+            _map = new ClientMap();
 
             _syncScroll = new object();
 
@@ -382,9 +361,14 @@ namespace RK.Win.Controls
         {
             if (!DesignMode)
             {
+                IsMapLoaded = true;
                 foreach (IMapRenderer renderer in _renderers)
                 {
                     renderer.ChangeMap(this);
+                }
+                if (MapChanged != null)
+                {
+                    MapChanged(this);
                 }
             }
         }
@@ -428,10 +412,7 @@ namespace RK.Win.Controls
             {
                 _terminating = true;
 
-                if (_tcpClient != null)
-                {
-                    _tcpClient.Dispose();
-                }
+                DisconnectFromHost();
 
                 _threadObjectChanged.Join(100);
                 _threadWorld.Join(100);
@@ -440,7 +421,7 @@ namespace RK.Win.Controls
 
                 DestroyGraphics();
 
-                _clientMap.Dispose();
+                _map.Dispose();
 
                 Application.RemoveMessageFilter(this);
             }
@@ -490,7 +471,7 @@ namespace RK.Win.Controls
                 foreach (int playerId in _players.Keys)
                 {
                     PlayerDataEx playerData = _playersData[playerId];
-                    if (Engine.ValidateNewPlayerPosition(playerData, _clientMap))
+                    if (Engine.ValidateNewPlayerPosition(playerData, _map))
                     {
                         _somethingChanged = playerData.NeedUpdatePosition = true;
                     }
@@ -730,17 +711,7 @@ namespace RK.Win.Controls
 #endregion
 
 #region Map
-
-        private void LoadMap(ServerMap map)
-        {
-            _map = map;
-            OnMapChanged();
-            if (MapLoaded != null)
-            {
-                MapLoaded(this);
-            }
-        }
-
+        
         public void SetPosition(int x, int y)
         {
             lock (_syncScroll)
@@ -779,12 +750,12 @@ namespace RK.Win.Controls
 
         public ShortPoint? CursorToTilePos(Point location)
         {
-            if (_clientMap != null)
+            if (_map != null)
             {
                 float pixelSize = ConstMap.PIXEL_SIZE * _scaleFactor;
                 int x = (int)Math.Floor((_posX + location.X) / pixelSize);
                 int y = (int)Math.Floor((_posY + location.Y) / pixelSize);
-                if (x >= 0 && y >= 0 && x < _clientMap.Width && y < _clientMap.Height)
+                if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
                 {
                     return new ShortPoint(x, y);
                 }
@@ -799,9 +770,9 @@ namespace RK.Win.Controls
                 return;
             }
 
-            if (x >= 0 && y >= 0 && x < _clientMap.Width && y < _clientMap.Height)
+            if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
             {
-                Tile* tile = _clientMap[(ushort)x, (ushort)y];
+                Tile* tile = _map[(ushort)x, (ushort)y];
                 (*tile).Type = type;
                 foreach (IMapRenderer renderer in _renderers)
                 {
@@ -852,7 +823,7 @@ namespace RK.Win.Controls
             ShortPoint? tilePos = CursorToTilePos(location);
             if (tilePos != null)
             {
-                Tile* tile = _clientMap[tilePos.Value.X, tilePos.Value.Y];
+                Tile* tile = _map[tilePos.Value.X, tilePos.Value.Y];
                 (*tile).Type = (*tile).Type == TileType.Wall ? TileType.Nothing : TileType.Wall;
                 foreach (IMapRenderer renderer in _renderers)
                 {
@@ -975,7 +946,10 @@ namespace RK.Win.Controls
                     {
                         RUserEnter userEnter = (RUserEnter) e;
 
-                        _clientMap.AppendMapData(userEnter.MapData, userEnter.MapWindow);
+                        _map.Setup(userEnter.MapSize);
+                        _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
+                        _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
+                        OnMapChanged();
 
                         foreach (Player p in userEnter.PlayersOnLocation)
                         {
@@ -1050,7 +1024,7 @@ namespace RK.Win.Controls
 
                 case PacketType.MapData:
                     RMapData mapData = (RMapData) e;
-                    _clientMap.AppendMapData(mapData.MapData, mapData.MapWindow);
+                    _map.AppendMapData(mapData.MapData, mapData.MapWindow);
                     break;
             }
         }

@@ -35,11 +35,13 @@ namespace RK.Common.Win32
         [DllImport("msvcrt.dll", EntryPoint = "memmove", CallingConvention = CallingConvention.Cdecl)]
         public static extern void* Move(void* dest, void* src, int count);
 
+        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void* Set(void* dest, int c, int count);
+
         private static int _ph = GetProcessHeap();
 
         public static void* HeapAlloc(int size, bool zeroMem = true)
         {
-            //            return Marshal.AllocHGlobal(size).ToPointer();
             void* result = HeapAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, size);
             if (result == null)
             {

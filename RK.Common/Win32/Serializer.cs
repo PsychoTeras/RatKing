@@ -67,7 +67,7 @@ namespace RK.Common.Win32
 
         public static void Read(byte* bData, out byte val, ref int pos)
         {
-            val = *&bData[pos];
+            val = bData[pos];
             pos += sizeof(byte);
         }
 
@@ -216,7 +216,7 @@ namespace RK.Common.Win32
 
         public static void Write(byte* bData, byte val, ref int pos)
         {
-            *&bData[pos] = val;
+            bData[pos] = val;
             pos += sizeof(byte);
         }
 

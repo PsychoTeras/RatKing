@@ -48,14 +48,14 @@ namespace RK.Common.Host
 
         public GameHost()
         {
-            if (Environment.CommandLine.Trim().Split(new [] {' '}).Length == 1)
-            {
-                _netServer = new TCPServer(15051);
-                _netServer.ClientConnected += TCPClientConnected;
-                _netServer.ClientDataReceived += TCPClientDataReceived;
-                _netServer.ClientDisonnected += TCPClientDisonnected;
-                _netServer.Start();
-            }
+            World = new GameWorld();
+            World.LoadMap();
+
+            _netServer = new TCPServer(15051);
+            _netServer.ClientConnected += TCPClientConnected;
+            _netServer.ClientDataReceived += TCPClientDataReceived;
+            _netServer.ClientDisonnected += TCPClientDisonnected;
+            _netServer.Start();
 
             _loggedPlayers = new Dictionary<long, int>();
             _tcpClients = new Dictionary<TCPClientEx, long>();
@@ -76,11 +76,6 @@ namespace RK.Common.Host
             {
                 new VCheckPosition(this)
             };
-        }
-
-        public GameHost(GameWorld world) : this()
-        {
-            World = world;
         }
 
 #endregion
@@ -176,8 +171,13 @@ namespace RK.Common.Host
             playerData.ScreenRes = pUserEnter.ScreenRes;
 
             List<Player> playersOnLocation = World.PlayersGetNearest(playerData);
+
             ShortRect mapWindow;
             byte[] mapData = World.MapWindowGet(playerData, playerData.ScreenRes, out mapWindow);
+            ShortSize mapSize = new ShortSize(playerData.Map.Width, playerData.Map.Height);
+
+            ShortSize miniMapSize;
+            byte[] miniMapData = World.MiniMapGet(playerData, out miniMapSize);
 
             SendResponse(new RPlayerEnter
             {
@@ -188,8 +188,13 @@ namespace RK.Common.Host
             {
                 MyPlayerId = playerData.Player.Id,
                 PlayersOnLocation = playersOnLocation,
+                
+                MapSize = mapSize,
                 MapData = mapData,
-                MapWindow = mapWindow
+                MapWindow = mapWindow,
+
+                MiniMapData = miniMapData,
+                MiniMapSize = miniMapSize
             };
         }
 

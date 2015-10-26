@@ -11,8 +11,12 @@ namespace RK.Common.Proto.Responses
         public int MyPlayerId;
         public List<Player> PlayersOnLocation;
 
+        public ShortSize MapSize;
         public byte[] MapData;
         public ShortRect MapWindow;
+
+        public byte[] MiniMapData;
+        public ShortSize MiniMapSize;
 
         public override PacketType Type
         {
@@ -26,8 +30,13 @@ namespace RK.Common.Proto.Responses
                 return
                     sizeof (int) +
                     Serializer.SizeOf(PlayersOnLocation) +
+
+                    sizeof(ShortSize) +
                     Serializer.SizeOf(MapData) +
-                    sizeof (ShortRect);
+                    sizeof (ShortRect) +
+
+                    Serializer.SizeOf(MiniMapData) +
+                    sizeof (ShortSize);
             }
         }
 
@@ -46,8 +55,12 @@ namespace RK.Common.Proto.Responses
             Serializer.Read(bData, out MyPlayerId, ref pos);
             Serializer.Read<Player, List<Player>>(bData, out PlayersOnLocation, ref pos);
 
+            Serializer.Read(bData, out MapSize, ref pos);
             Serializer.Read(bData, out MapData, ref pos);
             Serializer.Read(bData, out MapWindow, ref pos);
+
+            Serializer.Read(bData, out MiniMapData, ref pos);
+            Serializer.Read(bData, out MiniMapSize, ref pos);
         }
 
         protected override void SerializeToMemory(byte* bData, int pos)
@@ -55,8 +68,12 @@ namespace RK.Common.Proto.Responses
             Serializer.Write(bData, MyPlayerId, ref pos);
             Serializer.Write<Player, List<Player>>(bData, PlayersOnLocation, ref pos);
 
+            Serializer.Write(bData, MapSize, ref pos);
             Serializer.Write(bData, MapData, ref pos);
             Serializer.Write(bData, MapWindow, ref pos);
+
+            Serializer.Write(bData, MiniMapData, ref pos);
+            Serializer.Write(bData, MiniMapSize, ref pos);
         }
 
         public RUserEnter() { }

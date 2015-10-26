@@ -6,7 +6,6 @@ using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
-using RK.Common.Map;
 
 namespace RK.Win.Controls
 {
@@ -87,7 +86,7 @@ namespace RK.Win.Controls
             {
                 if (_map != null)
                 {
-                    _map.MapLoaded -= MapLoaded;
+                    _map.MapChanged -= MapChanged;
                     _map.TilesChanged -= MapTilesChanged;
                     _map.ScaleFactorChanged -= MapObjectChanged;
                     _map.PositionChanged -= MapObjectChanged;
@@ -98,7 +97,7 @@ namespace RK.Win.Controls
                 {
                     if (_map != null)
                     {
-                        _map.MapLoaded += MapLoaded;
+                        _map.MapChanged += MapChanged;
                         _map.TilesChanged += MapTilesChanged;
                         _map.ScaleFactorChanged += MapObjectChanged;
                         _map.PositionChanged += MapObjectChanged;
@@ -107,6 +106,11 @@ namespace RK.Win.Controls
                     NeedRepaint(true);
                 }
             }
+        }
+
+        private bool IsMapLoaded
+        {
+            get { return _map != null && _map.IsMapLoaded; }
         }
 
 #endregion
@@ -167,14 +171,14 @@ namespace RK.Win.Controls
             NeedRepaint(false);
         }
 
-        private void MapLoaded(object sender)
+        private void MapChanged(object sender)
         {
             if (_bgBitmap != null)
             {
                 _bgBitmap.Dispose();
                 _bgBitmap = null;
             }
-            if (!DesignMode && _map != null && _map.IsServerMapLoaded)
+            if (!DesignMode && IsMapLoaded && _bgBitmap == null)
             {
                 _bgBitmap = Image.FromFile("Resources\\bg_minimap.png");
             }
@@ -237,18 +241,17 @@ namespace RK.Win.Controls
 
         private void PaintMiniMap()
         {
-            if (_map != null && _map.IsServerMapLoaded && _bgBitmap != null)
+            if (IsMapLoaded && _bgBitmap != null)
             {
                 _miniMapBitmapBuffer.DrawImage(_bgBitmap, ClientRectangle);
 
-                int w = _map.Map.Width - 1, h = _map.Map.Height - 1;
-                for (int y = 0; y < Height; y++)
+                ushort width = _map.Map.MiniMapSize.Width;
+                ushort height = _map.Map.MiniMapSize.Height;
+                for (ushort y = 0; y < height; y++)
                 {
-                    for (int x = 0; x < Width; x++)
+                    for (ushort x = 0; x < width; x++)
                     {
-                        ushort tX = (ushort) ((float) (x + 1)/Width*w);
-                        ushort tY = (ushort) ((float) (y + 1)/Height*h);
-                        if ((*_map.Map[tX, tY]).Type == TileType.Wall)
+                        if (_map.Map.GetMiniMapPixel(x, y) == 1)
                         {
                             _miniMapBitmapBuffer.FillRectangle(_mapWallsBrush, x, y, 1, 1);
                         }
@@ -259,16 +262,16 @@ namespace RK.Win.Controls
 
         private void GeneralPaint()
         {
-            if (_map != null && _map.IsServerMapLoaded)
+            if (IsMapLoaded)
             {
-                float w = _map.Map.Width * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
-                float h = _map.Map.Height * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
+                float w = _map.Map.Width*ConstMap.PIXEL_SIZE*_map.ScaleFactor;
+                float h = _map.Map.Height*ConstMap.PIXEL_SIZE*_map.ScaleFactor;
 
                 int w1 = (int) (Width*(_map.Width/w));
                 int h1 = (int) (Height*(_map.Height/h));
 
-                int x1 = (int) (_map.PosX / w * Width);
-                int y1 = (int) (_map.PosY / h * Height);
+                int x1 = (int) (_map.PosX/w*Width);
+                int y1 = (int) (_map.PosY/h*Height);
 
                 _buffer.DrawImage(_miniMapBitmap, 0, 0);
                 _buffer.DrawRectangle(_mapWindowPen, x1, y1, w1, h1);
@@ -321,16 +324,16 @@ namespace RK.Win.Controls
 
         private void SetMapPosition(Point location, bool smothScroll)
         {
-            float w = _map.Map.Width * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
-            float h = _map.Map.Height * ConstMap.PIXEL_SIZE * _map.ScaleFactor;
-            float x = (float)location.X / Width * w;
-            float y = (float)location.Y / Height * h;
-            _map.CenterTo((int)x, (int)y, smothScroll);
+            float w = _map.Map.Width*ConstMap.PIXEL_SIZE*_map.ScaleFactor;
+            float h = _map.Map.Height*ConstMap.PIXEL_SIZE*_map.ScaleFactor;
+            float x = (float) location.X/Width*w;
+            float y = (float) location.Y/Height*h;
+            _map.CenterTo((int) x, (int) y, smothScroll);
         }
 
         private void MiniMapControlMouseDown(object sender, MouseEventArgs e)
         {
-            if (_map != null && _map.IsServerMapLoaded)
+            if (IsMapLoaded)
             {
                 _mousePos = e.Location;
                 SetMapPosition(e.Location, true);

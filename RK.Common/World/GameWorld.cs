@@ -179,7 +179,7 @@ namespace RK.Common.World
 
 #endregion
 
-#region Map
+#region Map & Minimap
 
         public ServerMap MapGet(int mapId)
         {
@@ -223,6 +223,18 @@ namespace RK.Common.World
                 return map.GetWindow(mapWindow.X, mapWindow.Y, mapWindow.Width, mapWindow.Height);
             }
             mapWindow = ShortRect.Empty;
+            return null;
+        }
+
+        public byte[] MiniMapGet(Player player, out ShortSize miniMapSize)
+        {
+            ServerMap map;
+            if (_maps.TryGetValue(player.MapId, out map))
+            {
+                miniMapSize = map.MiniMapSize;
+                return map.GetMiniMap();
+            }
+            miniMapSize = ShortSize.Empty;
             return null;
         }
 
