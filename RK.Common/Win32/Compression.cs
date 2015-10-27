@@ -3,7 +3,7 @@ using System.IO.Compression;
 
 namespace RK.Common.Win32
 {
-    public static class Compression
+    internal static class Compression
     {
         public static byte[] Compress(byte[] data, int startPos)
         {

@@ -71,6 +71,12 @@ namespace RK.Common.Classes.Common
             Height = source.Height;
         }
 
+        public bool Contains(ShortPoint point)
+        {
+            return point.X >= X && point.X <= X + Width &&
+                   point.Y >= Y && point.Y <= Y + Height;
+        }
+
         public static bool operator ==(ShortRect o1, ShortRect o2)
         {
             return o1.Equals(o2);

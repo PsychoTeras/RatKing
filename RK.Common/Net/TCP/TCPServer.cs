@@ -10,7 +10,7 @@ using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP
 {
-    public sealed class TCPServer : TCPBase
+    internal sealed class TCPServer : TCPBase
     {
 
 #region Delegates

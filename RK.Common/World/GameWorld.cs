@@ -9,18 +9,19 @@ using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
 using RK.Common.Map;
+using Direction = RK.Common.Classes.Common.Direction;
 
 namespace RK.Common.World
 {
-    public sealed class GameWorld : IDisposable
+    internal sealed class GameWorld : IDisposable
     {
 
 #region Constants
 
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
-        private const int NEAREST_AREA_HALF_SIZE_SIZE = 1000 * ConstMap.PIXEL_SIZE;
+        private const int NEAREST_AREA_HALF_SIZE = 100 * ConstMap.PIXEL_SIZE;
 
-        private const float MAP_WINDOW_RES_COEF = 100f;
+        private const float MAP_WINDOW_RES_COEF = 1.5f;
 
 #endregion
 
@@ -168,7 +169,7 @@ namespace RK.Common.World
                 foreach (PlayerDataEx p in _players)
                 {
                     if (p.Player.MapId == player.MapId &&
-                        p.Player.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE_SIZE))
+                        p.Player.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE))
                     {
                         players.Add(p.Player);
                     }
@@ -196,46 +197,73 @@ namespace RK.Common.World
                 : null;
         }
 
-        public byte[] MapWindowGet(Player player, ShortSize screenRes, out ShortRect mapWindow)
+        public byte[] MapWindowGet(PlayerDataEx playerData, out ShortRect mapWindow)
         {
-            ServerMap map;
-            if (_maps.TryGetValue(player.MapId, out map))
+            const float resCoef = MAP_WINDOW_RES_COEF/ConstMap.PIXEL_SIZE;
+
+            float dStartX, dStartY;
+            float dWidth = playerData.ScreenRes.Width*resCoef;
+            float dHeight = playerData.ScreenRes.Height*resCoef;
+            ShortPoint pos = playerData.Player.Position.ToShortPoint(ConstMap.PIXEL_SIZE);
+            switch (playerData.Player.Direction)
             {
-                const float resCoef = MAP_WINDOW_RES_COEF/ConstMap.PIXEL_SIZE;
-
-                int mapWidth = map.Width, mapHeight = map.Height;
-
-                float dWidth = screenRes.Width*resCoef;
-                float dHeight = screenRes.Height * resCoef;
-                float dStartX = ((float)player.Position.X / ConstMap.PIXEL_SIZE) - dWidth / 2;
-                float dStartY = ((float)player.Position.Y / ConstMap.PIXEL_SIZE) - dHeight / 2;
-
-                ushort startX = (ushort) Math.Max(dStartX, 0);
-                ushort startY = (ushort) Math.Max(dStartY, 0);
-                ushort width = (ushort)Math.Ceiling(startX + dWidth > mapWidth
-                    ? dWidth - (startX + dWidth - mapWidth)
-                    : dWidth);
-                ushort height = (ushort)Math.Ceiling(startY + dHeight > mapHeight
-                    ? dHeight - (startY + dHeight - mapHeight)
-                    : dHeight);
-
-                mapWindow = new ShortRect(startX, startY, width, height);
-                return map.GetWindow(mapWindow.X, mapWindow.Y, mapWindow.Width, mapWindow.Height);
+                case Direction.N:
+                    dStartX = pos.X - dWidth/2;
+                    dStartY = pos.Y - dHeight;
+                    break;
+                case Direction.S:
+                    dStartX = pos.X - dWidth/2;
+                    dStartY = pos.Y;
+                    break;
+                case Direction.W:
+                    dStartX = pos.X - dWidth;
+                    dStartY = pos.Y - dHeight/2;
+                    break;
+                case Direction.E:
+                    dStartX = pos.X;
+                    dStartY = pos.Y - dHeight/2;
+                    break;
+                case Direction.NW:
+                    dStartX = pos.X - dWidth/1.1f;
+                    dStartY = pos.Y - dHeight/1.1f;
+                    break;
+                case Direction.NE:
+                    dStartX = pos.X - dWidth*0.1f;
+                    dStartY = pos.Y - dHeight/1.1f;
+                    break;
+                case Direction.SW:
+                    dStartX = pos.X - dWidth/1.1f;
+                    dStartY = pos.Y - dHeight*0.1f;
+                    break;
+                case Direction.SE:
+                    dStartX = pos.X - dWidth*0.1f;
+                    dStartY = pos.Y - dHeight*0.1f;
+                    break;
+                default:
+                    dStartX = pos.X - dWidth/2;
+                    dStartY = pos.Y - dHeight/2;
+                    break;
             }
-            mapWindow = ShortRect.Empty;
-            return null;
+
+            int mapWidth = playerData.Map.Width, mapHeight = playerData.Map.Height;
+
+            ushort startX = (ushort) Math.Max(dStartX, 0);
+            ushort startY = (ushort) Math.Max(dStartY, 0);
+            ushort width = (ushort) Math.Ceiling(startX + dWidth > mapWidth
+                ? dWidth - (startX + dWidth - mapWidth)
+                : dWidth);
+            ushort height = (ushort) Math.Ceiling(startY + dHeight > mapHeight
+                ? dHeight - (startY + dHeight - mapHeight)
+                : dHeight);
+
+            mapWindow = new ShortRect(startX, startY, width, height);
+            return playerData.Map.GetWindow(mapWindow.X, mapWindow.Y, mapWindow.Width, mapWindow.Height);
         }
 
-        public byte[] MiniMapGet(Player player, out ShortSize miniMapSize)
+        public byte[] MiniMapGet(PlayerDataEx playerData, out ShortSize miniMapSize)
         {
-            ServerMap map;
-            if (_maps.TryGetValue(player.MapId, out map))
-            {
-                miniMapSize = map.MiniMapSize;
-                return map.GetMiniMap();
-            }
-            miniMapSize = ShortSize.Empty;
-            return null;
+            miniMapSize = playerData.Map.MiniMapSize;
+            return playerData.Map.GetMiniMap();
         }
 
 #endregion

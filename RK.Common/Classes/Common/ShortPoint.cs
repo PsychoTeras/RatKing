@@ -100,5 +100,10 @@ namespace RK.Common.Classes.Common
         {
             return new ShortPoint(source);
         }
+
+        public static ShortPoint ToShortPoint(this Point source, int pixelSize)
+        {
+            return new ShortPoint(source.X / pixelSize, source.Y / pixelSize);
+        }
     }
 }

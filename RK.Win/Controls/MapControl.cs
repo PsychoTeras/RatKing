@@ -40,6 +40,8 @@ namespace RK.Win.Controls
         private const float DEF_SCALE_FACTOR = 1f;
         private const bool DEF_SHOW_TILE_NUMBER = true;
 
+        private const float BORDER_AREA_SPACE_PART = 3f;
+
 #endregion
 
 #region Private fields
@@ -69,7 +71,6 @@ namespace RK.Win.Controls
         private Dictionary<int, PlayerDataEx> _playersData;
         private ReadOnlyCollection<Player> _playersRo;
 
-        private Player _myPlayer;
         private PlayerDataEx _myPlayerData;
 
         private Thread _threadWorld;
@@ -304,7 +305,7 @@ namespace RK.Win.Controls
 
                 DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.114", 15051);
+                _tcpClient = new TCPClient("192.168.1.32", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 
@@ -434,10 +435,10 @@ namespace RK.Win.Controls
 
         private void UpdateScreenPosByPlayerPos(Player player)
         {
-            int wPart = (int)(Width / 3f);
+            int wPart = (int)(Width / BORDER_AREA_SPACE_PART);
             int leftWinBorder = _posX + wPart;
             int rightWinBorder = _posX + Width - wPart;
-            int hPart = (int)(Height / 3f);
+            int hPart = (int)(Height / BORDER_AREA_SPACE_PART);
             int topWinBorder = _posY + hPart;
             int bottomWinBorder = _posY + Height - hPart;
 
@@ -473,6 +474,16 @@ namespace RK.Win.Controls
                     PlayerDataEx playerData = _playersData[playerId];
                     if (Engine.ValidateNewPlayerPosition(playerData, _map))
                     {
+                        if (_myPlayerData.Player.Id == playerId && !_myPlayerData.GettingMapWindow &&
+                            _myPlayerData.Player.Direction != Direction.None &&
+                            _map.NeedsToLoadMapWindow(_myPlayerData, BORDER_AREA_SPACE_PART))
+                        {
+                            _myPlayerData.GettingMapWindow = true;
+                            TCPClientDataSend(new PMapData
+                            {
+                                SessionToken = _sessionToken,
+                            });
+                        }
                         _somethingChanged = playerData.NeedUpdatePosition = true;
                     }
                 }
@@ -481,17 +492,17 @@ namespace RK.Win.Controls
 
         private void CheckMyPlayerRotation()
         {
-            if (_myPlayer != null)
+            if (_myPlayerData != null)
             {
-                float pSizeWh = _myPlayer.Size.Width * _scaleFactor / 2;
-                float pSizeHh = _myPlayer.Size.Height * _scaleFactor / 2;
+                float pSizeWh = _myPlayerData.Player.Size.Width*_scaleFactor/2;
+                float pSizeHh = _myPlayerData.Player.Size.Height*_scaleFactor/2;
 
                 Point mouseLocation = PointToClient(Cursor.Position);
-                Point p1 = new Point((int)(_myPlayer.Position.X * _scaleFactor + pSizeWh),
-                                     (int)(_myPlayer.Position.Y * _scaleFactor + pSizeHh));
+                Point p1 = new Point((int) (_myPlayerData.Player.Position.X*_scaleFactor + pSizeWh),
+                                     (int) (_myPlayerData.Player.Position.Y*_scaleFactor + pSizeHh));
                 Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
                 float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
-                if (angle != _myPlayer.Angle)
+                if (angle != _myPlayerData.Player.Angle)
                 {
                     TCPClientDataSend(new PPlayerRotate
                     {
@@ -675,11 +686,11 @@ namespace RK.Win.Controls
 
         private void CheckMyPlayerPosition()
         {
-            if (_myPlayer != null && _myPlayerData.NeedUpdatePosition)
+            if (_myPlayerData != null && _myPlayerData.NeedUpdatePosition)
             {
                 _myPlayerData.NeedUpdatePosition = false;
                 CheckMyPlayerRotation();
-                UpdateScreenPosByPlayerPos(_myPlayer);
+                UpdateScreenPosByPlayerPos(_myPlayerData);
             }
         }
 
@@ -772,11 +783,13 @@ namespace RK.Win.Controls
 
             if (x >= 0 && y >= 0 && x < _map.Width && y < _map.Height)
             {
-                Tile* tile = _map[(ushort)x, (ushort)y];
-                (*tile).Type = type;
-                foreach (IMapRenderer renderer in _renderers)
+                Tile* tile = _map.SetTileType((ushort) x, (ushort) y, type);
+                if (tile != null)
                 {
-                    renderer.UpdateTile(this, (ushort)x, (ushort)y, *tile);
+                    foreach (IMapRenderer renderer in _renderers)
+                    {
+                        renderer.UpdateTile(this, (ushort) x, (ushort) y, *tile);
+                    }
                 }
             }
         }
@@ -824,14 +837,18 @@ namespace RK.Win.Controls
             if (tilePos != null)
             {
                 Tile* tile = _map[tilePos.Value.X, tilePos.Value.Y];
-                (*tile).Type = (*tile).Type == TileType.Wall ? TileType.Nothing : TileType.Wall;
-                foreach (IMapRenderer renderer in _renderers)
+                TileType newTileType = (*tile).Type == TileType.Wall ? TileType.Nothing : TileType.Wall;
+                tile = _map.SetTileType(tilePos.Value.X, tilePos.Value.Y, newTileType);
+                if (tile != null)
                 {
-                    renderer.UpdateTile(this, tilePos.Value.X, tilePos.Value.Y, *tile);
-                }
-                if (TilesChanged != null)
-                {
-                    TilesChanged(this);
+                    foreach (IMapRenderer renderer in _renderers)
+                    {
+                        renderer.UpdateTile(this, tilePos.Value.X, tilePos.Value.Y, *tile);
+                    }
+                    if (TilesChanged != null)
+                    {
+                        TilesChanged(this);
+                    }
                 }
             }
         }
@@ -893,10 +910,10 @@ namespace RK.Win.Controls
 
         public void CenterPlayer()
         {
-            if (_myPlayer != null)
+            if (_myPlayerData != null)
             {
-                CenterTo((int)(_myPlayer.Position.X * _scaleFactor),
-                         (int)(_myPlayer.Position.Y * _scaleFactor),
+                CenterTo((int)(_myPlayerData.Player.Position.X * _scaleFactor),
+                         (int)(_myPlayerData.Player.Position.Y * _scaleFactor),
                          true);
             }
         }
@@ -907,12 +924,12 @@ namespace RK.Win.Controls
 
         public void PlayerMove(Direction direction)
         {
-            if (_myPlayer != null && _myPlayer.Direction != direction)
+            if (_myPlayerData != null && _myPlayerData.Player.Direction != direction)
             {
                 TCPClientDataSend(new PPlayerMove
                 {
                     SessionToken = _sessionToken,
-                    Position =  _myPlayer.Position,
+                    Position = _myPlayerData.Player.Position,
                     Direction = direction
                 });
             }
@@ -959,12 +976,11 @@ namespace RK.Win.Controls
                                 _playersData.Add(p.Id, new PlayerDataEx(p));
                             }
                         }
-                        _myPlayer = _players[userEnter.MyPlayerId];
                         _myPlayerData = _playersData[userEnter.MyPlayerId];
                         _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
                     }
-                    CenterTo((int) (_myPlayer.Position.X*_scaleFactor),
-                             (int) (_myPlayer.Position.Y*_scaleFactor),
+                    CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor),
+                             (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
                              true);
                     break;
 
@@ -972,8 +988,8 @@ namespace RK.Win.Controls
                     lock (_players)
                     {
                         RPlayerEnter playerEnter = (RPlayerEnter) e;
-                        if (!_players.ContainsKey(playerEnter.Player.Id) && _myPlayer != null &&
-                            playerEnter.Player.Id != _myPlayer.Id)
+                        if (!_players.ContainsKey(playerEnter.Player.Id) && _myPlayerData != null &&
+                            playerEnter.Player.Id != _myPlayerData.Player.Id)
                         {
                             _players.Add(playerEnter.Player.Id, playerEnter.Player);
                             _playersData.Add(playerEnter.Player.Id, new PlayerDataEx(playerEnter.Player));
@@ -987,8 +1003,8 @@ namespace RK.Win.Controls
                     lock (_players)
                     {
                         RPlayerExit playerExit = (RPlayerExit) e;
-                        if (_players.ContainsKey(playerExit.PlayerId) && _myPlayer != null &&
-                            playerExit.PlayerId != _myPlayer.Id)
+                        if (_players.ContainsKey(playerExit.PlayerId) && _myPlayerData != null &&
+                            playerExit.PlayerId != _myPlayerData.Player.Id)
                         {
                             _players.Remove(playerExit.PlayerId);
                             _playersData.Remove(playerExit.PlayerId);
@@ -1025,6 +1041,7 @@ namespace RK.Win.Controls
                 case PacketType.MapData:
                     RMapData mapData = (RMapData) e;
                     _map.AppendMapData(mapData.MapData, mapData.MapWindow);
+                    _myPlayerData.GettingMapWindow = false;
                     break;
             }
         }

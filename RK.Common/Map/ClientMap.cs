@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using RK.Common.Classes.Common;
+using RK.Common.Classes.Units;
+using RK.Common.Const;
 using RK.Common.Win32;
+using D = RK.Common.Classes.Common.Direction;
 
 namespace RK.Common.Map
 {
@@ -30,6 +33,8 @@ namespace RK.Common.Map
 
         private Dictionary<int, int> _map;
         private Dictionary<int, int> _rtFlags;
+
+        private List<ShortRect> _windows;
 
 #endregion
 
@@ -71,6 +76,7 @@ namespace RK.Common.Map
             _tilesSet = new Dictionary<int, ushort>();
             _map = new Dictionary<int, int>();
             _rtFlags = new Dictionary<int, int>();
+            _windows = new List<ShortRect>();
         }
 
 #endregion
@@ -95,7 +101,7 @@ namespace RK.Common.Map
             int tileCoordMark = y << 16 | x;
             if (_rtFlags.TryGetValue(tileCoordMark, out rtFlags))
             {
-                _rtFlags[tileCoordMark] = (int)(rtFlags & 0xFFFFFF00);
+                _rtFlags[tileCoordMark] = (int) (rtFlags & 0xFFFFFF00);
             }
         }
 
@@ -105,13 +111,39 @@ namespace RK.Common.Map
             int tileCoordMark = y << 16 | x;
             if (_rtFlags.TryGetValue(tileCoordMark, out rtFlags))
             {
-                _rtFlags[tileCoordMark] = (int)(rtFlags & 0xFFFFFF00 | borders);
+                _rtFlags[tileCoordMark] = (int) (rtFlags & 0xFFFFFF00 | borders);
             }
         }
 
 #endregion
 
 #region Map
+
+        private bool IsCloseToBorder(ShortRect window, ShortPoint playerPos, Player player,
+            float borderAreaSpacePart)
+        {
+            int horzSpace = (int) (window.Width/borderAreaSpacePart);
+            int vertSpace = (int) (window.Height/borderAreaSpacePart);
+            return (playerPos.X <= window.X + horzSpace && playerPos.X - horzSpace >= 0 &&
+                    (player.Direction == D.W || player.Direction == D.NW || player.Direction == D.SW)) ||
+                   (playerPos.X >= window.X + window.Width - horzSpace && playerPos.X + horzSpace < _width &&
+                    (player.Direction == D.E || player.Direction == D.NE || player.Direction == D.SE)) ||
+                   (playerPos.Y <= window.Y + vertSpace && playerPos.Y - vertSpace >= 0 &&
+                    (player.Direction == D.N || player.Direction == D.NE || player.Direction == D.NW)) ||
+                   (playerPos.Y >= window.Y + window.Height - vertSpace && playerPos.Y + vertSpace < _height &&
+                    (player.Direction == D.S || player.Direction == D.SE || player.Direction == D.SW));
+        }
+
+        public bool NeedsToLoadMapWindow(Player player, float borderAreaSpacePart)
+        {
+            ShortPoint playerPos = player.Position.ToShortPoint(ConstMap.PIXEL_SIZE);
+            foreach (ShortRect window in _windows)
+            {
+                if (!window.Contains(playerPos)) continue;
+                if (!IsCloseToBorder(window, playerPos, player, borderAreaSpacePart)) return false;
+            }
+            return true;
+        }
 
         public void Setup(ShortSize mapSize)
         {
@@ -220,6 +252,26 @@ namespace RK.Common.Map
                     }
                 }
             }
+
+            _windows.Add(window);
+        }
+
+        public Tile* SetTileType(ushort x, ushort y, TileType type)
+        {
+            ushort tileIdx;
+            Tile tile = *this[x, y];
+            int tileMark = tile.GetHashCode();
+            if (_tilesSet.TryGetValue(tileMark, out tileIdx))
+            {
+                tileMark = tile.GetHashCode(type);
+                if (_tilesSet.TryGetValue(tileMark, out tileIdx))
+                {
+                    int tileCoordMark = y << 16 | x;
+                    _map[tileCoordMark] = tileIdx;
+                    return &_tiles[tileIdx];
+                }
+            }
+            return null;
         }
 
 #endregion

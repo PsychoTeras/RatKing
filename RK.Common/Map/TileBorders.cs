@@ -1,6 +1,6 @@
 ﻿namespace RK.Common.Map
 {
-    public static unsafe class TileBorders
+    internal static unsafe class TileBorders
     {
         public static byte GetBorders(int x, int y, ushort w, ushort h, TileType areaType, ServerMap map)
         {

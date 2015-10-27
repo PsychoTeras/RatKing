@@ -67,6 +67,36 @@ namespace RK.Common.Map
             }
         }
 
+        public int GetHashCode(TileType newType)
+        {
+            unchecked
+            {
+                return ((int) newType*0x18D) ^
+                       (TypeIndex*0x18D) ^
+                       Flags;
+            }
+        }
+
+        public int GetHashCode(byte newTypeIndex)
+        {
+            unchecked
+            {
+                return ((int) Type*0x18D) ^
+                       (newTypeIndex*0x18D) ^
+                       Flags;
+            }
+        }
+
+        public int GetHashCode(int newFlags)
+        {
+            unchecked
+            {
+                return ((int) Type*0x18D) ^
+                       (TypeIndex*0x18D) ^
+                       newFlags;
+            }
+        }
+
 #endregion
 
 #region ISerializable

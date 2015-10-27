@@ -2,7 +2,7 @@
 
 namespace RK.Common.Host
 {
-    public abstract class BaseValidator
+    internal abstract class BaseValidator
     {
 
 #region Protected fields

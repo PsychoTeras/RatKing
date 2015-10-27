@@ -81,7 +81,6 @@
     <Compile Include="Map\IBaseMap.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
     <Compile Include="Win32\Compression.cs" />
-    <Compile Include="Win32\QuickLZ.cs" />
     <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />
     <Compile Include="Map\ServerMap.cs" />

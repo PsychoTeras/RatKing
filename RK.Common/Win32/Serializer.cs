@@ -7,7 +7,7 @@ using Direction = RK.Common.Classes.Common.Direction;
 
 namespace RK.Common.Win32
 {
-    public unsafe static class Serializer
+    internal unsafe static class Serializer
     {
         public static int SizeOf(byte[] data)
         {

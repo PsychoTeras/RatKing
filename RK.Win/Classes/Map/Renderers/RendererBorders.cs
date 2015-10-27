@@ -49,7 +49,7 @@ namespace RK.Win.Classes.Map.Renderers
                             borders = TileBorders.ScanAndSetBorders(x, y, TileType.Wall, map);
                         }
 
-                        if (borders == 1)
+                        if (borders < 2)
                         {
                             continue;
                         }
@@ -86,7 +86,20 @@ namespace RK.Win.Classes.Map.Renderers
 
         public void ChangeMap(MapControl mapCtrl) { }
 
-        public void UpdateTile(MapControl mapCtrl, ushort x, ushort y, Tile tile) { }
+        public void UpdateTile(MapControl mapCtrl, ushort x, ushort y, Tile tile)
+        {
+            ushort minX = (ushort) Math.Max(x - 1, 0);
+            ushort maxX = (ushort) Math.Min(x + 1, mapCtrl.Map.Width - 1);
+            ushort minY = (ushort) Math.Max(y - 1, 0);
+            ushort maxY = (ushort) Math.Min(y + 1, mapCtrl.Map.Height - 1);
+            for (y = minY; y <= maxY; y++)
+            {
+                for (x = minX; x <= maxX; x++)
+                {
+                    mapCtrl.Map.FlagClearBorders(x, y);    
+                }
+            }
+        }
 
 #endregion
 

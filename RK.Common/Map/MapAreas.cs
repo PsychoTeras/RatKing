@@ -4,7 +4,7 @@ using RK.Common.Classes.Common;
 
 namespace RK.Common.Map
 {
-    public unsafe class MapArea : List<ShortPoint>
+    internal unsafe class MapArea : List<ShortPoint>
     {
 
 #region Public fields
@@ -248,7 +248,7 @@ namespace RK.Common.Map
 
     }
 
-    public unsafe class MapAreas : List<MapArea>
+    internal unsafe class MapAreas : List<MapArea>
     {
 
 #region Private fields

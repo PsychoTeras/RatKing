@@ -8,7 +8,7 @@ using RK.Common.Proto.Packets;
 
 namespace RK.Common.Host.Validators
 {
-    public sealed class VCheckPosition : BaseValidator
+    internal sealed class VCheckPosition : BaseValidator
     {
         class ValidationInfo
         {

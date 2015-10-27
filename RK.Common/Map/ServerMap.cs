@@ -79,7 +79,7 @@ namespace RK.Common.Map
         public ushort MiniMapHeight;
         public ShortSize MiniMapSize;
 
-        public MapAreas SpaceAreas;
+        internal MapAreas SpaceAreas;
 
 #endregion
 

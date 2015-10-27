@@ -40,7 +40,7 @@ namespace RK.Common.Host
 
 #region Public fields
 
-        public GameWorld World;
+        internal GameWorld World;
 
 #endregion
 
@@ -173,7 +173,7 @@ namespace RK.Common.Host
             List<Player> playersOnLocation = World.PlayersGetNearest(playerData);
 
             ShortRect mapWindow;
-            byte[] mapData = World.MapWindowGet(playerData, playerData.ScreenRes, out mapWindow);
+            byte[] mapData = World.MapWindowGet(playerData, out mapWindow);
             ShortSize mapSize = new ShortSize(playerData.Map.Width, playerData.Map.Height);
 
             ShortSize miniMapSize;
@@ -303,7 +303,7 @@ namespace RK.Common.Host
             }
 
             ShortRect mapWindow;
-            byte[] mapData = World.MapWindowGet(playerData, playerData.ScreenRes, out mapWindow);
+            byte[] mapData = World.MapWindowGet(playerData, out mapWindow);
 
             return new RMapData(pMapData)
             {
