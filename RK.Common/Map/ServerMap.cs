@@ -257,6 +257,9 @@ namespace RK.Common.Map
             int smallSimilarsCnt = 0;
             const int smallSimilarsCntLim = byte.MaxValue / 2;
 
+            ushort tilesSetCount = 0;
+            Dictionary<Tile, ushort> tilesSet = new Dictionary<Tile, ushort>();
+
             ArrayList tilesInfo = new ArrayList();
             for (int y = startY; y < endY; y++)
             {
@@ -286,22 +289,41 @@ namespace RK.Common.Map
                         smallSimilarsCnt++;
                     }
 
+                    ushort tileIdx;
+                    if (!tilesSet.TryGetValue(tile, out tileIdx))
+                    {
+                        tileIdx = tilesSetCount++;
+                        tilesSet.Add(tile, tileIdx);
+                    }
+
                     //Add tile info
-                    tilesInfo.Add(new Pair<Tile, ushort>(tile, similarsCnt));
+                    tilesInfo.Add(new Pair<ushort, ushort>(tileIdx, similarsCnt));
                 }
             }
 
-            int count = tilesInfo.Count;
-            int dataSize = sizeof(int) +
-                           sizeof(byte) * smallSimilarsCnt +
-                           sizeof(ushort) * (count - smallSimilarsCnt) +
-                           ConstMap.TILE_SERIALIZE_SIZE_OF * count;
+            int dataSize = sizeof (short) +
+                           ConstMap.TILE_SERIALIZE_SIZE_OF*tilesSet.Count + //Tiles set
+
+                           sizeof (int) +
+                           sizeof (byte)*smallSimilarsCnt +
+                           sizeof (ushort)*(tilesInfo.Count - smallSimilarsCnt) +
+                           sizeof (short)*tilesInfo.Count; //Tiles list
+
             byte[] tilesData = new byte[dataSize];
             fixed (byte* bData = tilesData)
             {
                 int pos = 0;
-                Serializer.Write(bData, count, ref pos);
-                foreach (Pair<Tile, ushort> info in tilesInfo)
+
+                //Save tiles set
+                Serializer.Write(bData, (ushort)tilesSet.Count, ref pos);
+                foreach (Tile tile in tilesSet.Keys)
+                {
+                    tile.Serialize(bData, ref pos);
+                }
+
+                //Tiles list
+                Serializer.Write(bData, tilesInfo.Count, ref pos);
+                foreach (Pair<ushort, ushort> info in tilesInfo)
                 {
                     if (info.Value <= smallSimilarsCntLim)
                     {
@@ -309,12 +331,12 @@ namespace RK.Common.Map
                     }
                     else
                     {
-                        ushort hi = (ushort)(info.Value & 0x00FF);
-                        byte lo = (byte)(info.Value >> 8 | 0x80);
-                        ushort value = (ushort)(hi << 8 | lo);
+                        ushort hi = (ushort) (info.Value & 0x00FF);
+                        byte lo = (byte) (info.Value >> 8 | 0x80);
+                        ushort value = (ushort) (hi << 8 | lo);
                         Serializer.Write(bData, value, ref pos);
                     }
-                    info.Key.Serialize(bData, ref pos);
+                    Serializer.Write(bData, info.Key, ref pos);
                 }
             }
 

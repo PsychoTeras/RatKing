@@ -1,11 +1,6 @@
 ﻿#define UNSAFE_ARRAY
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RK.Common.Classes.Units;
@@ -174,25 +169,21 @@ namespace RK.Console
             int idx = (int)((object[])obj)[0];
             var list = (List<Player>)((object[])obj)[1];
             var ev = (EventWaitHandle)((object[])obj)[2];
-//            var sync = (ReaderWriterLockSlim)((object[])obj)[3];
 
             if (idx % 2 == 0)
             {
                 for (int i = 0; i < ITERATIONS_COUNT; i++)
                 {
-//                    sync.EnterWriteLock();
                     lock (list)
                     {
                         list.Add(new Player {Id = idx*ITERATIONS_COUNT + i});
                     }
-//                    sync.ExitWriteLock();
                 }
             }
             else
             {
                 for (int i = 0; i < ITERATIONS_COUNT; i++)
                 {
-//                    sync.EnterReadLock();
                     lock (list)
                     {
                         if (list.Count > i)
@@ -200,7 +191,6 @@ namespace RK.Console
                             list[i].MapId++;
                         }
                     }
-//                    sync.ExitReadLock();
                 }
             }
             ev.Set();
@@ -260,7 +250,7 @@ namespace RK.Console
 
         static void Main(string[] args)
         {
-            TestCollectionsPerf();
+            TestMapWindowGetPerf();
             System.Console.ReadKey();
         }
     }

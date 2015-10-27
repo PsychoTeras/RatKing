@@ -61,10 +61,9 @@ namespace RK.Common.Map
         {
             unchecked
             {
-                int hashCode = Type.GetHashCode();
-                hashCode = (hashCode*0x18D) ^ TypeIndex.GetHashCode();
-                hashCode = (hashCode*0x18D) ^ Flags.GetHashCode();
-                return hashCode;
+                return ((int) Type*0x18D) ^
+                       (TypeIndex*0x18D) ^
+                       Flags;
             }
         }
 

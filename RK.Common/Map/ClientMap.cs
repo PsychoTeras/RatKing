@@ -21,13 +21,13 @@ namespace RK.Common.Map
         private ushort _width;
 
         private Tile* _tiles;
-        private int _tilesListCount;
-        private int _tilesListCapacity;
+        private ushort _tilesListCount;
+        private ushort _tilesListCapacity;
+        private Dictionary<int, ushort> _tilesSet;
 
         private byte* _miniMapData;
         private ShortSize _miniMapSize;
 
-        private Dictionary<int, int> _tilesSet;
         private Dictionary<int, int> _map;
         private Dictionary<int, int> _rtFlags;
 
@@ -68,7 +68,7 @@ namespace RK.Common.Map
 
         public ClientMap()
         {
-            _tilesSet = new Dictionary<int, int>();
+            _tilesSet = new Dictionary<int, ushort>();
             _map = new Dictionary<int, int>();
             _rtFlags = new Dictionary<int, int>();
         }
@@ -130,15 +130,15 @@ namespace RK.Common.Map
                 }
                 else
                 {
-                    _tilesListCapacity = (int) (_tilesListCapacity*TILES_LIST_CAPACITY_INC);
+                    _tilesListCapacity = (ushort) (_tilesListCapacity*TILES_LIST_CAPACITY_INC);
                     _tiles = (Tile*) Memory.HeapReAlloc(_tiles, _tilesListCapacity*sizeof (Tile), false);
                 }
             }
         }
 
-        private int AppendTile(ref Tile tile)
+        private ushort AppendTile(ref Tile tile)
         {
-            int tileIdx;
+            ushort tileIdx;
             int tileMark = tile.GetHashCode();
             if (!_tilesSet.TryGetValue(tileMark, out tileIdx))
             {
@@ -158,13 +158,28 @@ namespace RK.Common.Map
             }
 
             int startX = window.X, startY = window.Y;
+            Dictionary<ushort, Tile> tilesSet = new Dictionary<ushort, Tile>();
 
             fixed (byte* bData = data)
             {
-                int pos = 0, tilesCnt, curIdx = 0;
+                int pos = 0;
+
+                //Read tiles set
+                ushort tilesInSet;
+                Serializer.Read(bData, out tilesInSet, ref pos);
+                for (ushort i = 0; i < tilesInSet; i++)
+                {
+                    Tile tile = new Tile();
+                    tile.Deserialize(bData, ref pos);
+                    tilesSet.Add(i, tile);
+                }
+
+                //Read tiles list
+                int tilesCnt, curIdx = 0;
                 Serializer.Read(bData, out tilesCnt, ref pos);
                 for (int i = 0; i < tilesCnt; i++)
                 {
+                    //Read tile series length
                     byte rleMark;
                     ushort seriesLength;
                     Serializer.Read(bData, out rleMark, ref pos);
@@ -179,9 +194,13 @@ namespace RK.Common.Map
                         seriesLength = rleMark;
                     }
 
-                    Tile tile = new Tile();
-                    tile.Deserialize(bData, ref pos);
-                    int tileIdx = AppendTile(ref tile);
+                    //Match tile
+                    ushort tileIdx;
+                    Serializer.Read(bData, out tileIdx, ref pos);
+                    Tile tile = tilesSet[tileIdx];
+                    tileIdx = AppendTile(ref tile);
+
+                    //Fill tiles list
                     int maxIdx = curIdx + seriesLength;
                     for (; curIdx < maxIdx; curIdx++)
                     {

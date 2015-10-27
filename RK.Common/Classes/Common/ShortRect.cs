@@ -93,10 +93,13 @@ namespace RK.Common.Classes.Common
 
         public override int GetHashCode()
         {
-            return (X.GetHashCode()*0x18D) ^
-                   (Y.GetHashCode()*0x18D) ^
-                   (Width.GetHashCode()*0x18D) ^
-                   (Height.GetHashCode());
+            unchecked
+            {
+                return (X*0x18D) ^
+                       (Y*0x18D) ^
+                       (Width*0x18D) ^
+                       Height;
+            }
         }
 
         public override string ToString()
