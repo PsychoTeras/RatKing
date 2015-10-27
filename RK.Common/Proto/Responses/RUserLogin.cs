@@ -12,6 +12,11 @@ namespace RK.Common.Proto.Responses
             get { return PacketType.UserLogin; }
         }
 
+        public override bool Private
+        {
+            get { return true; }
+        }
+
         protected override int SizeOf
         {
             get

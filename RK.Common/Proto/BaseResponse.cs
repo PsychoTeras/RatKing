@@ -77,10 +77,10 @@ namespace RK.Common.Proto
             if (HasError)
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendFormat("Error code: {0}", ErrorCode);
+                sb.AppendFormat("{0}: Error code {1}", Type, ErrorCode);
                 return sb.ToString();
             }
-            return "No errors";
+            return string.Format("{0}: No errors", Type);
         }
 
 #endregion

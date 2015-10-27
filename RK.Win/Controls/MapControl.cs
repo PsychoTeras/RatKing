@@ -304,7 +304,7 @@ namespace RK.Win.Controls
 
                 DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.32", 15051);
+                _tcpClient = new TCPClient("192.168.1.114", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 

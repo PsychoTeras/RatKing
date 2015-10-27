@@ -168,13 +168,12 @@ namespace RK.Common.Map
             int miniMapArea = MiniMapWidth*MiniMapHeight;
             _miniMap = (byte*) Memory.HeapAlloc(miniMapArea/2);
 
-            ushort mapX, mapY;
             float xCoef = (float) _width/MiniMapWidth;
             float yCoef = (float) _height/MiniMapHeight;
             for (int i = 0; i < miniMapArea; i++)
             {
-                mapX = (ushort) (i*xCoef%_width);
-                mapY = (ushort) (i*xCoef*yCoef/_width);
+                ushort mapX = (ushort) (i*xCoef%_width);
+                ushort mapY = (ushort) (i*xCoef*yCoef/_width);
 
                 Tile* tile = &_tiles[mapY*_width + mapX];
                 byte pxl = (byte) ((*tile).Type == TileType.Wall ? 1 : 0);
@@ -233,9 +232,16 @@ namespace RK.Common.Map
                 foreach (Pair<byte, ushort> info in miniMapInfo)
                 {
                     if (info.Value <= smallSimilarsCntLim)
+                    {
                         Serializer.Write(bData, (byte) info.Value, ref pos);
+                    }
                     else
-                        Serializer.Write(bData, info.Value, ref pos);
+                    {
+                        ushort hi = (ushort)(info.Value & 0x00FF);
+                        byte lo = (byte)(info.Value >> 8 | 0x80);
+                        ushort value = (ushort)(hi << 8 | lo);
+                        Serializer.Write(bData, value, ref pos);
+                    }
                     Serializer.Write(bData, info.Key, ref pos);
                 }
             }
@@ -260,20 +266,20 @@ namespace RK.Common.Map
 
                     //Find all similar tiles in a row
                     ushort similarsCnt = 1;
-                    //while (similarsCnt < short.MaxValue - 1)
-                    //{
-                    //    int xn = x + 1, yn = y;
-                    //    if (xn == endX)
-                    //    {
-                    //        xn = startX;
-                    //        yn++;
-                    //    }
-                    //    if (yn == endY || _tiles[yn*_width + xn] != tile) break;
+                    while (similarsCnt < short.MaxValue - 1)
+                    {
+                        int xn = x + 1, yn = y;
+                        if (xn == endX)
+                        {
+                            xn = startX;
+                            yn++;
+                        }
+                        if (yn == endY || _tiles[yn*_width + xn] != tile) break;
 
-                    //    similarsCnt++;
-                    //    x = xn;
-                    //    y = yn;
-                    //}
+                        similarsCnt++;
+                        x = xn;
+                        y = yn;
+                    }
 
                     if (similarsCnt <= smallSimilarsCntLim)
                     {
@@ -298,9 +304,16 @@ namespace RK.Common.Map
                 foreach (Pair<Tile, ushort> info in tilesInfo)
                 {
                     if (info.Value <= smallSimilarsCntLim)
-                        Serializer.Write(bData, (byte)info.Value, ref pos);
+                    {
+                        Serializer.Write(bData, (byte) info.Value, ref pos);
+                    }
                     else
-                        Serializer.Write(bData, info.Value, ref pos);
+                    {
+                        ushort hi = (ushort)(info.Value & 0x00FF);
+                        byte lo = (byte)(info.Value >> 8 | 0x80);
+                        ushort value = (ushort)(hi << 8 | lo);
+                        Serializer.Write(bData, value, ref pos);
+                    }
                     info.Key.Serialize(bData, ref pos);
                 }
             }

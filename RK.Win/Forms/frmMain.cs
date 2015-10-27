@@ -31,7 +31,7 @@ namespace RK.Win.Forms
         {
             InitializeComponent();
 
-            if (Environment.CommandLine.Trim().Split(new[] {' '}).Length == 1)
+            if (Environment.CommandLine.Trim().Split(new[] {' '}).Length == 2)
             {
                 _host = new GameHost();
             }
@@ -192,7 +192,7 @@ namespace RK.Win.Forms
                 pbLabyrinth.Image.Dispose();
             }
 
-            ushort width = 700, height = 700;
+            ushort width = 500, height = 500;
             Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                 ImageLockMode.ReadWrite, bitmap.PixelFormat);

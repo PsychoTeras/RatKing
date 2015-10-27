@@ -18,7 +18,7 @@ namespace RK.Common.World
 #region Constants
 
         private const int MIN_FREE_AREA_SIZE = 500 * ConstMap.PIXEL_SIZE_SQR;
-        private const int NEAREST_AREA_HALF_SIZE_SIZE = 100 * ConstMap.PIXEL_SIZE;
+        private const int NEAREST_AREA_HALF_SIZE_SIZE = 1000 * ConstMap.PIXEL_SIZE;
 
         private const float MAP_WINDOW_RES_COEF = 100f;
 
