@@ -206,6 +206,12 @@ namespace RK.Win.Controls
         [Browsable(false)]
         public bool IsMapLoaded { get; private set; }
 
+        [Browsable(false)]
+        public PlayerDataEx PlayerData
+        {
+            get { return _myPlayerData; }
+        }
+
 #endregion
 
 #region Events
@@ -289,6 +295,7 @@ namespace RK.Win.Controls
                 }
                 IsMapLoaded = false;
                 _sessionToken = 0;
+                _myPlayerData = null;
             }
         }
 
@@ -575,7 +582,8 @@ namespace RK.Win.Controls
             {
                 new RendererBG(_scaleFactor),
                 new RendererWalls(),
-                new RendererBorders()
+                new RendererBorders(),
+                new RendererFOV()
             };
         }
 
@@ -646,6 +654,7 @@ namespace RK.Win.Controls
 
         private void GeneralPaint()
         {
+            _buffer.SetClip(ClientRectangle);
             Rectangle area = new Rectangle(_posX, _posY, Width, Height);
             foreach (IMapRenderer renderer in _renderers)
             {

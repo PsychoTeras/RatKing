@@ -36,7 +36,7 @@ namespace RK.Common.Classes.Units
 
         public static implicit operator Player(PlayerData playerData)
         {
-            return playerData.Player;
+            return playerData == null ? null : playerData.Player;
         }
     }
 }

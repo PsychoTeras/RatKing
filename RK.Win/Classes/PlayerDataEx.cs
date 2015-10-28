@@ -2,7 +2,7 @@
 
 namespace RK.Win.Classes
 {
-    internal sealed class PlayerDataEx : PlayerData
+    public sealed class PlayerDataEx : PlayerData
     {
         public bool GettingMapWindow;
         public bool NeedUpdatePosition;

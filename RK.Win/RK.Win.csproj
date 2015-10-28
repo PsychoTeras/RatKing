@@ -68,6 +68,7 @@
     <Compile Include="Classes\Map\Renderers\IMapRenderer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererBG.cs" />
     <Compile Include="Classes\Map\Renderers\RendererBorders.cs" />
+    <Compile Include="Classes\Map\Renderers\RendererFOV.cs" />
     <Compile Include="Classes\Map\Renderers\RendererPlayer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererWalls.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
@@ -142,6 +143,9 @@
     </Content>
     <Content Include="Resources\bg_tiles.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\fov.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\player.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
