@@ -427,16 +427,16 @@ namespace RK.Common.Host
 
                     lock (_playersWorldResponses)
                     {
-                        Parallel.ForEach(_playersWorldResponses.Where(r => _playersHaveWorldResponses.Contains(r.Key)),
-                            response =>
+                        var responses = _playersWorldResponses.Where(r => _playersHaveWorldResponses.Contains(r.Key));
+                        Parallel.ForEach(responses, response =>
+                        {
+                            TCPClientEx tcpClient;
+                            if (_playerClients.TryGetValue(response.Key, out tcpClient))
                             {
-                                TCPClientEx tcpClient;
-                                if (_playerClients.TryGetValue(response.Key, out tcpClient))
-                                {
-                                    _netServer.SendData(tcpClient, response.Value);
-                                }
-                                response.Value.Clear();
-                            });
+                                _netServer.SendData(tcpClient, response.Value);
+                            }
+                            response.Value.Clear();
+                        });
                         _playersHaveWorldResponses.Clear();
                     }
 

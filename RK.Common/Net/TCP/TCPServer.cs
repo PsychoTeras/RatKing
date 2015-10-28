@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -346,13 +347,25 @@ namespace RK.Common.Net.TCP
 
             try
             {
-                //Send data
-                foreach (ITransferable packet in packets)
+                int dataSize = 0, idx = 0, cnt = packets.Count();
+                byte[][] data = new byte[packets.Count()][];
+                foreach (byte[] byteBuffer in packets.Select(packet => packet.Serialize()))
                 {
-                    byte[] byteBuffer = packet.Serialize();
-                    int dataLength = byteBuffer.Length;
-                    ((TcpClient)tcpClient).GetStream().Write(byteBuffer, 0, dataLength);
+                    data[idx++] = byteBuffer;
+                    dataSize += byteBuffer.Length;
                 }
+
+                idx = 0;
+                byte[] outData = new byte[dataSize];
+                for (int i = 0; i < cnt; i++)
+                {
+                    byte[] array = data[i];
+                    int length = array.Length;
+                    Array.Copy(array, 0, outData, idx, length);
+                    idx += length;
+                }
+
+                ((TcpClient)tcpClient).GetStream().Write(outData, 0, dataSize);
                 return true;
             }
             catch { }
