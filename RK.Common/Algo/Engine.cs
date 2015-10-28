@@ -16,7 +16,7 @@ namespace RK.Common.Algo
             {
                 int traveled = CalculatePlayerTraveledDistance(playerData);
                 Point newPos = CalculateNewPlayerPos(playerData.Player, traveled);
-//                PlayerPosProcessCollision(playerData.Player, map, ref newPos);
+                PlayerPosProcessCollision(playerData.Player, map, ref newPos);
                 if (playerData.Player.Position != newPos)
                 {
                     playerData.Player.Position = newPos;
