@@ -312,7 +312,7 @@ namespace RK.Win.Controls
 
                 DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.32", 15051);
+                _tcpClient = new TCPClient("192.168.1.114", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 
@@ -583,7 +583,7 @@ namespace RK.Win.Controls
                 new RendererBG(_scaleFactor),
                 new RendererWalls(),
                 new RendererBorders(),
-                new RendererFOV()
+//                new RendererFOV()
             };
         }
 

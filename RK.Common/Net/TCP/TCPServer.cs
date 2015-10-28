@@ -337,6 +337,28 @@ namespace RK.Common.Net.TCP
             return false;
         }
 
+        public bool SendData(TCPClientEx tcpClient, IEnumerable<ITransferable> packets, object userData = null)
+        {
+            if (!tcpClient.Connected)
+            {
+                return false;
+            }
+
+            try
+            {
+                //Send data
+                foreach (ITransferable packet in packets)
+                {
+                    byte[] byteBuffer = packet.Serialize();
+                    int dataLength = byteBuffer.Length;
+                    ((TcpClient)tcpClient).GetStream().Write(byteBuffer, 0, dataLength);
+                }
+                return true;
+            }
+            catch { }
+            return false;
+        }
+
         private void ProcessReceivedData(TCPClientEx tcpClientEx, MemoryStream stream)
         {
             List<BasePacket> packets = new List<BasePacket>();

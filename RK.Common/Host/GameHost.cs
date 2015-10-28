@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
@@ -16,6 +19,12 @@ namespace RK.Common.Host
 {
     public sealed class GameHost : IDisposable
     {
+
+#region Constants
+
+        private const int WORLD_DELAY_BETWEEN_FRAMES_MS = 30;
+
+#endregion
 
 #region Delegates
 
@@ -35,6 +44,13 @@ namespace RK.Common.Host
 
         private Dictionary<long, int> _loggedPlayers;
         private Dictionary<TCPClientEx, long> _tcpClients;
+        private Dictionary<int, TCPClientEx> _playerClients;
+
+        private Thread _threadWorldProcessor;
+        private HashSet<int> _playersHaveWorldResponses;
+        private Dictionary<int, List<BaseResponse>> _playersWorldResponses;
+
+        private volatile bool _terminating;
 
 #endregion
 
@@ -59,6 +75,10 @@ namespace RK.Common.Host
 
             _loggedPlayers = new Dictionary<long, int>();
             _tcpClients = new Dictionary<TCPClientEx, long>();
+            _playerClients = new Dictionary<int, TCPClientEx>();
+            
+            _playersHaveWorldResponses = new HashSet<int>();
+            _playersWorldResponses = new Dictionary<int, List<BaseResponse>>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
             {
@@ -76,6 +96,10 @@ namespace RK.Common.Host
             {
                 new VCheckPosition(this)
             };
+
+            _threadWorldProcessor = new Thread(SendWorldResponsesProc);
+            _threadWorldProcessor.IsBackground = true;
+            _threadWorldProcessor.Start();
         }
 
 #endregion
@@ -85,6 +109,20 @@ namespace RK.Common.Host
         private void ThrowSessionError(params object[] args)
         {
             BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
+        }
+
+        private void RegisterWorldResponseForNearest(Player player, BaseResponse response)
+        {
+            List<Player> nearestPlayers = World.PlayersGetNearest(player);
+            lock (_playersWorldResponses)
+            {
+                foreach (Player nearest in nearestPlayers)
+                {
+                    if (!_playersHaveWorldResponses.Contains(nearest.Id))
+                        _playersHaveWorldResponses.Add(nearest.Id);
+                    _playersWorldResponses[nearest.Id].Add(response);
+                }
+            }
         }
 
         private void AssertSession(BasePacket packet)
@@ -113,12 +151,15 @@ namespace RK.Common.Host
 
         public void Dispose()
         {
+            _terminating = true;
             if (_netServer != null)
             {
                 _netServer.Dispose();
             }
+            _threadWorldProcessor.Join(100);
             World.Dispose();
         }
+
 #endregion
 
 #region User
@@ -141,6 +182,11 @@ namespace RK.Common.Host
 
             World.PlayerAdd(pUserLogin.SessionToken, player);
 
+            lock (_playersWorldResponses)
+            {
+                _playersWorldResponses.Add(player.Id, new List<BaseResponse>());
+            }
+
             lock (_loggedPlayers)
             {
                 _loggedPlayers.Add(pUserLogin.SessionToken, player.Id);
@@ -149,6 +195,7 @@ namespace RK.Common.Host
             lock (_tcpClients)
             {
                 _tcpClients.Add(tcpClient, pUserLogin.SessionToken);
+                _playerClients.Add(player.Id, tcpClient);
             }
 
             return new RUserLogin(pUserLogin)
@@ -159,7 +206,7 @@ namespace RK.Common.Host
 
         private BaseResponse Enter(TCPClientEx tcpClient, BasePacket packet)
         {
-            PUserEnter pUserEnter = (PUserEnter)packet;
+            PUserEnter pUserEnter = (PUserEnter) packet;
 
             PlayerDataEx playerData = World.PlayerDataGet(pUserEnter.SessionToken);
             if (playerData == null)
@@ -168,9 +215,10 @@ namespace RK.Common.Host
                 return null;
             }
 
-            playerData.ScreenRes = pUserEnter.ScreenRes;
+            int maxScreenSide = Math.Max(pUserEnter.ScreenRes.Width, pUserEnter.ScreenRes.Height);
+            playerData.ScreenRes = new ShortSize(maxScreenSide, maxScreenSide);
 
-            List<Player> playersOnLocation = World.PlayersGetNearest(playerData);
+            List<Player> nearestPlayers = World.PlayersGetNearest(playerData);
 
             ShortRect mapWindow;
             byte[] mapData = World.MapWindowGet(playerData, out mapWindow);
@@ -179,7 +227,7 @@ namespace RK.Common.Host
             ShortSize miniMapSize;
             byte[] miniMapData = World.MiniMapGet(playerData, out miniMapSize);
 
-            SendResponse(new RPlayerEnter
+            RegisterWorldResponseForNearest(playerData, new RPlayerEnter
             {
                 Player = playerData
             });
@@ -187,8 +235,8 @@ namespace RK.Common.Host
             return new RUserEnter(pUserEnter)
             {
                 MyPlayerId = playerData.Player.Id,
-                PlayersOnLocation = playersOnLocation,
-                
+                PlayersOnLocation = nearestPlayers,
+
                 MapSize = mapSize,
                 MapData = mapData,
                 MapWindow = mapWindow,
@@ -215,6 +263,12 @@ namespace RK.Common.Host
                     lock (_tcpClients)
                     {
                         _tcpClients.Remove(tcpClient);
+                        _playerClients.Remove(playerId);
+                    }
+
+                    lock (_playersWorldResponses)
+                    {
+                        _playersWorldResponses.Remove(playerId);
                     }
 
                     World.PlayerRemove(sessionToken);
@@ -235,21 +289,22 @@ namespace RK.Common.Host
         private BaseResponse PlayerRotate(TCPClientEx tcpClient, BasePacket packet)
         {
             PPlayerRotate pPlayerRotate = (PPlayerRotate)packet;
-            Player player = World.PlayerGet(pPlayerRotate.SessionToken);
-            if (player == null)
+            PlayerDataEx playerData = World.PlayerDataGet(pPlayerRotate.SessionToken);
+            if (playerData == null)
             {
                 ThrowSessionError(packet.Type, packet.SessionToken);
                 return null;
             }
 
-            if (player.Angle != pPlayerRotate.Angle)
+            if (playerData.Player.Angle != pPlayerRotate.Angle)
             {
-                player.Angle = pPlayerRotate.Angle;
-                return new RPlayerRotate
+                playerData.Player.Angle = pPlayerRotate.Angle;
+
+                RegisterWorldResponseForNearest(playerData, new RPlayerRotate
                 {
-                    PlayerId = player.Id,
+                    PlayerId = playerData.Player.Id,
                     Angle = pPlayerRotate.Angle
-                };
+                });
             }
 
             return null;
@@ -276,12 +331,13 @@ namespace RK.Common.Host
                 {
                     playerData.StartMoving(pPlayerMove.Position, pPlayerMove.Direction);
                 }
-                return new RPlayerMove
+
+                RegisterWorldResponseForNearest(playerData, new RPlayerMove
                 {
                     PlayerId = playerData.Player.Id,
                     Position = pPlayerMove.Position,
                     Direction = pPlayerMove.Direction,
-                };
+                });
             }
 
             return null;
@@ -341,13 +397,54 @@ namespace RK.Common.Host
 
         private void TCPClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets)
         {
-            for (int i = 0; i < packets.Count; i++)
+            Parallel.For(0, packets.Count, i =>
             {
                 BasePacket packet = packets[i];
                 BaseResponse response = ProcessPacket(tcpClient, packet);
                 if (response != null)
                 {
                     SendResponse(response, tcpClient);
+                }
+            });
+        }
+
+        private void SendWorldResponsesProc()
+        {
+            WaitHandle waitHandle = new Mutex();
+            int timeToCall = 1000 / WORLD_DELAY_BETWEEN_FRAMES_MS, lostElapsedChunk = 0, needsToWait = timeToCall;
+            DateTime? lastFrameRenderTime = null;
+
+            while (!_terminating)
+            {
+                waitHandle.WaitOne(needsToWait - lostElapsedChunk);
+                try
+                {
+                    if (lastFrameRenderTime != null)
+                    {
+                        TimeSpan elapsed = DateTime.Now - lastFrameRenderTime.Value;
+                        lostElapsedChunk = (int) (elapsed.TotalMilliseconds%timeToCall);
+                    }
+
+                    lock (_playersWorldResponses)
+                    {
+                        Parallel.ForEach(_playersWorldResponses.Where(r => _playersHaveWorldResponses.Contains(r.Key)),
+                            response =>
+                            {
+                                TCPClientEx tcpClient;
+                                if (_playerClients.TryGetValue(response.Key, out tcpClient))
+                                {
+                                    _netServer.SendData(tcpClient, response.Value);
+                                }
+                                response.Value.Clear();
+                            });
+                        _playersHaveWorldResponses.Clear();
+                    }
+
+                    lastFrameRenderTime = DateTime.Now;
+                }
+                catch
+                {
+                    Thread.Sleep(0);
                 }
             }
         }

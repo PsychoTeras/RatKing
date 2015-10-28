@@ -69,7 +69,6 @@
     <Compile Include="Classes\Map\Renderers\RendererBG.cs" />
     <Compile Include="Classes\Map\Renderers\RendererBorders.cs" />
     <Compile Include="Classes\Map\Renderers\RendererFOV.cs" />
-    <Compile Include="Classes\Map\Renderers\RendererPlayer.cs" />
     <Compile Include="Classes\Map\Renderers\RendererWalls.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
     <Compile Include="Classes\PlayerDataEx.cs" />
