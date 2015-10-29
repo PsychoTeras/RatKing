@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Windows.Forms;
-using RK.Win.Forms;
+using RK.Client.Forms;
 
-namespace RK.Win
+namespace RK.Client
 {
     static class Program
     {

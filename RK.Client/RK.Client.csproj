@@ -7,8 +7,8 @@
     <ProjectGuid>{BB19CD68-E2F1-4EE3-B83F-AF1D118C4CB5}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RK.Win</RootNamespace>
-    <AssemblyName>RK.Win</AssemblyName>
+    <RootNamespace>RK.Client</RootNamespace>
+    <AssemblyName>RK.Client</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

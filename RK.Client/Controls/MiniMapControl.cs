@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
 
-namespace RK.Win.Controls
+namespace RK.Client.Controls
 {
     public unsafe partial class MiniMapControl : Control
     {

@@ -10,14 +10,14 @@ namespace RK.Server.Controls
 {
     namespace Graphing
     {
-        public class C2DPushGraph : Control
+        public class PerfGraph : Control
         {
             public class LineHandle
             {
                 private Line _line;
-                private C2DPushGraph _owner;
+                private PerfGraph _owner;
 
-                public LineHandle(ref Object line, C2DPushGraph owner)
+                public LineHandle(ref Object line, PerfGraph owner)
                 {
                     if (string.Compare(line.GetType().Name, "Line") != 0)
                     {
@@ -181,13 +181,13 @@ namespace RK.Server.Controls
             private List<Line> _lines = new List<Line>();
             private IContainer components;
 
-            public C2DPushGraph()
+            public PerfGraph()
             {
                 InitializeComponent();
                 InitializeStyles();
             }
 
-            public C2DPushGraph(Form parent)
+            public PerfGraph(Form parent)
             {
                 parent.Controls.Add(this);
 
@@ -195,7 +195,7 @@ namespace RK.Server.Controls
                 InitializeStyles();
             }
 
-            public C2DPushGraph(Form parent, Rectangle rectPos)
+            public PerfGraph(Form parent, Rectangle rectPos)
             {
                 parent.Controls.Add(this);
 
@@ -571,7 +571,7 @@ namespace RK.Server.Controls
             protected void CalculateMaxPushPoints()
             {
                 int areaWidth = Width - _offsetX;
-                _maxCoords = (areaWidth/_lineInterval) + (areaWidth%_lineInterval != 0 ? 1 : 0);
+                _maxCoords = (areaWidth/_lineInterval) + (areaWidth%_lineInterval != 0 ? _lineInterval / 2 : 0);
 
                 if (_maxCoords <= 0)
                 {

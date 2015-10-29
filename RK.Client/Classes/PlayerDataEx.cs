@@ -1,6 +1,6 @@
 ﻿using RK.Common.Classes.Units;
 
-namespace RK.Win.Classes
+namespace RK.Client.Classes
 {
     public sealed class PlayerDataEx : PlayerData
     {

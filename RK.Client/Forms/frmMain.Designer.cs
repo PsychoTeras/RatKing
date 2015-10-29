@@ -1,4 +1,7 @@
-﻿namespace RK.Win.Forms
+﻿using RK.Client.Controls;
+using RK.Client.UserActivityMonitor;
+
+namespace RK.Client.Forms
 {
     partial class frmMain
     {
@@ -33,8 +36,8 @@
             this.tpMap = new System.Windows.Forms.TabPage();
             this.pMapCtrl = new System.Windows.Forms.Panel();
             this.pMiniMap = new System.Windows.Forms.Panel();
-            this.miniMapCtrl = new RK.Win.Controls.MiniMapControl();
-            this.mapCtrl = new RK.Win.Controls.MapControl();
+            this.miniMapCtrl = new MiniMapControl();
+            this.mapCtrl = new MapControl();
             this.toolStrip4 = new System.Windows.Forms.ToolStrip();
             this.btnLoadLabyrinth = new System.Windows.Forms.ToolStripButton();
             this.lblLabyrinthTilePos = new System.Windows.Forms.ToolStripLabel();
@@ -79,7 +82,7 @@
             this.tbLabyrinthAngle = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
             this.tbLabyrinthLacunarity = new System.Windows.Forms.ToolStripTextBox();
-            this.eventsProvider = new RK.Win.UserActivityMonitor.GlobalEventProvider();
+            this.eventsProvider = new GlobalEventProvider();
             this.tcMain.SuspendLayout();
             this.tpMap.SuspendLayout();
             this.pMapCtrl.SuspendLayout();
@@ -167,7 +170,7 @@
             this.mapCtrl.TabIndex = 1;
             this.mapCtrl.TabStop = false;
             this.mapCtrl.Text = "map1";
-            this.mapCtrl.MouseWheel += new RK.Win.Controls.MouseWheel(this.MapMouseWheel);
+            this.mapCtrl.MouseWheel += new MouseWheel(this.MapMouseWheel);
             this.mapCtrl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MapMouseDown);
             this.mapCtrl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MapMouseMove);
             this.mapCtrl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.MapMouseUp);

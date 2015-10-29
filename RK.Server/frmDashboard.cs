@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows.Forms;
 using IPCLogger.Core.Loggers.LIPC;
 using RK.Common.Classes;
@@ -15,7 +17,7 @@ namespace RK.Server
         private LIPCView _logger;
         private GameHost _gameHost;
 
-        private C2DPushGraph.LineHandle _lineWorldResponsesPrc;
+        private PerfGraph.LineHandle _lineWorldResponsesPrc;
 
 #endregion
 
@@ -107,6 +109,11 @@ namespace RK.Server
         private void frmDashboard_FormClosing(object sender, FormClosingEventArgs e)
         {
             _gameHost.Dispose();
+            Process client = Process.GetProcessesByName("RK.Client").FirstOrDefault();
+            if (client != null && !client.HasExited)
+            {
+                client.Kill();
+            }
         }
 
 #endregion

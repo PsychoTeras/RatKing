@@ -1,4 +1,4 @@
-﻿namespace RK.Win.Controls
+﻿namespace RK.Client.Controls
 {
     partial class MapControl
     {

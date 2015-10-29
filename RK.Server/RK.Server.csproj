@@ -64,7 +64,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controls\2DPushGraph.cs">
+    <Compile Include="Controls\PerfGraph.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Controls\Header.cs">

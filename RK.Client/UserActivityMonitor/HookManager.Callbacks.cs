@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace RK.Win.UserActivityMonitor
+namespace RK.Client.UserActivityMonitor
 {
     public static partial class HookManager
     {

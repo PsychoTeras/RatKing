@@ -11,7 +11,7 @@ using RK.Common.Classes.Common;
 using RK.Common.Map;
 using RK.Common.Win32;
 
-namespace RK.Win.Forms
+namespace RK.Client.Forms
 {
     public partial class frmMain : Form
     {
@@ -22,6 +22,13 @@ namespace RK.Win.Forms
 
         [DllImport("user32.dll")]
         private static extern int GetKeyboardState(byte[] keystate);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetWindowPos(IntPtr hWnd, int hWndInsertAfter, 
+            int x, int y, int cx, int cy, int wFlags);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool BringWindowToTop(IntPtr hWnd);
 
         private object[] GetEnumValues(Type e)
         {
@@ -44,8 +51,15 @@ namespace RK.Win.Forms
             cbLabyrinthACCombine.Items.AddRange(GetEnumValues(typeof(CombinerTypes)));
             cbLabyrinthACCombine.SelectedItem = CombinerTypes.MULT;
 
-            _server = Process.GetProcessesByName("RK.Server").First();
-            while (_server == null || _server.MainWindowHandle == IntPtr.Zero) ;
+            _server = Process.GetProcessesByName("RK.Server").FirstOrDefault();
+            if (_server != null)
+            {
+                while (_server.MainWindowHandle == IntPtr.Zero) ;
+                Rectangle va = Screen.GetWorkingArea(this);
+                SetWindowPos(_server.MainWindowHandle, 0, va.Left, va.Top, va.Width/2, va.Height, 0);
+                SetWindowPos(Handle, 0, va.Left + va.Width/2, va.Top, va.Width/2, va.Height, 0);
+                BringWindowToTop(_server.MainWindowHandle);
+            }
         }
 
         private bool KeyPressed(Keys keys)

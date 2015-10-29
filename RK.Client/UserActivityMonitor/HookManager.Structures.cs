@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace RK.Win.UserActivityMonitor {
+namespace RK.Client.UserActivityMonitor {
 
     public static partial class HookManager {
         /// <summary>

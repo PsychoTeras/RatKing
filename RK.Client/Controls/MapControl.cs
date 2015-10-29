@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using RK.Client.Classes;
+using RK.Client.Classes.Map.Renderers;
 using RK.Common.Algo;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
@@ -17,10 +19,8 @@ using RK.Common.Net.TCP;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
-using RK.Win.Classes;
-using RK.Win.Classes.Map.Renderers;
 
-namespace RK.Win.Controls
+namespace RK.Client.Controls
 {
     public delegate void MapEvent(object sender);
     public delegate void MouseWheel(object sender, int delta);
@@ -508,7 +508,7 @@ namespace RK.Win.Controls
                 Point p1 = new Point((int) (_myPlayerData.Player.Position.X*_scaleFactor + pSizeWh),
                                      (int) (_myPlayerData.Player.Position.Y*_scaleFactor + pSizeHh));
                 Point p2 = new Point(mouseLocation.X + _posX, mouseLocation.Y + _posY);
-                float angle = Geometry.GetAngleOfLine(p1, p2) - 90;
+                float angle = (float) Math.Round(Geometry.GetAngleOfLine(p1, p2) - 90);
                 if (angle != _myPlayerData.Player.Angle)
                 {
                     TCPClientDataSend(new PPlayerRotate

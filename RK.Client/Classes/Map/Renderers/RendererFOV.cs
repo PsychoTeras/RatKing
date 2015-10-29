@@ -1,10 +1,10 @@
 ﻿using System.Drawing;
 using System.Drawing.Drawing2D;
+using RK.Client.Controls;
 using RK.Common.Classes.Units;
 using RK.Common.Map;
-using RK.Win.Controls;
 
-namespace RK.Win.Classes.Map.Renderers
+namespace RK.Client.Classes.Map.Renderers
 {
     public class RendererFOV : IMapRenderer
     {

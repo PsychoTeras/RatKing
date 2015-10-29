@@ -1,6 +1,6 @@
 ﻿using RK.Common.Map;
 
-namespace RK.Win.Classes.Map
+namespace RK.Client.Classes.Map
 {
     public static unsafe class TileBorders
     {

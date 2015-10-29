@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Drawing;
+using RK.Client.Controls;
 using RK.Common.Map;
-using RK.Win.Controls;
 
-namespace RK.Win.Classes.Map.Renderers
+namespace RK.Client.Classes.Map.Renderers
 {
     public class RendererBG : IMapRenderer, IDisposable
     {

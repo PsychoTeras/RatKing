@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RK.Win.Classes.Map
+namespace RK.Client.Classes.Map
 {
     public unsafe class MapBG : IDisposable
     {

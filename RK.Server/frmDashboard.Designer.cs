@@ -37,7 +37,7 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
             this.panel4 = new System.Windows.Forms.Panel();
-            this.gWorldResponsesPrc = new RK.Server.Controls.Graphing.C2DPushGraph();
+            this.gWorldResponsesPrc = new RK.Server.Controls.Graphing.PerfGraph();
             this.pWorldResponsesPrc.SuspendLayout();
             this.pNavigationControlsHeader.SuspendLayout();
             this.pControls.SuspendLayout();
@@ -197,7 +197,7 @@
         #endregion
 
         private System.Windows.Forms.Panel pWorldResponsesPrc;
-        private Controls.Graphing.C2DPushGraph gWorldResponsesPrc;
+        private Controls.Graphing.PerfGraph gWorldResponsesPrc;
         private System.Windows.Forms.Panel pNavigationControlsHeader;
         private System.Windows.Forms.Label lblNavigationControlsHeader;
         private System.Windows.Forms.Panel panel3;
