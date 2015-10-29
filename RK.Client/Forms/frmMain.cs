@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
@@ -7,7 +8,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using AccidentalNoise;
 using RK.Common.Classes.Common;
-using RK.Common.Host;
 using RK.Common.Map;
 using RK.Common.Win32;
 
@@ -15,9 +15,10 @@ namespace RK.Win.Forms
 {
     public partial class frmMain : Form
     {
-        private GameHost _host;
         private Point? _mousePos;
         private byte[] _keys = new byte[256];
+
+        private Process _server;
 
         [DllImport("user32.dll")]
         private static extern int GetKeyboardState(byte[] keystate);
@@ -31,11 +32,6 @@ namespace RK.Win.Forms
         {
             InitializeComponent();
 
-            if (Environment.CommandLine.Trim().Split(new[] {' '}).Length == 2)
-            {
-                _host = new GameHost();
-            }
-
             cbLabyrinthType.Items.AddRange(GetEnumValues(typeof(FractalType)));
             cbLabyrinthType.SelectedItem = FractalType.FBM;
 
@@ -47,6 +43,9 @@ namespace RK.Win.Forms
 
             cbLabyrinthACCombine.Items.AddRange(GetEnumValues(typeof(CombinerTypes)));
             cbLabyrinthACCombine.SelectedItem = CombinerTypes.MULT;
+
+            _server = Process.GetProcessesByName("RK.Server").First();
+            while (_server == null || _server.MainWindowHandle == IntPtr.Zero) ;
         }
 
         private bool KeyPressed(Keys keys)
@@ -138,7 +137,6 @@ namespace RK.Win.Forms
         }
 
         private uint? _labOldSeed;
-
         private unsafe void BtnGenerateLabyrinthClick(object sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
@@ -231,12 +229,12 @@ namespace RK.Win.Forms
 
         private void FrmMainFormClosing(object sender, FormClosingEventArgs e)
         {
+            if (_server != null && !_server.HasExited)
+            {
+                _server.Kill();
+            }
             mapCtrl.Dispose();
             miniMapCtrl.Dispose();
-            if (_host != null)
-            {
-                _host.Dispose();
-            }
         }
 
         private void EventsProviderKeyDown(object sender, KeyEventArgs e)

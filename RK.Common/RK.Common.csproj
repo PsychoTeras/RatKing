@@ -69,6 +69,7 @@
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Classes\Common\SparseList.cs" />
+    <Compile Include="Classes\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />
     <Compile Include="Classes\Units\PlayerDataEx.cs" />
     <Compile Include="Map\ClientMap.cs" />

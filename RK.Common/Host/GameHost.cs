@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IPCLogger.Core.Loggers;
+using RK.Common.Classes;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
@@ -13,6 +15,7 @@ using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
+using RK.Common.Win32;
 using RK.Common.World;
 
 namespace RK.Common.Host
@@ -37,6 +40,8 @@ namespace RK.Common.Host
 
 #region Private fields
 
+//        private static LFactory
+        
         private TCPServer _netServer;
 
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
@@ -47,7 +52,8 @@ namespace RK.Common.Host
         private Dictionary<int, TCPClientEx> _playerClients;
 
         private Thread _threadWorldProcessor;
-        private HashSet<int> _playersHaveWorldResponses;
+        private bool _worldHasUnsentResponses;
+        private HashSet<int> _playersThatHaveWorldResponses;
         private Dictionary<int, List<BaseResponse>> _playersWorldResponses;
 
         private volatile bool _terminating;
@@ -62,13 +68,17 @@ namespace RK.Common.Host
 
 #region Ctor
 
+        static GameHost()
+        {
+            LFactory.Instance.Setup("RK.Server.config");
+        }
+
         public GameHost()
         {
             World = new GameWorld();
             World.LoadMap();
 
             _netServer = new TCPServer(15051);
-            _netServer.ClientConnected += TCPClientConnected;
             _netServer.ClientDataReceived += TCPClientDataReceived;
             _netServer.ClientDisonnected += TCPClientDisonnected;
             _netServer.Start();
@@ -77,7 +87,7 @@ namespace RK.Common.Host
             _tcpClients = new Dictionary<TCPClientEx, long>();
             _playerClients = new Dictionary<int, TCPClientEx>();
             
-            _playersHaveWorldResponses = new HashSet<int>();
+            _playersThatHaveWorldResponses = new HashSet<int>();
             _playersWorldResponses = new Dictionary<int, List<BaseResponse>>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
@@ -111,20 +121,6 @@ namespace RK.Common.Host
             BaseResponse.Throw("Invalid session", ECGeneral.SessionError);
         }
 
-        private void RegisterWorldResponseForNearest(Player player, BaseResponse response)
-        {
-            List<Player> nearestPlayers = World.PlayersGetNearest(player);
-            lock (_playersWorldResponses)
-            {
-                foreach (Player nearest in nearestPlayers)
-                {
-                    if (!_playersHaveWorldResponses.Contains(nearest.Id))
-                        _playersHaveWorldResponses.Add(nearest.Id);
-                    _playersWorldResponses[nearest.Id].Add(response);
-                }
-            }
-        }
-
         private void AssertSession(BasePacket packet)
         {
             if (packet.Type != PacketType.UserLogin)
@@ -136,7 +132,7 @@ namespace RK.Common.Host
             }
         }
 
-        public BaseResponse ProcessPacket(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse ProcessPacket(TCPClientEx tcpClient, BasePacket packet)
         {
             try
             {
@@ -149,6 +145,12 @@ namespace RK.Common.Host
             }
         }
 
+        private void WriteLog(LogEventType eventType, string msg)
+        {
+            msg = string.Format("{0}\x4{1}", eventType, msg);
+            LFactory.Instance.Write(msg);
+        }
+
         public void Dispose()
         {
             _terminating = true;
@@ -158,6 +160,29 @@ namespace RK.Common.Host
             }
             _threadWorldProcessor.Join(100);
             World.Dispose();
+            LFactory.Instance.Deinitialize();
+        }
+
+#endregion
+
+#region World
+
+        private void RegisterWorldResponseForNearest(Player player, BaseResponse response)
+        {
+            List<Player> nearestPlayers = World.PlayersGetNearest(player);
+            if (nearestPlayers.Count > 0)
+            {
+                lock (_playersWorldResponses)
+                {
+                    foreach (Player nearest in nearestPlayers)
+                    {
+                        if (!_playersThatHaveWorldResponses.Contains(nearest.Id))
+                            _playersThatHaveWorldResponses.Add(nearest.Id);
+                        _playersWorldResponses[nearest.Id].Add(response);
+                    }
+                }
+                _worldHasUnsentResponses = true;
+            }
         }
 
 #endregion
@@ -372,8 +397,6 @@ namespace RK.Common.Host
 
 #region TCP
 
-        private void TCPClientConnected(TCPClientEx tcpClient) { }
-
         private void TCPClientDisonnected(TCPClientEx tcpClient)
         {
             long sessionToken;
@@ -410,37 +433,53 @@ namespace RK.Common.Host
 
         private void SendWorldResponsesProc()
         {
-            WaitHandle waitHandle = new Mutex();
-            int timeToCall = 1000 / WORLD_DELAY_BETWEEN_FRAMES_MS, lostElapsedChunk = 0, needsToWait = timeToCall;
+            HRTimer timer = new HRTimer();
+            int timeToCall = 1000/WORLD_DELAY_BETWEEN_FRAMES_MS;
+            int lostElapsedChunk = 0, needsToWait = timeToCall;
             DateTime? lastFrameRenderTime = null;
 
             while (!_terminating)
             {
-                waitHandle.WaitOne(needsToWait - lostElapsedChunk);
+                Thread.Sleep(needsToWait - lostElapsedChunk);
                 try
                 {
                     if (lastFrameRenderTime != null)
                     {
-                        TimeSpan elapsed = DateTime.Now - lastFrameRenderTime.Value;
+                        TimeSpan elapsed = DateTime.UtcNow - lastFrameRenderTime.Value;
                         lostElapsedChunk = (int) (elapsed.TotalMilliseconds%timeToCall);
                     }
 
+                    if (!_worldHasUnsentResponses)
+                    {
+                        lastFrameRenderTime = DateTime.UtcNow;
+                        continue;
+                    }
+
+                    timer.StartWatch();
+
                     lock (_playersWorldResponses)
                     {
-                        var responses = _playersWorldResponses.Where(r => _playersHaveWorldResponses.Contains(r.Key));
-                        Parallel.ForEach(responses, response =>
+                        KeyValuePair<int, List<BaseResponse>>[] responses = _playersWorldResponses.
+                            Where(r => _playersThatHaveWorldResponses.Contains(r.Key)).
+                            ToArray();
+                        int responsesCnt = responses.Length;
+                        Parallel.For(0, responsesCnt, i =>
                         {
                             TCPClientEx tcpClient;
+                            var response = responses[i];
                             if (_playerClients.TryGetValue(response.Key, out tcpClient))
                             {
                                 _netServer.SendData(tcpClient, response.Value);
                             }
                             response.Value.Clear();
                         });
-                        _playersHaveWorldResponses.Clear();
+                        _playersThatHaveWorldResponses.Clear();
+                        _worldHasUnsentResponses = false;
                     }
 
-                    lastFrameRenderTime = DateTime.Now;
+                    WriteLog(LogEventType.SendWorldResponses, timer.StopWatch().ToString("F"));
+
+                    lastFrameRenderTime = DateTime.UtcNow;
                 }
                 catch
                 {
