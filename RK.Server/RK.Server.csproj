@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -39,7 +39,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <Prefer32Bit>false</Prefer32Bit>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>..\_bin\</OutputPath>
-	<BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\_obj\</BaseIntermediateOutputPath>
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
@@ -65,6 +65,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\2DPushGraph.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\Header.cs" />
+    <Compile Include="Controls\Header.Designer.cs">
+      <DependentUpon>Header.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmDashboard.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -73,6 +80,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Controls\Header.resx">
+      <DependentUpon>Header.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDashboard.resx">
+      <DependentUpon>frmDashboard.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
