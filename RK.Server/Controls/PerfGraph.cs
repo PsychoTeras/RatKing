@@ -769,6 +769,12 @@ namespace RK.Server.Controls
                 return GetLine(numID) != null;
             }
 
+            private int _lineCounter;
+            public LineHandle AddLine()
+            {
+                return AddLine(_lineCounter++, ForeColor);
+            }
+
             public LineHandle AddLine(int numID, Color clr)
             {
                 if (LineExists(numID))

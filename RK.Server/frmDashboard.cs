@@ -17,8 +17,6 @@ namespace RK.Server
         private LIPCView _logger;
         private GameHost _gameHost;
 
-        private PerfGraph.LineHandle _lineWorldResponsesPrc;
-
 #endregion
 
 #region Ctor
@@ -27,11 +25,11 @@ namespace RK.Server
         {
             InitializeComponent();
 
-            _lineWorldResponsesPrc = gWorldResponsesPrc.AddLine(0,
-                gWorldResponsesPrc.ForeColor);
-            _lineWorldResponsesPrc.Thickness = 2;
+            gTCPResponsesProc.AddLine().Thickness = 2;
+            gTCPResponsesSend.AddLine().Thickness = 2;
 
             _logger = new LIPCView();
+            _logger.QueryIntervalMsec = 30;
             _logger.StartView("RK.Server", OnEvent);
             _gameHost = new GameHost();
         }
@@ -75,13 +73,23 @@ namespace RK.Server
             {
                 switch (eventType)
                 {
-                    case LogEventType.SendWorldResponses:
+                    case LogEventType.TCPResponsesProc:
                     {
-                        if (gWorldResponsesPrc.Enabled)
+                        if (gTCPResponsesProc.Enabled)
                         {
                             float fData = float.Parse(data);
-                            gWorldResponsesPrc.Push(fData, 0);
-                            gWorldResponsesPrc.UpdateGraph();
+                            gTCPResponsesProc.Push(fData, 0);
+                            gTCPResponsesProc.UpdateGraph();
+                        }
+                        break;
+                    }
+                    case LogEventType.TCPResponsesSend:
+                    {
+                        if (gTCPResponsesSend.Enabled)
+                        {
+                            float fData = float.Parse(data);
+                            gTCPResponsesSend.Push(fData, 0);
+                            gTCPResponsesSend.UpdateGraph();
                         }
                         break;
                     }

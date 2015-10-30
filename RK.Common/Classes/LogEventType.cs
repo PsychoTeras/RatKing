@@ -2,6 +2,7 @@
 {
     public enum LogEventType : byte
     {
-        SendWorldResponses
+        TCPResponsesProc,
+        TCPResponsesSend
     }
 }
