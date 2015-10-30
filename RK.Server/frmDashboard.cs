@@ -77,9 +77,12 @@ namespace RK.Server
                 {
                     case LogEventType.SendWorldResponses:
                     {
-                        float fData = float.Parse(data);
-                        gWorldResponsesPrc.Push(fData, 0);
-                        gWorldResponsesPrc.UpdateGraph();
+                        if (gWorldResponsesPrc.Enabled)
+                        {
+                            float fData = float.Parse(data);
+                            gWorldResponsesPrc.Push(fData, 0);
+                            gWorldResponsesPrc.UpdateGraph();
+                        }
                         break;
                     }
                 }
@@ -113,6 +116,15 @@ namespace RK.Server
             if (client != null && !client.HasExited)
             {
                 client.Kill();
+            }
+        }
+
+        private void GraphMouseDown(object sender, MouseEventArgs e)
+        {
+            PerfGraph g = sender as PerfGraph;
+            if (g != null && e.Button == MouseButtons.Right)
+            {
+                g.Enabled = !g.Enabled;
             }
         }
 

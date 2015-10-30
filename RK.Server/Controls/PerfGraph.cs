@@ -104,7 +104,7 @@ namespace RK.Server.Controls
                 public Pen PenThin;
                 public Brush Brush;
 
-                private Color _color = Color.Green;
+                private Color _color = Color.Black;
                 private uint _thickness = 1;
 
                 public Color Color
@@ -152,13 +152,17 @@ namespace RK.Server.Controls
                 }
             }
 
+            private bool _enabled = true;
+            private Color _disabledColor = Color.LightSteelBlue;
+            private Color _backColor = SystemColors.Window;
+
             private SolidBrush _backBrush;
 
-            private Color _textColor = Color.Yellow;
+            private Color _textColor = Color.FromArgb(80, 80, 80);
             private SolidBrush _textBrush;
             private Pen _borderPen;
 
-            private Color _gridColor = Color.Green;
+            private Color _gridColor = Color.FromKnownColor(KnownColor.GhostWhite);
             private Pen _gridPen;
 
             private string _maxLabel;
@@ -252,13 +256,50 @@ namespace RK.Server.Controls
                 get { return base.DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime; }
             }
 
-            public override Color BackColor
+            public Color DisabledColor
             {
-                get { return base.BackColor; }
+                get { return _disabledColor; }
                 set
                 {
-                    _backBrush.Dispose();
-                    _backBrush = new SolidBrush(base.BackColor = value);
+                    if (_disabledColor != value)
+                    {
+                        _disabledColor = value;
+                        if (!_enabled)
+                        {
+                            Invalidate(false);
+                        }
+                    }
+                }
+            }
+
+            public new bool Enabled
+            {
+                get { return _enabled; }
+                set
+                {
+                    _enabled = value;
+                    if (!DesignMode)
+                    {
+                        Color color = !value
+                            ? _disabledColor
+                            : _backColor;
+                        _backBrush.Dispose();
+                        _backBrush = new SolidBrush(color);
+                        Invalidate(false);
+                    }
+                }
+            }
+
+            public override Color BackColor
+            {
+                get { return _backColor; }
+                set
+                {
+                    if (!DesignMode && Enabled)
+                    {
+                        _backBrush.Dispose();
+                        _backBrush = new SolidBrush(_backColor = base.BackColor = value);
+                    }
                 }
             }
 
@@ -450,6 +491,8 @@ namespace RK.Server.Controls
                     ? SmoothingMode.HighQuality
                     : SmoothingMode.Default;
 
+                g.FillRectangle(_backBrush, ClientRectangle);
+
                 _offsetX = 0;
 
                 if (_bShowMinMax)
@@ -457,7 +500,7 @@ namespace RK.Server.Controls
                     DrawLabels(ref g);
                 }
 
-                if (_bShowGrid)
+                if (_bShowGrid && _enabled)
                 {
                     DrawGrid(ref g);
                 }

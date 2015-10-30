@@ -153,12 +153,12 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.gWorldResponsesPrc.AutoAdjustPeek = true;
-            this.gWorldResponsesPrc.BackColor = System.Drawing.Color.White;
+            this.gWorldResponsesPrc.DisabledColor = System.Drawing.SystemColors.ButtonFace;
             this.gWorldResponsesPrc.ForeColor = System.Drawing.Color.SaddleBrown;
             this.gWorldResponsesPrc.GridColor = System.Drawing.Color.GhostWhite;
             this.gWorldResponsesPrc.GridSize = ((ushort)(10));
             this.gWorldResponsesPrc.HighQuality = true;
-            this.gWorldResponsesPrc.LineInterval = ((ushort)(5));
+            this.gWorldResponsesPrc.LineInterval = ((ushort)(3));
             this.gWorldResponsesPrc.Location = new System.Drawing.Point(0, 18);
             this.gWorldResponsesPrc.MaxLabel = "";
             this.gWorldResponsesPrc.MaxPeekMagnitude = 0F;
@@ -171,6 +171,7 @@
             this.gWorldResponsesPrc.TabIndex = 1;
             this.gWorldResponsesPrc.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
             this.gWorldResponsesPrc.Units = "msec";
+            this.gWorldResponsesPrc.MouseDown += new System.Windows.Forms.MouseEventHandler(this.GraphMouseDown);
             // 
             // frmDashboard
             // 
