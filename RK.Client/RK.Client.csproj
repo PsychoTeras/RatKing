@@ -72,6 +72,7 @@
     <Compile Include="Classes\Map\Renderers\RendererWalls.cs" />
     <Compile Include="Classes\Map\TileBorders.cs" />
     <Compile Include="Classes\PlayerDataEx.cs" />
+    <Compile Include="Classes\WorldBot.cs" />
     <Compile Include="Controls\MapControl.cs">
       <SubType>Component</SubType>
     </Compile>

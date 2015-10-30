@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AccidentalNoise;
+using RK.Client.Classes;
 using RK.Common.Classes.Common;
 using RK.Common.Map;
 using RK.Common.Win32;
@@ -19,6 +22,7 @@ namespace RK.Client.Forms
         private byte[] _keys = new byte[256];
 
         private Process _server;
+        private List<WorldBot> _bots;
 
         [DllImport("user32.dll")]
         private static extern int GetKeyboardState(byte[] keystate);
@@ -54,12 +58,14 @@ namespace RK.Client.Forms
             _server = Process.GetProcessesByName("RK.Server").FirstOrDefault();
             if (_server != null)
             {
-                while (_server.MainWindowHandle == IntPtr.Zero) ;
+                while (_server.MainWindowHandle == IntPtr.Zero);
                 Rectangle va = Screen.GetWorkingArea(this);
                 SetWindowPos(_server.MainWindowHandle, 0, va.Left, va.Top, va.Width/2, va.Height, 0);
                 SetWindowPos(Handle, 0, va.Left + va.Width/2, va.Top, va.Width/2, va.Height, 0);
                 BringWindowToTop(_server.MainWindowHandle);
             }
+
+            _bots = new List<WorldBot>();
         }
 
         private bool KeyPressed(Keys keys)
@@ -311,10 +317,37 @@ namespace RK.Client.Forms
 
         private void BtnLoadLabyrinthClick(object sender, EventArgs e)
         {
-            Cursor = Cursors.WaitCursor;
-            mapCtrl.DisconnectFromHost();
-            mapCtrl.ConnectToHost();
-            Cursor = DefaultCursor;
+            if (mapCtrl.Enabled)
+            {
+                Cursor = Cursors.WaitCursor;
+                mapCtrl.DisconnectFromHost();
+                mapCtrl.ConnectToHost();
+                Cursor = DefaultCursor;
+            }
+        }
+
+        private void BtnStopWorldStressTestClick(object sender, EventArgs e)
+        {
+            foreach (WorldBot bot in _bots)
+            {
+                bot.Dispose();
+            }
+            _bots.Clear();
+            mapCtrl.Enabled = true;
+            mapCtrl.Show();
+        }
+
+        private void BtnDoWorldStressTestClick(object sender, EventArgs e)
+        {
+            mapCtrl.Hide();
+            mapCtrl.Enabled = false;
+            ThreadPool.QueueUserWorkItem(o =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    _bots.Add(new WorldBot());
+                }
+            });
         }
     }
 

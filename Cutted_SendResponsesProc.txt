@@ -1,0 +1,56 @@
+
+        private void SendResponsesProc()
+        {
+            const float timeToCall = 1000 / WORLD_DELAY_BETWEEN_FRAMES_MS;
+
+            HRTimer timer = new HRTimer();
+            DateTime opTime = DateTime.UtcNow;
+
+            while (!_terminating)
+            {
+                if (_unsentResponsesAvailable)
+                {
+                    timer.StartWatch();
+                    lock (_responses)
+                    {
+                        KeyValuePair<int, List<BaseResponse>>[] responses = _responses.
+                            Where(r => _playersThatHaveResponses.Contains(r.Key)).
+                            ToArray();
+                        int responsesCnt = responses.Length;
+                        Parallel.For(0, responsesCnt, i =>
+                        {
+                            TCPClientEx tcpClient;
+                            var response = responses[i];
+                            if (_playerClients.TryGetValue(response.Key, out tcpClient))
+                            {
+                                _netServer.SendData(tcpClient, response.Value);
+                            }
+                            response.Value.Clear();
+                        });
+                        _playersThatHaveResponses.Clear();
+                        _unsentResponsesAvailable = false;
+                    }
+                    WriteLog(LogEventType.TCPResponsesSend, timer.StopWatch().ToString("F"));
+                }
+
+                DateTime curTime = DateTime.UtcNow;
+                TimeSpan elapsed = curTime - opTime;
+                DateTime waitUntil = curTime.AddMilliseconds(Math.Max(timeToCall - elapsed.TotalMilliseconds - 1, 0));
+
+                do
+                {
+                    Thread.Sleep(1);
+                } while (DateTime.UtcNow < waitUntil);
+
+                curTime = DateTime.UtcNow;
+                elapsed = curTime - opTime;
+
+                double msTotal = elapsed.TotalMilliseconds;
+                if (msTotal > timeToCall)
+                {
+                    opTime = curTime.AddMilliseconds(-(msTotal - timeToCall));
+                }
+
+                WriteLog(LogEventType.TCPResponsesProc, msTotal.ToString("F"));
+            }
+        }

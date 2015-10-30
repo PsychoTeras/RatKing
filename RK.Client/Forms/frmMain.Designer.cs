@@ -36,11 +36,14 @@ namespace RK.Client.Forms
             this.tpMap = new System.Windows.Forms.TabPage();
             this.pMapCtrl = new System.Windows.Forms.Panel();
             this.pMiniMap = new System.Windows.Forms.Panel();
-            this.miniMapCtrl = new MiniMapControl();
-            this.mapCtrl = new MapControl();
+            this.miniMapCtrl = new RK.Client.Controls.MiniMapControl();
+            this.mapCtrl = new RK.Client.Controls.MapControl();
             this.toolStrip4 = new System.Windows.Forms.ToolStrip();
             this.btnLoadLabyrinth = new System.Windows.Forms.ToolStripButton();
             this.lblLabyrinthTilePos = new System.Windows.Forms.ToolStripLabel();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnDoWorldStressTest = new System.Windows.Forms.ToolStripButton();
+            this.btnStopWorldStressTest = new System.Windows.Forms.ToolStripButton();
             this.tpLabyrinthGenerator = new System.Windows.Forms.TabPage();
             this.toolStrip3 = new System.Windows.Forms.ToolStrip();
             this.chkLabyrinthAC = new System.Windows.Forms.ToolStripButton();
@@ -82,7 +85,7 @@ namespace RK.Client.Forms
             this.tbLabyrinthAngle = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel12 = new System.Windows.Forms.ToolStripLabel();
             this.tbLabyrinthLacunarity = new System.Windows.Forms.ToolStripTextBox();
-            this.eventsProvider = new GlobalEventProvider();
+            this.eventsProvider = new RK.Client.UserActivityMonitor.GlobalEventProvider();
             this.tcMain.SuspendLayout();
             this.tpMap.SuspendLayout();
             this.pMapCtrl.SuspendLayout();
@@ -124,6 +127,7 @@ namespace RK.Client.Forms
             this.pMapCtrl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.pMapCtrl.BackColor = System.Drawing.Color.Black;
             this.pMapCtrl.Controls.Add(this.pMiniMap);
             this.pMapCtrl.Controls.Add(this.mapCtrl);
             this.pMapCtrl.Location = new System.Drawing.Point(3, 31);
@@ -170,7 +174,7 @@ namespace RK.Client.Forms
             this.mapCtrl.TabIndex = 1;
             this.mapCtrl.TabStop = false;
             this.mapCtrl.Text = "map1";
-            this.mapCtrl.MouseWheel += new MouseWheel(this.MapMouseWheel);
+            this.mapCtrl.MouseWheel += new RK.Client.Controls.MouseWheel(this.MapMouseWheel);
             this.mapCtrl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MapMouseDown);
             this.mapCtrl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MapMouseMove);
             this.mapCtrl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.MapMouseUp);
@@ -179,7 +183,10 @@ namespace RK.Client.Forms
             // 
             this.toolStrip4.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnLoadLabyrinth,
-            this.lblLabyrinthTilePos});
+            this.lblLabyrinthTilePos,
+            this.toolStripSeparator4,
+            this.btnDoWorldStressTest,
+            this.btnStopWorldStressTest});
             this.toolStrip4.Location = new System.Drawing.Point(3, 3);
             this.toolStrip4.Name = "toolStrip4";
             this.toolStrip4.Size = new System.Drawing.Size(721, 25);
@@ -202,6 +209,31 @@ namespace RK.Client.Forms
             this.lblLabyrinthTilePos.Name = "lblLabyrinthTilePos";
             this.lblLabyrinthTilePos.Size = new System.Drawing.Size(112, 22);
             this.lblLabyrinthTilePos.Text = "No tile under cursor";
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnDoWorldStressTest
+            // 
+            this.btnDoWorldStressTest.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnDoWorldStressTest.Image = ((System.Drawing.Image)(resources.GetObject("btnDoWorldStressTest.Image")));
+            this.btnDoWorldStressTest.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnDoWorldStressTest.Name = "btnDoWorldStressTest";
+            this.btnDoWorldStressTest.Size = new System.Drawing.Size(23, 22);
+            this.btnDoWorldStressTest.Text = "toolStripButton1";
+            this.btnDoWorldStressTest.Click += new System.EventHandler(this.BtnDoWorldStressTestClick);
+            // 
+            // btnStopWorldStressTest
+            // 
+            this.btnStopWorldStressTest.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnStopWorldStressTest.Image = ((System.Drawing.Image)(resources.GetObject("btnStopWorldStressTest.Image")));
+            this.btnStopWorldStressTest.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnStopWorldStressTest.Name = "btnStopWorldStressTest";
+            this.btnStopWorldStressTest.Size = new System.Drawing.Size(23, 22);
+            this.btnStopWorldStressTest.Text = "toolStripButton1";
+            this.btnStopWorldStressTest.Click += new System.EventHandler(this.BtnStopWorldStressTestClick);
             // 
             // tpLabyrinthGenerator
             // 
@@ -621,6 +653,9 @@ namespace RK.Client.Forms
         private System.Windows.Forms.Panel pMiniMap;
         private Controls.MiniMapControl miniMapCtrl;
         private UserActivityMonitor.GlobalEventProvider eventsProvider;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripButton btnDoWorldStressTest;
+        private System.Windows.Forms.ToolStripButton btnStopWorldStressTest;
 
     }
 }

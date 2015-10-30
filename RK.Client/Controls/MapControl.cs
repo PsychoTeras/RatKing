@@ -524,7 +524,10 @@ namespace RK.Client.Controls
         {
             while (!_terminating && !IsDisposed)
             {
-                UpdatePlayersPosition();
+                if (Enabled)
+                {
+                    UpdatePlayersPosition();
+                }
                 Thread.Sleep(1);
             }
         }
@@ -533,11 +536,14 @@ namespace RK.Client.Controls
         {
             while (!_terminating && !IsDisposed)
             {
-                if (_somethingChanged && ObjectChanged != null)
+                if (Enabled)
                 {
-                    ObjectChanged(this);
+                    if (_somethingChanged && ObjectChanged != null)
+                    {
+                        ObjectChanged(this);
+                    }
+                    _somethingChanged = false;
                 }
-                _somethingChanged = false;
                 Thread.Sleep(1);
             }
         }
@@ -550,28 +556,30 @@ namespace RK.Client.Controls
         {
             while (!_terminating && !IsDisposed)
             {
-                DateTime prewFrameRenderTime = _lastFrameRenderTime;
-
-                try
+                if (Enabled)
                 {
-                    Invoke(new Action(() =>
+                    DateTime prewFrameRenderTime = _lastFrameRenderTime;
+
+                    try
                     {
-                        CheckMyPlayerPosition();
-                        Repaint();
-                    }));
-                }
-                catch
-                {
-                    Thread.Sleep(100);
-                    continue;
-                }
+                        Invoke(new Action(() =>
+                        {
+                            CheckMyPlayerPosition();
+                            Repaint();
+                        }));
+                    }
+                    catch
+                    {
+                        Thread.Sleep(100);
+                        continue;
+                    }
 
-                _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
-                    ? _fpsCounterArrIdx + 1
-                    : 0;
-                _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
-                    Subtract(prewFrameRenderTime).TotalMilliseconds;
-
+                    _fpsCounterArrIdx = _fpsCounterArrIdx < _fpsCounterData.Length - 1
+                        ? _fpsCounterArrIdx + 1
+                        : 0;
+                    _fpsCounterData[_fpsCounterArrIdx] = (byte) _lastFrameRenderTime.
+                        Subtract(prewFrameRenderTime).TotalMilliseconds;
+                }
                 Thread.Sleep(5);
             }
         }

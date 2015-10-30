@@ -108,6 +108,7 @@ namespace RK.Common.Host
             };
 
             _threadSendResponses = new Thread(SendResponsesProc);
+            _threadSendResponses.Priority = ThreadPriority.AboveNormal;
             _threadSendResponses.IsBackground = true;
             _threadSendResponses.Start();
         }
@@ -452,16 +453,18 @@ namespace RK.Common.Host
                             Where(r => _playersThatHaveResponses.Contains(r.Key)).
                             ToArray();
                         int responsesCnt = responses.Length;
-                        Parallel.For(0, responsesCnt, i =>
+//                        Parallel.For(0, responsesCnt, i =>
+                        for (int i = 0; i < responsesCnt; i++)
                         {
                             TCPClientEx tcpClient;
-                            var response = responses[i];
+                            KeyValuePair<int, List<BaseResponse>> response = responses[i];
                             if (_playerClients.TryGetValue(response.Key, out tcpClient))
                             {
                                 _netServer.SendData(tcpClient, response.Value);
                             }
                             response.Value.Clear();
-                        });
+//                        });
+                        }
                         _playersThatHaveResponses.Clear();
                         _unsentResponsesAvailable = false;
                     }
@@ -469,9 +472,9 @@ namespace RK.Common.Host
                 }
 
                 TimeSpan elapsed = DateTime.UtcNow - opTime;
-                int needsToWait = (int) Math.Max(timeToCall - elapsed.TotalMilliseconds - 1, 1);
+                int timeToIdle = (int) Math.Max(timeToCall - elapsed.TotalMilliseconds - 1, 1);
 
-                Thread.Sleep(needsToWait);
+                Thread.Sleep(timeToIdle);
 
                 DateTime curTime = DateTime.UtcNow;
                 elapsed = curTime - opTime;
