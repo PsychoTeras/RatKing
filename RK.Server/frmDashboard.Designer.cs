@@ -278,7 +278,7 @@
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "RK.Server";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmDashboard_FormClosing);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmDashboardFormClosing);
             this.pMain.ResumeLayout(false);
             this.pTCPResponsesProc.ResumeLayout(false);
             this.panel5.ResumeLayout(false);

@@ -102,10 +102,10 @@ namespace RK.Common.Net.TCP
 
         private void RemoveConnectedClient(long clientId)
         {
-            TCPClientEx tcpClient;
-            if (_connectedClients.TryGetValue(clientId, out tcpClient))
+            lock (_clientsData)
             {
-                lock (_clientsData)
+                TCPClientEx tcpClient;
+                if (_connectedClients.TryGetValue(clientId, out tcpClient))
                 {
                     TcpClient oldTcpClient = tcpClient;
                     if (oldTcpClient.Connected)
@@ -124,7 +124,21 @@ namespace RK.Common.Net.TCP
         {
             lock (_clientsData)
             {
+                foreach (long clientId in _connectedClients.Keys.ToArray())
+                {
+                    TCPClientEx tcpClient;
+                    if (_connectedClients.TryGetValue(clientId, out tcpClient))
+                    {
+                        TcpClient oldTcpClient = tcpClient;
+                        if (oldTcpClient.Connected)
+                        {
+                            oldTcpClient.Close();
+                        }
+                        _clientsData[clientId].Dispose();
+                    }
+                }
                 _clientsData.Clear();
+                _connectedClients.Clear();
             }
         }
 

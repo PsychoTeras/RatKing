@@ -66,18 +66,23 @@ namespace RK.Server
                 }
             }));
         }
-
-        private void ProcessDashboardMsg(LogEventType eventType, string data)
+        
+        private void OnEvent(IPCEvent ev)
         {
+            if (string.IsNullOrEmpty(ev.Message))
+            {
+                return;
+            }
+
             tbOutput.Invoke(new Action(delegate
             {
-                switch (eventType)
+                switch ((LogEventType) ev.Type)
                 {
                     case LogEventType.TCPResponsesProc:
                     {
                         if (gTCPResponsesProc.Enabled)
                         {
-                            float fData = float.Parse(data);
+                            float fData = float.Parse(ev.Message);
                             gTCPResponsesProc.Push(fData, 0);
                             gTCPResponsesProc.UpdateGraph();
                         }
@@ -87,38 +92,24 @@ namespace RK.Server
                     {
                         if (gTCPResponsesSend.Enabled)
                         {
-                            float fData = float.Parse(data);
+                            float fData = float.Parse(ev.Message);
                             gTCPResponsesSend.Push(fData, 0);
                             gTCPResponsesSend.UpdateGraph();
                         }
+                        break;
+                    }
+                    default:
+                    {
+                        WriteLog(ev.Message);
                         break;
                     }
                 }
             }));
         }
 
-        private void OnEvent(IPCEvent ev)
+        private void FrmDashboardFormClosing(object sender, FormClosingEventArgs e)
         {
-            if (!string.IsNullOrEmpty(ev.Message))
-            {
-                string[] msgData = ev.Message.Split('\x4');
-                if (msgData.Length == 2)
-                {
-                    LogEventType eventType;
-                    if (Enum.TryParse(msgData[0], false, out eventType))
-                        ProcessDashboardMsg(eventType, msgData[1]);
-                    else
-                        WriteLog(ev.Message);
-                }
-                else
-                {
-                    WriteLog(ev.Message);
-                }
-            }
-        }
-
-        private void frmDashboard_FormClosing(object sender, FormClosingEventArgs e)
-        {
+            _logger.Dispose();
             _gameHost.Dispose();
             Process client = Process.GetProcessesByName("RK.Client").FirstOrDefault();
             if (client != null && !client.HasExited)

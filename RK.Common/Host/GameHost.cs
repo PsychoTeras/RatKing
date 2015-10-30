@@ -145,10 +145,14 @@ namespace RK.Common.Host
             }
         }
 
+        private void WriteLog(string msg)
+        {
+            LFactory.Instance.Write(msg);
+        }
+
         private void WriteLog(LogEventType eventType, string msg)
         {
-            msg = string.Format("{0}\x4{1}", eventType, msg);
-            LFactory.Instance.Write(msg);
+            LFactory.Instance.Write(eventType, msg);
         }
 
         public void Dispose()
@@ -436,11 +440,9 @@ namespace RK.Common.Host
             const float timeToCall = 1000 / WORLD_DELAY_BETWEEN_FRAMES_MS;
 
             HRTimer timer = new HRTimer();
-
+            DateTime opTime = DateTime.UtcNow;
             while (!_terminating)
             {
-                DateTime opTime = DateTime.UtcNow;
-
                 if (_unsentResponsesAvailable)
                 {
                     timer.StartWatch();
@@ -467,11 +469,14 @@ namespace RK.Common.Host
                 }
 
                 TimeSpan elapsed = DateTime.UtcNow - opTime;
-                int needsToWait = (int) Math.Max(timeToCall - (elapsed.TotalMilliseconds%timeToCall), 1);
+                int needsToWait = (int) Math.Max(timeToCall - elapsed.TotalMilliseconds - 1, 1);
 
                 Thread.Sleep(needsToWait);
 
-                elapsed = DateTime.UtcNow - opTime;
+                DateTime curTime = DateTime.UtcNow;
+                elapsed = curTime - opTime;
+                opTime = curTime;
+
                 WriteLog(LogEventType.TCPResponsesProc, elapsed.TotalMilliseconds.ToString("F"));
             }
         }
