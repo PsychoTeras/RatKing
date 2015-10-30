@@ -467,7 +467,7 @@ namespace RK.Common.Host
                 }
 
                 TimeSpan elapsed = DateTime.UtcNow - opTime;
-                int needsToWait = (int) (timeToCall - (elapsed.TotalMilliseconds%timeToCall));
+                int needsToWait = (int) Math.Max(timeToCall - (elapsed.TotalMilliseconds%timeToCall), 1);
 
                 Thread.Sleep(needsToWait);
 
