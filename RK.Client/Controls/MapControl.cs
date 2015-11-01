@@ -15,7 +15,7 @@ using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Const;
 using RK.Common.Map;
-using RK.Common.Net.TCP;
+using RK.Common.Net.TCP2.Client;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
@@ -46,7 +46,7 @@ namespace RK.Client.Controls
 
 #region Private fields
 
-        private TCPClient _tcpClient;
+        private TCPClient2 _tcpClient;
         private ClientMap _map;
 
         private Graphics _buffer;
@@ -312,7 +312,11 @@ namespace RK.Client.Controls
 
                 DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.32", 15051);
+                TCPClientSettings settings = new TCPClientSettings
+                    (
+                        ushort.MaxValue, "192.168.1.32", 15051, true
+                    );
+                _tcpClient = new TCPClient2(settings);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 
@@ -1071,7 +1075,7 @@ namespace RK.Client.Controls
         {
             if (_sessionToken != 0 || packet.Type == PacketType.UserLogin)
             {
-                _tcpClient.SendData(packet);
+                _tcpClient.Send(packet);
             }
         }
 

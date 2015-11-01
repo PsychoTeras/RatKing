@@ -60,11 +60,11 @@ namespace RK.Common.Net.TCP2.Client
 
             _receiveEvent = new SocketAsyncEventArgs();
             _bufferManager.SetBuffer(_receiveEvent);
-            _receiveEvent.Completed += IO_Completed;
+            _receiveEvent.Completed += IOCompleted;
 
             _sendEvent = new SocketAsyncEventArgs();
             _bufferManager.SetBuffer(_sendEvent);
-            _sendEvent.Completed += IO_Completed;
+            _sendEvent.Completed += IOCompleted;
 
             _clientToken = new ClientToken(_receiveEvent, _sendEvent);
         }
@@ -73,14 +73,10 @@ namespace RK.Common.Net.TCP2.Client
 
 #region Class methods
 
-        private void IO_Completed(object sender, SocketAsyncEventArgs e)
+        private void IOCompleted(object sender, SocketAsyncEventArgs e)
         {
             switch (e.LastOperation)
             {
-                case SocketAsyncOperation.Connect:
-                    ProcessConnect(e);
-                    break;
-
                 case SocketAsyncOperation.Receive:
                     ProcessReceive(e);
                     break;
@@ -92,25 +88,27 @@ namespace RK.Common.Net.TCP2.Client
                 case SocketAsyncOperation.Disconnect:
                     ProcessDisconnectAndCloseSocket(e);
                     break;
+
                 default:
-                    throw new ArgumentException("\r\nError in I/O Completed");
+                    throw new ArgumentException("Error in I/O Completed");
             }
         }
 
         public void Connect()
         {
             _connectEvent = new SocketAsyncEventArgs();
-            _connectEvent.Completed += IO_Completed;
+            _connectEvent.Completed += ProcessConnect;
             _connectEvent.RemoteEndPoint = _settings.EndPoint;
-            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, 
+                ProtocolType.Tcp);
 
             if (!_connectEvent.AcceptSocket.ConnectAsync(_connectEvent))
             {
-                ProcessConnect(_connectEvent);
+                ProcessConnect(this, _connectEvent);
             }
         }
 
-        private void ProcessConnect(SocketAsyncEventArgs e)
+        private void ProcessConnect(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError == SocketError.Success)
             {
@@ -250,6 +248,7 @@ namespace RK.Common.Net.TCP2.Client
                 {
                     DataReceiveError();
                 }
+
                 StartDisconnect(e);
                 return;
             }
@@ -277,8 +276,7 @@ namespace RK.Common.Net.TCP2.Client
         private void StartDisconnect(SocketAsyncEventArgs e)
         {
             e.AcceptSocket.Shutdown(SocketShutdown.Both);
-            bool willRaiseEvent = e.AcceptSocket.DisconnectAsync(e);
-            if (!willRaiseEvent)
+            if (!e.AcceptSocket.DisconnectAsync(e))
             {
                 ProcessDisconnectAndCloseSocket(e);
             }
