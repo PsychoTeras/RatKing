@@ -19,7 +19,7 @@ namespace RK.Console
     unsafe class Program
     {
         private const int THREADS_COUNT = 8;
-        private const int ITERATIONS_COUNT = 100000;
+        private const int ITERATIONS_COUNT = 1000000;
 
         private static WaitHandle[] _tEvents;
 
