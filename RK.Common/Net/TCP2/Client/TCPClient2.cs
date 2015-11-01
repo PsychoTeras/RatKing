@@ -7,7 +7,7 @@ using RK.Common.Proto;
 
 namespace RK.Common.Net.TCP2.Client
 {
-    public sealed class SocketClient : TCPBase
+    public sealed class TCPClient2 : TCPBase
     {
 
 #region Delegates
@@ -45,9 +45,15 @@ namespace RK.Common.Net.TCP2.Client
 
 #endregion
 
+#region Properties
+
+        public bool IsConnected { get; private set; }
+
+#endregion
+
 #region Ctor
 
-        public SocketClient(TCPClientSettings settings)
+        public TCPClient2(TCPClientSettings settings)
         {
             _settings = settings;
             _bufferManager = new BufferManager(_settings.BufferSize, 2);
@@ -111,6 +117,8 @@ namespace RK.Common.Net.TCP2.Client
                 _clientToken.Prepare(e);
                 DisposeEventObject(ref _connectEvent);
 
+                IsConnected = true;
+
                 //Fire Connected event
                 if (Connected != null)
                 {
@@ -139,16 +147,16 @@ namespace RK.Common.Net.TCP2.Client
             }
         }
 
-        public void Send(int clientId, ITransferable packet)
+        public void Send(ITransferable packet)
         {
             //Serialize data
             byte[] dataToSend = packet.Serialize();
 
             //Send data
-            Send(clientId, dataToSend);
+            Send(dataToSend);
         }
 
-        public void Send(int clientId, byte[] dataToSend)
+        public void Send(byte[] dataToSend)
         {
             //Get a client
             _clientToken.SendSync.WaitOne();
@@ -289,6 +297,8 @@ namespace RK.Common.Net.TCP2.Client
             }
             catch { }
             theSocket.Close();
+
+            IsConnected = false;
 
             //Fire Disconnected event
             if (Disconnected != null)
