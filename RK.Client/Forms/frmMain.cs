@@ -66,6 +66,27 @@ namespace RK.Client.Forms
             }
 
             _bots = new List<WorldBot>();
+            ThreadPool.QueueUserWorkItem(o =>
+            {
+                Random rnd = new Random(Environment.TickCount);
+                while (true)
+                {
+                    lock (_bots)
+                    {
+                        foreach (WorldBot bot in _bots)
+                        {
+                            if (!bot.Connected)
+                            {
+                                bot.Connect();
+                                Thread.Sleep(3);
+                            }
+                            bot.DoSimulate();
+                            Thread.Sleep(3);
+                        }
+                    }
+                    Thread.Sleep(rnd.Next(10, 100));
+                }
+            });
         }
 
         private bool KeyPressed(Keys keys)
@@ -328,11 +349,14 @@ namespace RK.Client.Forms
 
         private void BtnStopWorldStressTestClick(object sender, EventArgs e)
         {
-            foreach (WorldBot bot in _bots)
+            lock (_bots)
             {
-                bot.Dispose();
+                foreach (WorldBot bot in _bots)
+                {
+                    bot.Dispose();
+                }
+                _bots.Clear();
             }
-            _bots.Clear();
             mapCtrl.Enabled = true;
             mapCtrl.Show();
         }
@@ -341,13 +365,13 @@ namespace RK.Client.Forms
         {
             mapCtrl.Hide();
             mapCtrl.Enabled = false;
-            ThreadPool.QueueUserWorkItem(o =>
+            lock (_bots)
             {
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 500; i++)
                 {
                     _bots.Add(new WorldBot());
                 }
-            });
+            }
         }
     }
 

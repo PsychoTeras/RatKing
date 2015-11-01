@@ -16,6 +16,12 @@ namespace RK.Common.Proto
 
 #endregion
 
+#region Private fields
+
+        private byte[] _serializeCache;
+
+#endregion
+
 #region Public fields
 
         public long Id;
@@ -118,6 +124,11 @@ namespace RK.Common.Proto
 
         public byte[] Serialize()
         {
+            if (_serializeCache != null)
+            {
+                return _serializeCache;
+            }
+
             int packetSize = BASE_SIZE + SizeOf;
             byte[] data = new byte[packetSize];
             fixed (byte* bData = data)
@@ -141,6 +152,12 @@ namespace RK.Common.Proto
                     }
                 }
             }
+
+            if (!Private)
+            {
+                _serializeCache = data;
+            }
+
             return data;
         }
 

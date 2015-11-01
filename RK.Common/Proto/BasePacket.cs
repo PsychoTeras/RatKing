@@ -15,21 +15,21 @@ namespace RK.Common.Proto
         public const int ERR_INVALID_PACKET_SIZE = -1;
         public const int ERR_INVALID_PACKET_TYPE = -2;
 
-        private const int BASE_SIZE = 24;
+        private const int BASE_SIZE = 20;
 
 #endregion
 
 #region Static fields
 
         private static int _packetIdCounter;
-        private static int _sessionIdCounter = Environment.TickCount;
+        private static int _sessionIdCounter;
 
 #endregion
 
 #region Public fields
 
         public int Id;
-        public long SessionToken;
+        public int SessionToken;
         public long TimeStamp;
 
 #endregion
@@ -58,9 +58,9 @@ namespace RK.Common.Proto
             TimeStamp = DateTime.UtcNow.ToBinary();
         }
 
-        public static long NewSessionToken(int userId)
+        public static int NewSessionToken()
         {
-            return ((long)userId << 32) | Interlocked.Increment(ref _sessionIdCounter);
+            return Interlocked.Increment(ref _sessionIdCounter);
         }
 
 #endregion
@@ -79,7 +79,7 @@ namespace RK.Common.Proto
                 (*(PacketType*) &bData[2]) = Type;
                 (*(long*) &bData[4]) = Id;
                 (*(long*) &bData[8]) = SessionToken;
-                (*(long*) &bData[16]) = TimeStamp;
+                (*(long*) &bData[12]) = TimeStamp;
                 SerializeToMemory(bData, BASE_SIZE);
 
                 if (Compressed)
@@ -168,8 +168,8 @@ namespace RK.Common.Proto
                 }
 
                 packet.Id = *(int*) &bData[4];
-                packet.SessionToken = *(long*) &bData[8];
-                packet.TimeStamp = *(long*) &bData[16];
+                packet.SessionToken = *(int*) &bData[8];
+                packet.TimeStamp = *(long*) &bData[12];
 
                 if (!packet.Compressed)
                 {

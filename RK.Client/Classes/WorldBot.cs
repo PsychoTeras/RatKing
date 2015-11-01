@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Windows.Forms;
 using RK.Common.Classes.Common;
 using RK.Common.Net.TCP;
@@ -13,22 +12,23 @@ namespace RK.Client.Classes
     public sealed class WorldBot : IDisposable
     {
         private TCPClient _tcpClient;
-        private long _sessionToken;
-        private Thread _thread;
+        private int _sessionToken;
+        private Random _rnd = new Random(Environment.TickCount);
 
-        private volatile bool _disposiong;
+        public bool Connected
+        {
+            get { return _tcpClient.IsConnected; }
+        }
 
         public WorldBot()
         {
-            _thread = new Thread(DoSimulate);
-            _thread.IsBackground = true;
-            _thread.Priority = ThreadPriority.Lowest;
-            _thread.Start();
-
-            _tcpClient = new TCPClient("192.168.1.114", 15051);
+            _tcpClient = new TCPClient("192.168.1.32", 15051);
             _tcpClient.DataReceived += TCPClientDataReceived;
-            _tcpClient.Connect();
+        }
 
+        public void Connect()
+        {
+            _tcpClient.Connect();
             TCPClientDataSend(new PUserLogin
             {
                 UserName = "PsychoTeras",
@@ -73,29 +73,20 @@ namespace RK.Client.Classes
             }
         }
 
-        private void DoSimulate()
+        public void DoSimulate()
         {
-            Random rnd = new Random(Environment.TickCount);
-            try
+            switch (_rnd.Next(0, 3))
             {
-                while (!_disposiong)
+                default:
                 {
-                    switch (rnd.Next(0, 3))
+                    TCPClientDataSend(new PPlayerRotate
                     {
-                        default:
-                        {
-                            TCPClientDataSend(new PPlayerRotate
-                            {
-                                SessionToken = _sessionToken,
-                                Angle = rnd.Next(0, 360)
-                            });
-                            break;
-                        }
-                    }
-                    Thread.Sleep(rnd.Next(100, 1000));
+                        SessionToken = _sessionToken,
+                        Angle = _rnd.Next(0, 360)
+                    });
+                    break;
                 }
             }
-            catch { }
         }
 
         public void Dispose()
@@ -107,8 +98,6 @@ namespace RK.Client.Classes
                     SessionToken = _sessionToken
                 });
             }
-            _disposiong = true;
-            _thread.Abort();
             _tcpClient.Dispose();
         }
     }

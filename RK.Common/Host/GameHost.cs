@@ -4,13 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IPCLogger.Core.Loggers;
-using RK.Common.Classes;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
 using RK.Common.Const;
 using RK.Common.Host.Validators;
-using RK.Common.Net.TCP;
+using RK.Common.Net.TCP2;
 using RK.Common.Proto;
 using RK.Common.Proto.ErrorCodes;
 using RK.Common.Proto.Packets;
@@ -25,13 +24,19 @@ namespace RK.Common.Host
 
 #region Constants
 
+        private const int NET_PORT= 15051;
+        private const int NET_MAX_ACCEPT_OPS = 3000;
+        private const int NET_MAX_CONNECTIONS = 3000;
+        private const int NET_SOCKET_BACKLOG = 100;
+        private const int NET_BUFFER_SIZE = 1024;
+
         private const int WORLD_DELAY_BETWEEN_FRAMES_MS = 30;
 
 #endregion
 
 #region Delegates
 
-        private delegate BaseResponse OnAcceptPacket<in T>(TCPClientEx tcpClient, T packet) 
+        private delegate BaseResponse OnAcceptPacket<in T>(int clientId, T packet) 
             where T: BasePacket;
 
         public delegate void OnGameHostResponse(BaseResponse e);
@@ -40,20 +45,18 @@ namespace RK.Common.Host
 
 #region Private fields
 
-//        private static LFactory
-        
-        private TCPServer _netServer;
+        private TCPServer2 _netServer;
 
         private Dictionary<PacketType, OnAcceptPacket<BasePacket>> _actions;
         private List<BaseValidator> _validators;
 
-        private Dictionary<long, int> _loggedPlayers;
-        private Dictionary<TCPClientEx, long> _tcpClients;
-        private Dictionary<int, TCPClientEx> _playerClients;
+        private Dictionary<int, int> _loggedPlayers; //SessionId   | UserId
+        private Dictionary<int, int> _tcpClients;    //TCPClientId | SessionId
+        private Dictionary<int, int> _playerClients; //UserId      | TCPClientId
 
         private Thread _threadSendResponses;
         private bool _unsentResponsesAvailable;
-        private HashSet<int> _playersThatHaveResponses;
+//        private HashSet<int> _playersThatHaveResponses;
         private Dictionary<int, List<BaseResponse>> _responses;
 
         private volatile bool _terminating;
@@ -78,16 +81,21 @@ namespace RK.Common.Host
             World = new GameWorld();
             World.LoadMap();
 
-            _netServer = new TCPServer(15051);
+            TCPServerSettings setting = new TCPServerSettings(
+                NET_MAX_CONNECTIONS, NET_SOCKET_BACKLOG, NET_MAX_ACCEPT_OPS, 
+                NET_BUFFER_SIZE, NET_PORT);
+
+            _netServer = new TCPServer2(setting);
+            _netServer.ClientConnected += TCPClientConnected;
             _netServer.ClientDataReceived += TCPClientDataReceived;
             _netServer.ClientDisonnected += TCPClientDisonnected;
             _netServer.Start();
 
-            _loggedPlayers = new Dictionary<long, int>();
-            _tcpClients = new Dictionary<TCPClientEx, long>();
-            _playerClients = new Dictionary<int, TCPClientEx>();
+            _loggedPlayers = new Dictionary<int, int>();
+            _tcpClients = new Dictionary<int, int>();
+            _playerClients = new Dictionary<int, int>();
             
-            _playersThatHaveResponses = new HashSet<int>();
+//            _playersThatHaveResponses = new HashSet<int>();
             _responses = new Dictionary<int, List<BaseResponse>>();
 
             _actions = new Dictionary<PacketType, OnAcceptPacket<BasePacket>>
@@ -133,12 +141,12 @@ namespace RK.Common.Host
             }
         }
 
-        private BaseResponse ProcessPacket(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse ProcessPacket(int clientId, BasePacket packet)
         {
             try
             {
                 AssertSession(packet);
-                return _actions[packet.Type](tcpClient, packet);
+                return _actions[packet.Type](clientId, packet);
             }
             catch (Exception ex)
             {
@@ -177,13 +185,14 @@ namespace RK.Common.Host
             List<Player> nearestPlayers = World.PlayersGetNearest(player);
             if (nearestPlayers.Count > 0)
             {
-                lock (_responses)
+                foreach (Player nearest in nearestPlayers)
                 {
-                    foreach (Player nearest in nearestPlayers)
+//                        if (!_playersThatHaveResponses.Contains(nearest.Id))
+//                            _playersThatHaveResponses.Add(nearest.Id);
+                    List<BaseResponse> responsesList = _responses[nearest.Id];
+                    lock (responsesList)
                     {
-                        if (!_playersThatHaveResponses.Contains(nearest.Id))
-                            _playersThatHaveResponses.Add(nearest.Id);
-                        _responses[nearest.Id].Add(response);
+                        responsesList.Add(response);
                     }
                 }
                 _unsentResponsesAvailable = true;
@@ -194,12 +203,12 @@ namespace RK.Common.Host
 
 #region User
 
-        private BaseResponse Login(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse Login(int clientId, BasePacket packet)
         {
             PUserLogin pUserLogin = (PUserLogin) packet;
 
             User user = new User(pUserLogin.UserName, pUserLogin.Password);
-            pUserLogin.SessionToken = BasePacket.NewSessionToken(user.Id);
+            pUserLogin.SessionToken = BasePacket.NewSessionToken();
 
             Player player = Player.Create(user.UserName);
             ShortPoint? startPoint = World.MapFindPlayerStartPoint(player);
@@ -209,8 +218,6 @@ namespace RK.Common.Host
                 return null;
             }
             player.Position = startPoint.Value.ToPoint(ConstMap.PIXEL_SIZE);
-
-            World.PlayerAdd(pUserLogin.SessionToken, player);
 
             lock (_responses)
             {
@@ -224,9 +231,11 @@ namespace RK.Common.Host
 
             lock (_tcpClients)
             {
-                _tcpClients.Add(tcpClient, pUserLogin.SessionToken);
-                _playerClients.Add(player.Id, tcpClient);
+                _tcpClients.Add(clientId, pUserLogin.SessionToken);
+                _playerClients.Add(player.Id, clientId);
             }
+
+            World.PlayerAdd(pUserLogin.SessionToken, player);
 
             return new RUserLogin(pUserLogin)
             {
@@ -234,7 +243,7 @@ namespace RK.Common.Host
             };
         }
 
-        private BaseResponse Enter(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse Enter(int clientId, BasePacket packet)
         {
             PUserEnter pUserEnter = (PUserEnter) packet;
 
@@ -276,12 +285,12 @@ namespace RK.Common.Host
             };
         }
 
-        private BaseResponse Logout(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse Logout(int clientId, BasePacket packet)
         {
-            return Logout(tcpClient, packet.SessionToken);
+            return Logout(clientId, packet.SessionToken);
         }
 
-        private BaseResponse Logout(TCPClientEx tcpClient, long sessionToken)
+        private BaseResponse Logout(int clientId, int sessionToken)
         {
             lock (_loggedPlayers)
             {
@@ -292,7 +301,7 @@ namespace RK.Common.Host
 
                     lock (_tcpClients)
                     {
-                        _tcpClients.Remove(tcpClient);
+                        _tcpClients.Remove(clientId);
                         _playerClients.Remove(playerId);
                     }
 
@@ -316,7 +325,7 @@ namespace RK.Common.Host
 
 #region Player
 
-        private BaseResponse PlayerRotate(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse PlayerRotate(int clientId, BasePacket packet)
         {
             PPlayerRotate pPlayerRotate = (PPlayerRotate)packet;
             PlayerDataEx playerData = World.PlayerDataGet(pPlayerRotate.SessionToken);
@@ -340,7 +349,7 @@ namespace RK.Common.Host
             return null;
         }
 
-        private BaseResponse PlayerMove(TCPClientEx tcpClient, BasePacket packet)
+        private BaseResponse PlayerMove(int clientId, BasePacket packet)
         {
             PPlayerMove pPlayerMove = (PPlayerMove)packet;
             PlayerDataEx playerData = World.PlayerDataGet(pPlayerMove.SessionToken);
@@ -377,7 +386,7 @@ namespace RK.Common.Host
 
 #region Map
 
-        private BaseResponse MapData(TCPClientEx tcpclient, BasePacket packet)
+        private BaseResponse MapData(int clientId, BasePacket packet)
         {
             PMapData pMapData = (PMapData) packet;
 
@@ -402,20 +411,26 @@ namespace RK.Common.Host
 
 #region TCP
 
-        private void TCPClientDisonnected(TCPClientEx tcpClient)
+        private void TCPClientConnected(int clientId)
         {
-            long sessionToken;
-            if (_tcpClients.TryGetValue(tcpClient, out sessionToken))
-            {
-                Logout(tcpClient, sessionToken);
-            }
+            WriteLog(LogEventType.TCPConnections, _netServer.NumberOfAcceptedSockets.ToString());
         }
 
-        private void SendResponse(BaseResponse response, TCPClientEx tcpClient = null)
+        private void TCPClientDisonnected(int clientId)
+        {
+            int sessionToken;
+            if (_tcpClients.TryGetValue(clientId, out sessionToken))
+            {
+                Logout(clientId, sessionToken);
+            }
+            WriteLog(LogEventType.TCPConnections, _netServer.NumberOfAcceptedSockets.ToString());
+        }
+
+        private void SendResponse(BaseResponse response, int clientId = 0)
         {
             if (response.Private || response.HasError)
             {
-                _netServer.SendData(tcpClient, response);
+                _netServer.Send(clientId, response);
             }
             else
             {
@@ -423,17 +438,17 @@ namespace RK.Common.Host
             }
         }
 
-        private void TCPClientDataReceived(TCPClientEx tcpClient, IList<BasePacket> packets)
+        private void TCPClientDataReceived(int clientId, List<BasePacket> packets)
         {
-            Parallel.For(0, packets.Count, i =>
+            for (int i = 0; i < packets.Count; i++)
             {
                 BasePacket packet = packets[i];
-                BaseResponse response = ProcessPacket(tcpClient, packet);
+                BaseResponse response = ProcessPacket(clientId, packet);
                 if (response != null)
                 {
-                    SendResponse(response, tcpClient);
+                    SendResponse(response, clientId);
                 }
-            });
+            }
         }
 
         private void SendResponsesProc()
@@ -447,27 +462,32 @@ namespace RK.Common.Host
                 if (_unsentResponsesAvailable)
                 {
                     timer.StartWatch();
+                    KeyValuePair<int, List<BaseResponse>>[] responses;
                     lock (_responses)
                     {
-                        KeyValuePair<int, List<BaseResponse>>[] responses = _responses.
-                            Where(r => _playersThatHaveResponses.Contains(r.Key)).
-                            ToArray();
-                        int responsesCnt = responses.Length;
-//                        Parallel.For(0, responsesCnt, i =>
-                        for (int i = 0; i < responsesCnt; i++)
-                        {
-                            TCPClientEx tcpClient;
-                            KeyValuePair<int, List<BaseResponse>> response = responses[i];
-                            if (_playerClients.TryGetValue(response.Key, out tcpClient))
-                            {
-                                _netServer.SendData(tcpClient, response.Value);
-                            }
-                            response.Value.Clear();
-//                        });
-                        }
-                        _playersThatHaveResponses.Clear();
-                        _unsentResponsesAvailable = false;
+                        responses = _responses.ToArray();
                     }
+                    //IEnumerable<KeyValuePair<int, List<BaseResponse>>> responses = _responses.
+                    //    Where(r => _playersThatHaveResponses.Contains(r.Key));
+                    Parallel.ForEach(responses, response =>
+                    {
+                        if (response.Value.Count > 0)
+                        {
+                            int clientId;
+                            if (_playerClients.TryGetValue(response.Key, out clientId))
+                            {
+                                BaseResponse[] responseItems;
+                                lock (response.Value)
+                                {
+                                    responseItems = response.Value.ToArray();
+                                    response.Value.Clear();
+                                }
+                                _netServer.Send(clientId, responseItems);
+                            }
+                        }
+                    });
+//                        _playersThatHaveResponses.Clear();
+                    _unsentResponsesAvailable = false;
                     WriteLog(LogEventType.TCPResponsesSend, timer.StopWatch().ToString("F"));
                 }
 

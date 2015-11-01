@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 using IPCLogger.Core.Loggers.LIPC;
-using RK.Common.Classes;
 using RK.Common.Host;
 using RK.Server.Controls.Graphing;
 
@@ -27,6 +26,7 @@ namespace RK.Server
 
             gTCPResponsesProc.AddLine().Thickness = 2;
             gTCPResponsesSend.AddLine().Thickness = 2;
+            gTCPConnections.AddLine().Thickness = 2;
 
             _logger = new LIPCView();
             _logger.QueryIntervalMsec = 30;
@@ -78,6 +78,13 @@ namespace RK.Server
             {
                 switch ((LogEventType) ev.Type)
                 {
+                    case LogEventType.TCPConnections:
+                        {
+                            int iData = int.Parse(ev.Message);
+                            gTCPConnections.Push(iData, 0);
+                            gTCPConnections.UpdateGraph();
+                            break;
+                        }
                     case LogEventType.TCPResponsesProc:
                     {
                         if (gTCPResponsesProc.Enabled)

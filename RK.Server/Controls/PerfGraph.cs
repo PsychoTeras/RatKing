@@ -92,6 +92,7 @@ namespace RK.Server.Controls
 
             private class Line : IDisposable
             {
+                public float AvgVal;
                 public string TagText;
                 public SizeF TagTextSize;
 
@@ -179,6 +180,8 @@ namespace RK.Server.Controls
             private float _minPeek;
             private int _gridSize = 15;
             private int _offsetX;
+
+            private int? _maxPeekPosition;
 
             private string _units = string.Empty;
 
@@ -476,6 +479,7 @@ namespace RK.Server.Controls
                 get { return _bShowGrid; }
             }
 
+            public bool ShowInfoAvg { get; set; }
 
             protected override void OnSizeChanged(EventArgs e)
             {
@@ -494,6 +498,8 @@ namespace RK.Server.Controls
                 g.FillRectangle(_backBrush, ClientRectangle);
 
                 _offsetX = 0;
+
+                DecreaseMaxPeak();
 
                 if (_bShowMinMax)
                 {
@@ -524,6 +530,25 @@ namespace RK.Server.Controls
                 DrawLinesInfo(ref g);
 
                 g.ResetClip();
+            }
+
+            private void DecreaseMaxPeak()
+            {
+                if (_maxPeekPosition != null && _maxPeekPosition < 0)
+                {
+                    float maxVal = _lines.Max(l => l.MagnitudeList.Max()) * 1.5f;
+                    float partMaxPeak = _maxPeek / 1.5f;
+                    if (maxVal < partMaxPeak)
+                    {
+                        _maxPeek = partMaxPeak;
+                    }
+                    else
+                    {
+                        _maxPeek = maxVal;
+                        _maxPeekPosition = null;
+                    }
+                    RefreshLabels();
+                }
             }
 
             private void DrawLineUnderCursorInfo(ref Graphics g, int lineIdx)
@@ -560,6 +585,11 @@ namespace RK.Server.Controls
             private int _maxInfoRectHeight;
             private void DrawLinesInfo(ref Graphics g)
             {
+                if (!ShowInfoAvg)
+                {
+                    return;
+                }
+
                 Line[] lines = _lines.Where(l => l.MagnitudeList.Count > 0).ToArray();
                 int cnt = lines.Length;
                 if (cnt > 0)
@@ -570,8 +600,8 @@ namespace RK.Server.Controls
                     int maxStrLen = 0;
                     foreach (Line line in lines)
                     {
-                        float avgVal = line.MagnitudeList.Average();
-                        line.TagText = string.Format("Avg: {0} {1}", avgVal.ToString("F"), _units).TrimEnd();
+                        line.AvgVal = line.MagnitudeList.Average();
+                        line.TagText = string.Format("Avg: {0} {1}", line.AvgVal.ToString("F"), _units).TrimEnd();
                         line.TagTextSize = g.MeasureString(line.TagText, Font);
                         maxStrLen = (int) Math.Max(maxStrLen, line.TagTextSize.Width);
                     }
@@ -642,11 +672,11 @@ namespace RK.Server.Controls
             {
                 if (!_bMinLabelSet)
                 {
-                    _minLabel = _minPeek.ToString();
+                    _minLabel = _minPeek.ToString("##.##");
                 }
                 if (!_bMaxLabelSet)
                 {
-                    _maxLabel = _maxPeek.ToString();
+                    _maxLabel = _maxPeek.ToString("##.##");
                 }
             }
 
@@ -694,6 +724,8 @@ namespace RK.Server.Controls
                     int cullsRequired = (line.MagnitudeList.Count - _maxCoords) + 1;
                     if (cullsRequired > 0)
                     {
+                        if (_maxPeekPosition != null)
+                            _maxPeekPosition -= cullsRequired;
                         line.MagnitudeList.RemoveRange(0, cullsRequired);
                     }
                 }
@@ -801,7 +833,6 @@ namespace RK.Server.Controls
                 return _lines.Remove(line);
             }
 
-
             public bool Push(float magnitude, int numID)
             {
                 Line line = GetLine(numID);
@@ -821,6 +852,7 @@ namespace RK.Server.Controls
                 }
                 else if (_bAutoScale && magnitude > _maxPeek)
                 {
+                    _maxPeekPosition = line.MagnitudeList.Count;
                     _maxPeek = magnitude;
                     RefreshLabels();
                 }

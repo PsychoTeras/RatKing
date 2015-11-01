@@ -66,7 +66,7 @@ namespace RK.Client.Controls
         private Point? _scrollToPos;
         private object _syncScroll;
 
-        private long _sessionToken;
+        private int _sessionToken;
         private Dictionary<int, Player> _players;
         private Dictionary<int, PlayerDataEx> _playersData;
         private ReadOnlyCollection<Player> _playersRo;
@@ -312,7 +312,7 @@ namespace RK.Client.Controls
 
                 DisconnectFromHost();
 
-                _tcpClient = new TCPClient("192.168.1.114", 15051);
+                _tcpClient = new TCPClient("192.168.1.32", 15051);
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
 

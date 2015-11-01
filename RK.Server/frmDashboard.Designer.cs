@@ -29,6 +29,10 @@
         private void InitializeComponent()
         {
             this.pMain = new System.Windows.Forms.TableLayoutPanel();
+            this.pTCPConnections = new System.Windows.Forms.Panel();
+            this.panel7 = new System.Windows.Forms.Panel();
+            this.hTCPConnections = new System.Windows.Forms.Label();
+            this.panel8 = new System.Windows.Forms.Panel();
             this.pTCPResponsesProc = new System.Windows.Forms.Panel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.hTCPResponsesProc = new System.Windows.Forms.Label();
@@ -42,9 +46,12 @@
             this.pNavigationControlsHeader = new System.Windows.Forms.Panel();
             this.hTCPResponsesSend = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.gTCPConnections = new RK.Server.Controls.Graphing.PerfGraph();
             this.gTCPResponsesProc = new RK.Server.Controls.Graphing.PerfGraph();
             this.gTCPResponsesSend = new RK.Server.Controls.Graphing.PerfGraph();
             this.pMain.SuspendLayout();
+            this.pTCPConnections.SuspendLayout();
+            this.panel7.SuspendLayout();
             this.pTCPResponsesProc.SuspendLayout();
             this.panel5.SuspendLayout();
             this.pOutput.SuspendLayout();
@@ -55,21 +62,66 @@
             // 
             // pMain
             // 
-            this.pMain.ColumnCount = 2;
-            this.pMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 48.93238F));
-            this.pMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 51.06762F));
-            this.pMain.Controls.Add(this.pTCPResponsesProc, 0, 0);
+            this.pMain.ColumnCount = 3;
+            this.pMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 32.62159F));
+            this.pMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 34.04508F));
+            this.pMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.pMain.Controls.Add(this.pTCPConnections, 0, 0);
+            this.pMain.Controls.Add(this.pTCPResponsesProc, 1, 0);
             this.pMain.Controls.Add(this.pOutput, 0, 1);
-            this.pMain.Controls.Add(this.pTCPResponsesSend, 1, 0);
+            this.pMain.Controls.Add(this.pTCPResponsesSend, 2, 0);
             this.pMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pMain.Location = new System.Drawing.Point(0, 0);
             this.pMain.Name = "pMain";
             this.pMain.RowCount = 2;
             this.pMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 32.1361F));
-            this.pMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 67.86389F));
+            this.pMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 67.8639F));
             this.pMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.pMain.Size = new System.Drawing.Size(562, 529);
             this.pMain.TabIndex = 2;
+            // 
+            // pTCPConnections
+            // 
+            this.pTCPConnections.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pTCPConnections.Controls.Add(this.panel7);
+            this.pTCPConnections.Controls.Add(this.gTCPConnections);
+            this.pTCPConnections.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pTCPConnections.Location = new System.Drawing.Point(3, 3);
+            this.pTCPConnections.Name = "pTCPConnections";
+            this.pTCPConnections.Size = new System.Drawing.Size(177, 163);
+            this.pTCPConnections.TabIndex = 6;
+            // 
+            // panel7
+            // 
+            this.panel7.BackColor = System.Drawing.Color.Honeydew;
+            this.panel7.Controls.Add(this.hTCPConnections);
+            this.panel7.Controls.Add(this.panel8);
+            this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel7.Location = new System.Drawing.Point(0, 0);
+            this.panel7.Name = "panel7";
+            this.panel7.Size = new System.Drawing.Size(175, 18);
+            this.panel7.TabIndex = 3;
+            // 
+            // hTCPConnections
+            // 
+            this.hTCPConnections.BackColor = System.Drawing.Color.Khaki;
+            this.hTCPConnections.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.hTCPConnections.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.hTCPConnections.Location = new System.Drawing.Point(0, 0);
+            this.hTCPConnections.Name = "hTCPConnections";
+            this.hTCPConnections.Size = new System.Drawing.Size(175, 17);
+            this.hTCPConnections.TabIndex = 1;
+            this.hTCPConnections.Text = "TCP Connections";
+            this.hTCPConnections.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // panel8
+            // 
+            this.panel8.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel8.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel8.Location = new System.Drawing.Point(0, 17);
+            this.panel8.Name = "panel8";
+            this.panel8.Size = new System.Drawing.Size(175, 1);
+            this.panel8.TabIndex = 0;
             // 
             // pTCPResponsesProc
             // 
@@ -77,9 +129,9 @@
             this.pTCPResponsesProc.Controls.Add(this.panel5);
             this.pTCPResponsesProc.Controls.Add(this.gTCPResponsesProc);
             this.pTCPResponsesProc.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pTCPResponsesProc.Location = new System.Drawing.Point(3, 3);
+            this.pTCPResponsesProc.Location = new System.Drawing.Point(186, 3);
             this.pTCPResponsesProc.Name = "pTCPResponsesProc";
-            this.pTCPResponsesProc.Size = new System.Drawing.Size(268, 163);
+            this.pTCPResponsesProc.Size = new System.Drawing.Size(185, 163);
             this.pTCPResponsesProc.TabIndex = 4;
             // 
             // panel5
@@ -90,7 +142,7 @@
             this.panel5.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel5.Location = new System.Drawing.Point(0, 0);
             this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(266, 18);
+            this.panel5.Size = new System.Drawing.Size(183, 18);
             this.panel5.TabIndex = 3;
             // 
             // hTCPResponsesProc
@@ -100,7 +152,7 @@
             this.hTCPResponsesProc.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.hTCPResponsesProc.Location = new System.Drawing.Point(0, 0);
             this.hTCPResponsesProc.Name = "hTCPResponsesProc";
-            this.hTCPResponsesProc.Size = new System.Drawing.Size(266, 17);
+            this.hTCPResponsesProc.Size = new System.Drawing.Size(183, 17);
             this.hTCPResponsesProc.TabIndex = 1;
             this.hTCPResponsesProc.Text = "TCP Responses Proc";
             this.hTCPResponsesProc.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -111,13 +163,13 @@
             this.panel6.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.panel6.Location = new System.Drawing.Point(0, 17);
             this.panel6.Name = "panel6";
-            this.panel6.Size = new System.Drawing.Size(266, 1);
+            this.panel6.Size = new System.Drawing.Size(183, 1);
             this.panel6.TabIndex = 0;
             // 
             // pOutput
             // 
             this.pOutput.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pMain.SetColumnSpan(this.pOutput, 2);
+            this.pMain.SetColumnSpan(this.pOutput, 3);
             this.pOutput.Controls.Add(this.tbOutput);
             this.pOutput.Controls.Add(this.panel2);
             this.pOutput.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -178,9 +230,9 @@
             this.pTCPResponsesSend.Controls.Add(this.pNavigationControlsHeader);
             this.pTCPResponsesSend.Controls.Add(this.gTCPResponsesSend);
             this.pTCPResponsesSend.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pTCPResponsesSend.Location = new System.Drawing.Point(277, 3);
+            this.pTCPResponsesSend.Location = new System.Drawing.Point(377, 3);
             this.pTCPResponsesSend.Name = "pTCPResponsesSend";
-            this.pTCPResponsesSend.Size = new System.Drawing.Size(282, 163);
+            this.pTCPResponsesSend.Size = new System.Drawing.Size(182, 163);
             this.pTCPResponsesSend.TabIndex = 2;
             // 
             // pNavigationControlsHeader
@@ -191,7 +243,7 @@
             this.pNavigationControlsHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pNavigationControlsHeader.Location = new System.Drawing.Point(0, 0);
             this.pNavigationControlsHeader.Name = "pNavigationControlsHeader";
-            this.pNavigationControlsHeader.Size = new System.Drawing.Size(280, 18);
+            this.pNavigationControlsHeader.Size = new System.Drawing.Size(180, 18);
             this.pNavigationControlsHeader.TabIndex = 3;
             // 
             // hTCPResponsesSend
@@ -201,7 +253,7 @@
             this.hTCPResponsesSend.Font = new System.Drawing.Font("Calibri", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.hTCPResponsesSend.Location = new System.Drawing.Point(0, 0);
             this.hTCPResponsesSend.Name = "hTCPResponsesSend";
-            this.hTCPResponsesSend.Size = new System.Drawing.Size(280, 17);
+            this.hTCPResponsesSend.Size = new System.Drawing.Size(180, 17);
             this.hTCPResponsesSend.TabIndex = 1;
             this.hTCPResponsesSend.Text = "TCP Responses Send";
             this.hTCPResponsesSend.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -212,8 +264,34 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.panel3.Location = new System.Drawing.Point(0, 17);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(280, 1);
+            this.panel3.Size = new System.Drawing.Size(180, 1);
             this.panel3.TabIndex = 0;
+            // 
+            // gTCPConnections
+            // 
+            this.gTCPConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.gTCPConnections.AutoAdjustPeek = true;
+            this.gTCPConnections.DisabledColor = System.Drawing.SystemColors.ButtonFace;
+            this.gTCPConnections.ForeColor = System.Drawing.Color.SaddleBrown;
+            this.gTCPConnections.GridColor = System.Drawing.Color.GhostWhite;
+            this.gTCPConnections.GridSize = ((ushort)(10));
+            this.gTCPConnections.HighQuality = true;
+            this.gTCPConnections.LineInterval = ((ushort)(3));
+            this.gTCPConnections.Location = new System.Drawing.Point(0, 18);
+            this.gTCPConnections.MaxLabel = "";
+            this.gTCPConnections.MaxPeekMagnitude = 0F;
+            this.gTCPConnections.MinLabel = " ";
+            this.gTCPConnections.MinPeekMagnitude = 0F;
+            this.gTCPConnections.Name = "gTCPConnections";
+            this.gTCPConnections.ShowGrid = true;
+            this.gTCPConnections.ShowInfoAvg = false;
+            this.gTCPConnections.ShowLabels = true;
+            this.gTCPConnections.Size = new System.Drawing.Size(175, 143);
+            this.gTCPConnections.TabIndex = 1;
+            this.gTCPConnections.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
+            this.gTCPConnections.Units = "";
             // 
             // gTCPResponsesProc
             // 
@@ -229,13 +307,14 @@
             this.gTCPResponsesProc.LineInterval = ((ushort)(3));
             this.gTCPResponsesProc.Location = new System.Drawing.Point(0, 18);
             this.gTCPResponsesProc.MaxLabel = "";
-            this.gTCPResponsesProc.MaxPeekMagnitude = 100F;
+            this.gTCPResponsesProc.MaxPeekMagnitude = 50F;
             this.gTCPResponsesProc.MinLabel = " ";
             this.gTCPResponsesProc.MinPeekMagnitude = 0F;
             this.gTCPResponsesProc.Name = "gTCPResponsesProc";
             this.gTCPResponsesProc.ShowGrid = true;
+            this.gTCPResponsesProc.ShowInfoAvg = true;
             this.gTCPResponsesProc.ShowLabels = true;
-            this.gTCPResponsesProc.Size = new System.Drawing.Size(266, 143);
+            this.gTCPResponsesProc.Size = new System.Drawing.Size(183, 143);
             this.gTCPResponsesProc.TabIndex = 1;
             this.gTCPResponsesProc.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
             this.gTCPResponsesProc.Units = "msec";
@@ -260,8 +339,9 @@
             this.gTCPResponsesSend.MinPeekMagnitude = 0F;
             this.gTCPResponsesSend.Name = "gTCPResponsesSend";
             this.gTCPResponsesSend.ShowGrid = true;
+            this.gTCPResponsesSend.ShowInfoAvg = true;
             this.gTCPResponsesSend.ShowLabels = true;
-            this.gTCPResponsesSend.Size = new System.Drawing.Size(280, 143);
+            this.gTCPResponsesSend.Size = new System.Drawing.Size(180, 143);
             this.gTCPResponsesSend.TabIndex = 1;
             this.gTCPResponsesSend.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
             this.gTCPResponsesSend.Units = "msec";
@@ -280,6 +360,8 @@
             this.Text = "RK.Server";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmDashboardFormClosing);
             this.pMain.ResumeLayout(false);
+            this.pTCPConnections.ResumeLayout(false);
+            this.panel7.ResumeLayout(false);
             this.pTCPResponsesProc.ResumeLayout(false);
             this.panel5.ResumeLayout(false);
             this.pOutput.ResumeLayout(false);
@@ -309,6 +391,11 @@
         private System.Windows.Forms.Label hTCPResponsesProc;
         private System.Windows.Forms.Panel panel6;
         private Controls.Graphing.PerfGraph gTCPResponsesProc;
+        private System.Windows.Forms.Panel pTCPConnections;
+        private System.Windows.Forms.Panel panel7;
+        private System.Windows.Forms.Label hTCPConnections;
+        private System.Windows.Forms.Panel panel8;
+        private Controls.Graphing.PerfGraph gTCPConnections;
     }
 }
 

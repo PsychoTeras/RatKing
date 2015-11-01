@@ -69,7 +69,7 @@
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Classes\Common\SparseList.cs" />
-    <Compile Include="Classes\LogEventType.cs" />
+    <Compile Include="Host\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />
     <Compile Include="Classes\Units\PlayerDataEx.cs" />
     <Compile Include="Map\ClientMap.cs" />
@@ -83,6 +83,11 @@
     <Compile Include="Classes\Common\ShortSize.cs" />
     <Compile Include="Classes\Common\TinySize.cs" />
     <Compile Include="Map\IBaseMap.cs" />
+    <Compile Include="Net\TCP2\BufferManager.cs" />
+    <Compile Include="Net\TCP2\ClientToken.cs" />
+    <Compile Include="Classes\Common\Pool.cs" />
+    <Compile Include="Net\TCP2\TCPServer2.cs" />
+    <Compile Include="Net\TCP2\TCPServerSettings.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
     <Compile Include="Win32\Compression.cs" />
     <Compile Include="Const\ConstMap.cs" />

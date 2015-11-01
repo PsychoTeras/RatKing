@@ -5,7 +5,7 @@ namespace RK.Common.Proto.Responses
 {
     public unsafe sealed class RUserLogin : BaseResponse
     {
-        public long SessionToken;
+        public int SessionToken;
 
         public override PacketType Type
         {
@@ -22,7 +22,7 @@ namespace RK.Common.Proto.Responses
             get
             {
                 return
-                    sizeof(long);
+                    sizeof(int);
             }
         }
 
