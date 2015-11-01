@@ -212,9 +212,9 @@ namespace RK.Common.Net.TCP2.Server
             StartReceive(clientToken);
         }
 
-        public void Send(int clientId, IList<ITransferable> packets)
+        public void Send(int clientId, ITransferable[] packets)
         {
-            int dataSize = 0, cnt = packets.Count;
+            int dataSize = 0, cnt = packets.Length;
             if (cnt == 1)
             {
                 Send(clientId, packets[0]);

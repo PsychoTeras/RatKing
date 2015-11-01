@@ -1,6 +1,6 @@
 ﻿using RK.Common.Proto;
 
-namespace RK.Common.Host
+namespace RK.Common.Host.Validators
 {
     internal abstract class BaseValidator
     {

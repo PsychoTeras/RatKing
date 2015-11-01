@@ -126,7 +126,7 @@
     <Compile Include="Proto\Packets\PUserLogin.cs" />
     <Compile Include="Proto\Responses\RUserEnter.cs" />
     <Compile Include="Proto\Responses\RUserLogin.cs" />
-    <Compile Include="Host\BaseValidator.cs" />
+    <Compile Include="Host\Validators\BaseValidator.cs" />
     <Compile Include="Win32\HRTimer.cs" />
     <Compile Include="Win32\Memory.cs" />
     <Compile Include="Win32\Serializer.cs" />
