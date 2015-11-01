@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
+using RK.Common.Classes.Common;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2
+namespace RK.Common.Net.TCP2.Server
 {
     internal class ClientToken
     {
@@ -26,7 +26,7 @@ namespace RK.Common.Net.TCP2
         public int BytesSentAlreadyCount;
         public byte[] DataToSend;
         public object ObjectToSend;
-        public AutoResetEvent SendSync;
+        public HybridLock SendSync;
 
         public volatile bool Closed;
 
@@ -41,7 +41,7 @@ namespace RK.Common.Net.TCP2
             BufferOffsetSend = sendEvent.Offset;
 
             ReceivedData = new MemoryStream();
-            SendSync = new AutoResetEvent(true);
+            SendSync = new HybridLock();
         }
 
         public void Prepare(SocketAsyncEventArgs e)

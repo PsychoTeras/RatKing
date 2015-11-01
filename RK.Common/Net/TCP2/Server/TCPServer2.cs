@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -8,10 +7,8 @@ using RK.Common.Classes.Common;
 using RK.Common.Net.TCP;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2
+namespace RK.Common.Net.TCP2.Server
 {
-    using EventsPair = Pair<SocketAsyncEventArgs, SocketAsyncEventArgs>;
-
     internal class TCPServer2 : TCPBase
     {
 
@@ -129,8 +126,7 @@ namespace RK.Common.Net.TCP2
 #endif
 
             SocketAsyncEventArgs e = _poolOfAcceptEventArgs.Pop();
-            bool willRaiseEvent = _listenSocket.AcceptAsync(e);
-            if (!willRaiseEvent)
+            if (!_listenSocket.AcceptAsync(e))
             {
                 ProcessAccept(this, e);
             }
@@ -174,8 +170,7 @@ namespace RK.Common.Net.TCP2
             if (_disposed) return;
 #endif
 
-            bool willRaiseEvent = clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent);
-            if (!willRaiseEvent)
+            if (!clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
                 ProcessReceive(this, clientToken.ReceiveEvent);
             }
@@ -207,7 +202,7 @@ namespace RK.Common.Net.TCP2
                     List<BasePacket> packets = clientToken.ProcessReceivedData();
 
                     //Fire ClientDataReceived event
-                    if (ClientDataReceived != null && packets.Count > 0)
+                    if (packets.Count > 0 && ClientDataReceived != null)
                     {
                         ClientDataReceived(clientToken.Id, packets);
                     }
@@ -217,46 +212,50 @@ namespace RK.Common.Net.TCP2
             StartReceive(clientToken);
         }
 
-        public void Send(int clientId, IEnumerable<ITransferable> packets)
+        public void Send(int clientId, IList<ITransferable> packets)
         {
-            int dataSize = 0, idx = 0, cnt = packets.Count();
+            int dataSize = 0, cnt = packets.Count;
             if (cnt == 1)
             {
-                Send(clientId, packets.First());
+                Send(clientId, packets[0]);
                 return;
             }
 
             //Serialize all packets to one
             byte[][] data = new byte[cnt][];
-            foreach (byte[] byteBuffer in packets.Select(packet => packet.Serialize()))
+            for (int i = 0; i < cnt; i++)
             {
-                data[idx++] = byteBuffer;
+                byte[] byteBuffer = packets[i].Serialize();
+                data[i] = byteBuffer;
                 dataSize += byteBuffer.Length;
             }
 
-            idx = 0;
+            int idx = 0;
             byte[] dataToSend = new byte[dataSize];
             for (int i = 0; i < cnt; i++)
             {
                 byte[] array = data[i];
                 int length = array.Length;
-                Array.Copy(array, 0, dataToSend, idx, length);
+                Buffer.BlockCopy(array, 0, dataToSend, idx, length);
                 idx += length;
             }
 
             //Get a client
-//            ClientToken clientToken = _clients[clientId];
-//            clientToken.SendSync.WaitOne();
-            
-//            if (clientToken.Closed) return;
+            ClientToken clientToken = _clients[clientId];
+            clientToken.SendSync.WaitOne();
+            if (clientToken.Closed)
+            {
+                clientToken.SendSync.Set();
+                return;
+            }
 
             //Prepare data to send
-//            clientToken.DataToSend = dataToSend;
-//            clientToken.SendBytesRemainingCount = dataToSend.Length;
-//            clientToken.ObjectToSend = packets;
+            clientToken.DataToSend = dataToSend;
+            clientToken.SendBytesRemainingCount = dataToSend.Length;
+            clientToken.ObjectToSend = packets;
 
             //Send data
-//            StartSend(clientToken, true);
+            StartSend(clientToken, true);
         }
 
         public void Send(int clientId, ITransferable packet)
@@ -267,8 +266,11 @@ namespace RK.Common.Net.TCP2
             //Get a client
             ClientToken clientToken = _clients[clientId];
             clientToken.SendSync.WaitOne();
-            
-            if (clientToken.Closed) return;
+            if (clientToken.Closed)
+            {
+                clientToken.SendSync.Set();
+                return;
+            }
 
             //Prepare data to send
             clientToken.DataToSend = dataToSend;
@@ -284,8 +286,11 @@ namespace RK.Common.Net.TCP2
             //Get a client
             ClientToken clientToken = _clients[clientId];
             clientToken.SendSync.WaitOne();
-
-            if (clientToken.Closed) return;
+            if (clientToken.Closed)
+            {
+                clientToken.SendSync.Set();
+                return;
+            }
 
             //Prepare data to send
             clientToken.DataToSend = dataToSend;
@@ -321,8 +326,7 @@ namespace RK.Common.Net.TCP2
                     clientToken.SendEvent.Buffer, clientToken.BufferOffsetSend, _settings.BufferSize);
             }
 
-            bool willRaiseEvent = clientToken.SendEvent.AcceptSocket.SendAsync(clientToken.SendEvent);
-            if (!willRaiseEvent)
+            if (!clientToken.SendEvent.AcceptSocket.SendAsync(clientToken.SendEvent))
             {
                 ProcessSend(this, clientToken.SendEvent);
             }

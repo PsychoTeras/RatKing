@@ -5,26 +5,25 @@ namespace RK.Common.Win32
 {
     public static unsafe class Memory
     {
-        private const int HEAP_ZERO_MEMORY = 0x00000008;
+        //private const int HEAP_ZERO_MEMORY = 0x00000008;
 
-        [DllImport("kernel32")]
-        private static extern int GetProcessHeap();
+        //[DllImport("kernel32")]
+        //private static extern int GetProcessHeap();
 
-        [DllImport("kernel32")]
-        private static extern void* HeapAlloc(int hHeap, int flags, int size);
+        //[DllImport("kernel32")]
+        //private static extern void* HeapAlloc(int hHeap, int flags, int size);
 
-        [DllImport("kernel32")]
-        private static extern bool HeapFree(int hHeap, int flags, void* block);
+        //[DllImport("kernel32")]
+        //private static extern bool HeapFree(int hHeap, int flags, void* block);
 
-        [DllImport("kernel32")]
-        private static extern void* HeapReAlloc(int hHeap, int flags, void* block, int size);
+        //[DllImport("kernel32")]
+        //private static extern void* HeapReAlloc(int hHeap, int flags, void* block, int size);
 
-        [DllImport("kernel32")]
-        private static extern int HeapSize(int hHeap, int flags, void* block);
+        //[DllImport("kernel32")]
+        //private static extern bool HeapSetInformation(void* handle, int informationClass,
+        //    void* information, uint informationLength);
 
-        [DllImport("kernel32")]
-        private static extern bool HeapSetInformation(void* handle, int informationClass,
-            void* information, uint informationLength);
+        //private static int _ph = GetProcessHeap();
 
         [DllImport("kernel32", EntryPoint = "RtlZeroMemory")]
         public static extern void Zero(void* dest, int size);
@@ -38,44 +37,35 @@ namespace RK.Common.Win32
         [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl)]
         public static extern void* Set(void* dest, int c, int count);
 
-        private static int _ph = GetProcessHeap();
-
         public static void* HeapAlloc(int size, bool zeroMem = true)
         {
-            void* result = HeapAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, size);
-            if (result == null)
-            {
-                throw new OutOfMemoryException();
-            }
-            return result;
+            return Marshal.AllocHGlobal(size).ToPointer();
+            //void* result = HeapAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, size);
+            //if (result == null)
+            //{
+            //    throw new OutOfMemoryException();
+            //}
+            //return result;
         }
 
         public static void HeapFree(void* block)
         {
-            if (block != null && !HeapFree(_ph, 0, block))
-            {
-                throw new InvalidOperationException();
-            }
+            Marshal.FreeHGlobal(new IntPtr(block));
+            //if (block != null && !HeapFree(_ph, 0, block))
+            //{
+            //    throw new InvalidOperationException();
+            //}
         }
 
         public static void* HeapReAlloc(void* block, int size, bool zeroMem = true)
         {
-            void* result = HeapReAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, block, size);
-            if (result == null)
-            {
-                throw new OutOfMemoryException();
-            }
-            return result;
-        }
-
-        public static int HeapSizeOf(void* block)
-        {
-            int result = HeapSize(_ph, 0, block);
-            if (result == -1)
-            {
-                throw new InvalidOperationException();
-            }
-            return result;
+            return Marshal.ReAllocHGlobal(new IntPtr(block), new IntPtr(size)).ToPointer();
+            //void* result = HeapReAlloc(_ph, zeroMem ? HEAP_ZERO_MEMORY : 0, block, size);
+            //if (result == null)
+            //{
+            //    throw new OutOfMemoryException();
+            //}
+            //return result;
         }
 
         public static void HeapCopy(void* src, void* dst, int count)

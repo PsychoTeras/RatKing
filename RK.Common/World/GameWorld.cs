@@ -249,10 +249,10 @@ namespace RK.Common.World
 
             ushort startX = (ushort) Math.Max(dStartX, 0);
             ushort startY = (ushort) Math.Max(dStartY, 0);
-            ushort width = (ushort) Math.Ceiling(startX + dWidth > mapWidth
+            ushort width = (ushort) Math.Floor(startX + dWidth > mapWidth
                 ? dWidth - (startX + dWidth - mapWidth)
                 : dWidth);
-            ushort height = (ushort) Math.Ceiling(startY + dHeight > mapHeight
+            ushort height = (ushort) Math.Floor(startY + dHeight > mapHeight
                 ? dHeight - (startY + dHeight - mapHeight)
                 : dHeight);
 

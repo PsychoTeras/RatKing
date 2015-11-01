@@ -145,7 +145,7 @@ namespace RK.Common.Proto
                     int compressedLength = compressed.Length;
                     packetSize = BASE_SIZE + compressedLength;
                     Array.Resize(ref data, packetSize);
-                    Array.Copy(compressed, 0, data, BASE_SIZE, compressedLength);
+                    Buffer.BlockCopy(compressed, 0, data, BASE_SIZE, compressedLength);
                     fixed (byte* bNewData = data)
                     {
                         (*(int*)bNewData) = packetSize;

@@ -1,5 +1,6 @@
 ﻿#define UNSAFE_ARRAY
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace RK.Console
     unsafe class Program
     {
         private const int THREADS_COUNT = 8;
-        private const int ITERATIONS_COUNT = 1000000;
+        private const int ITERATIONS_COUNT = 100000;
 
         private static WaitHandle[] _tEvents;
 
@@ -83,14 +84,14 @@ namespace RK.Console
             BasePacket.Deserialize(ps, ps.Length, 0, out psize);
 
             HRTimer timer = HRTimer.CreateAndStart();
-
             Parallel.For(0, ITERATIONS_COUNT, i =>
+//            for (int i = 0; i < ITERATIONS_COUNT; i++)
             {
                 p.Setup();
                 ps = p.Serialize();
                 BasePacket.Deserialize(ps, ps.Length, 0, out psize);
             });
-
+//            }
             System.Console.WriteLine(timer.StopWatch());
         }
 
@@ -248,9 +249,162 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
+        internal static void TestDataCopyPerf()
+        {
+            const int buffersSize = 100;
+            const int buffersCount = ITERATIONS_COUNT / buffersSize;
+
+            byte[] srcData = new byte[ITERATIONS_COUNT];
+            for (int i = 0; i < srcData.Length; i++)
+            {
+                srcData[i] = (byte) i;
+            }
+
+            byte[][] smallBuffers = new byte[buffersCount][];
+            for (int i = 0; i < buffersCount; i++)
+            {
+                smallBuffers[i] = new byte[buffersSize];
+            }
+
+            System.Console.WriteLine("Array.Copy:");
+            HRTimer timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i*buffersSize;
+                Array.Copy(srcData, srcIdx, smallBuffers[i], 0, buffersSize);
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("Buffer.BlockCopy:");
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                Buffer.BlockCopy(srcData, srcIdx, smallBuffers[i], 0, buffersSize);
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("Marshal.Copy:");
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i])
+                {
+                    Marshal.Copy(srcData, srcIdx, new IntPtr(bDestData), buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("memcpy:");
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i]) fixed (byte* bSrcData = srcData)
+                {
+                    Memory.Copy(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("memcpy2:");
+            timer = HRTimer.CreateAndStart();
+            fixed (byte* bSrcData = srcData)
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i]) 
+                {
+                    Memory.Copy(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("memmove:");
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i]) fixed (byte* bSrcData = srcData)
+                {
+                    Memory.Move(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("memmove2:");
+            timer = HRTimer.CreateAndStart();
+            fixed (byte* bSrcData = srcData)
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i])
+                {
+                    Memory.Move(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("CustomCopy:");
+            timer = HRTimer.CreateAndStart();
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i]) fixed (byte* bSrcData = srcData)
+                {
+                    CustomCopy(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+
+            System.Console.WriteLine("CustomCopy2:");
+            timer = HRTimer.CreateAndStart();
+            fixed (byte* bSrcData = srcData)
+            for (int i = 0; i < buffersCount; i++)
+            {
+                int srcIdx = i * buffersSize;
+                fixed (byte* bDestData = smallBuffers[i])
+                {
+                    CustomCopy(bDestData, &bSrcData[srcIdx], buffersSize);
+                }
+            }
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
+        private static void CustomCopy(void* dest, void* src, int count)
+        {
+            int block = count >> 3;
+
+            long* pDest = (long*) dest;
+            long* pSrc = (long*) src;
+
+            for (int i = 0; i < block; i++)
+            {
+                *pDest = *pSrc;
+                pDest++;
+                pSrc++;
+            }
+            dest = pDest;
+            src = pSrc;
+            count = count - (block << 3);
+
+            if (count > 0)
+            {
+                byte* pDestB = (byte*) dest;
+                byte* pSrcB = (byte*) src;
+                for (int i = 0; i < count; i++)
+                {
+                    *pDestB = *pSrcB;
+                    pDestB++;
+                    pSrcB++;
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
-            TestMapWindowGetPerf();
+            TestDataCopyPerf();
             System.Console.ReadKey();
         }
     }

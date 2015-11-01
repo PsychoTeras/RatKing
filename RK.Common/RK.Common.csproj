@@ -68,6 +68,7 @@
     <Compile Include="Algo\Engine.cs" />
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
+    <Compile Include="Classes\Common\HybridLock.cs" />
     <Compile Include="Classes\Common\SparseList.cs" />
     <Compile Include="Host\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />
@@ -84,10 +85,10 @@
     <Compile Include="Classes\Common\TinySize.cs" />
     <Compile Include="Map\IBaseMap.cs" />
     <Compile Include="Net\TCP2\BufferManager.cs" />
-    <Compile Include="Net\TCP2\ClientToken.cs" />
+    <Compile Include="Net\TCP2\Server\ClientToken.cs" />
     <Compile Include="Classes\Common\Pool.cs" />
-    <Compile Include="Net\TCP2\TCPServer2.cs" />
-    <Compile Include="Net\TCP2\TCPServerSettings.cs" />
+    <Compile Include="Net\TCP2\Server\TCPServer2.cs" />
+    <Compile Include="Net\TCP2\Server\TCPServerSettings.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
     <Compile Include="Win32\Compression.cs" />
     <Compile Include="Const\ConstMap.cs" />
@@ -130,7 +131,9 @@
     <Compile Include="Win32\Memory.cs" />
     <Compile Include="Win32\Serializer.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Net\TCP2\Client\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
