@@ -78,7 +78,6 @@ namespace RK.Client.Forms
                             if (!bot.Connected)
                             {
                                 bot.Connect();
-                                Thread.Sleep(3);
                             }
                             bot.DoSimulate();
                             Thread.Sleep(3);

@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using RK.Common.Classes.Common;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2.Server
+namespace RK.Common.Net.TCP2
 {
     internal class ClientToken
     {
@@ -58,7 +58,7 @@ namespace RK.Common.Net.TCP2.Server
             ReceivedData.Write(e.Buffer, BufferOffsetReceive, ReceivedDataLength);
         }
 
-        public List<BasePacket> ProcessReceivedData()
+        public List<BasePacket> ProcessReceivedDataReq()
         {
             List<BasePacket> packets = new List<BasePacket>();
 
@@ -71,6 +71,37 @@ namespace RK.Common.Net.TCP2.Server
             do
             {
                 packet = BasePacket.Deserialize(buf, ReceivedDataLength, pos, out rSize);
+                if (rSize > 0 && packet != null)
+                {
+                    packets.Add(packet);
+                    pos += rSize;
+                }
+            } while (rSize > 0 && packet != null);
+
+            //Shrink stream
+            if (pos > 0)
+            {
+                ReceivedDataLength -= pos;
+                Buffer.BlockCopy(buf, pos, buf, 0, ReceivedDataLength);
+                ReceivedData.SetLength(ReceivedDataLength);
+            }
+
+            return packets;
+        }
+
+        public List<BaseResponse> ProcessReceivedDataRsp()
+        {
+            List<BaseResponse> packets = new List<BaseResponse>();
+
+            //Parse packets
+            int rSize;
+            int pos = 0;
+
+            byte[] buf = ReceivedData.GetBuffer();
+            BaseResponse packet;
+            do
+            {
+                packet = BaseResponse.Deserialize(buf, ReceivedDataLength, pos, out rSize);
                 if (rSize > 0 && packet != null)
                 {
                     packets.Add(packet);

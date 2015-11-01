@@ -4,7 +4,7 @@ namespace RK.Common.Classes.Common
 {
     internal sealed class Pool<T>
     {
-        private Stack<T> _pool;
+        private readonly Stack<T> _pool;
         
         public Pool(int capacity)
         {

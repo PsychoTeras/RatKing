@@ -14,11 +14,11 @@ namespace RK.Common.Net.TCP2.Server
 
 #region Delegates
 
-        public delegate void OnClientConnetion(int clientId);
+        public delegate void OnClientConnection(int clientId);
         public delegate void OnClientDataReceived(int clientId, List<BasePacket> packets);
-        public delegate void OnClientDataReceiveError(int clientId);
+        public delegate void OnClientDataReceiveError(int clientId, SocketError error);
         public delegate void OnClientDataSent(int clientId, object packet);
-        public delegate void OnClientDataSendError(int clientId, object packet);
+        public delegate void OnClientDataSendError(int clientId, object packet, SocketError error);
 
 #endregion
 
@@ -42,8 +42,8 @@ namespace RK.Common.Net.TCP2.Server
 
 #region Events
 
-        public event OnClientConnetion ClientConnected;
-        public event OnClientConnetion ClientDisonnected;
+        public event OnClientConnection ClientConnected;
+        public event OnClientConnection ClientDisonnected;
         public event OnClientDataReceived ClientDataReceived;
         public event OnClientDataReceiveError ClientDataReceiveError;
         public event OnClientDataSent ClientDataSent;
@@ -185,7 +185,7 @@ namespace RK.Common.Net.TCP2.Server
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
-                    ClientDataReceiveError(clientToken.Id);
+                    ClientDataReceiveError(clientToken.Id, e.SocketError);
                 }
 
                 CloseClientSocket(e);
@@ -199,7 +199,7 @@ namespace RK.Common.Net.TCP2.Server
                 if (clientToken.ReceivedDataLength != 0)
                 {
                     //Parse received data for packets
-                    List<BasePacket> packets = clientToken.ProcessReceivedData();
+                    List<BasePacket> packets = clientToken.ProcessReceivedDataReq();
 
                     //Fire ClientDataReceived event
                     if (packets.Count > 0 && ClientDataReceived != null)
@@ -217,7 +217,7 @@ namespace RK.Common.Net.TCP2.Server
             int dataSize = 0, cnt = packets.Length;
             if (cnt == 1)
             {
-                Send(clientId, packets[0]);
+                Send(clientId, packets[0].Serialize());
                 return;
             }
 
@@ -240,22 +240,8 @@ namespace RK.Common.Net.TCP2.Server
                 idx += length;
             }
 
-            //Get a client
-            ClientToken clientToken = _clients[clientId];
-            clientToken.SendSync.WaitOne();
-            if (clientToken.Closed)
-            {
-                clientToken.SendSync.Set();
-                return;
-            }
-
-            //Prepare data to send
-            clientToken.DataToSend = dataToSend;
-            clientToken.SendBytesRemainingCount = dataToSend.Length;
-            clientToken.ObjectToSend = packets;
-
             //Send data
-            StartSend(clientToken, true);
+            Send(clientId, dataToSend);
         }
 
         public void Send(int clientId, ITransferable packet)
@@ -263,22 +249,8 @@ namespace RK.Common.Net.TCP2.Server
             //Serialize data
             byte[] dataToSend = packet.Serialize();
 
-            //Get a client
-            ClientToken clientToken = _clients[clientId];
-            clientToken.SendSync.WaitOne();
-            if (clientToken.Closed)
-            {
-                clientToken.SendSync.Set();
-                return;
-            }
-
-            //Prepare data to send
-            clientToken.DataToSend = dataToSend;
-            clientToken.SendBytesRemainingCount = dataToSend.Length;
-            clientToken.ObjectToSend = packet;
-
             //Send data
-            StartSend(clientToken, true);
+            Send(clientId, dataToSend);
         }
 
         public void Send(int clientId, byte[] dataToSend)
@@ -359,7 +331,7 @@ namespace RK.Common.Net.TCP2.Server
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
-                    ClientDataSendError(clientToken.Id, clientToken.ObjectToSend);
+                    ClientDataSendError(clientToken.Id, clientToken.ObjectToSend, e.SocketError);
                 }
                 CloseClientSocket(e);
             }

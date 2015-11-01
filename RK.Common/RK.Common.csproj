@@ -85,8 +85,10 @@
     <Compile Include="Classes\Common\TinySize.cs" />
     <Compile Include="Map\IBaseMap.cs" />
     <Compile Include="Net\TCP2\BufferManager.cs" />
-    <Compile Include="Net\TCP2\Server\ClientToken.cs" />
+    <Compile Include="Net\TCP2\Client\TCPClient2.cs" />
+    <Compile Include="Net\TCP2\ClientToken.cs" />
     <Compile Include="Classes\Common\Pool.cs" />
+    <Compile Include="Net\TCP2\Client\TCPClientSettings.cs" />
     <Compile Include="Net\TCP2\Server\TCPServer2.cs" />
     <Compile Include="Net\TCP2\Server\TCPServerSettings.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
@@ -131,9 +133,7 @@
     <Compile Include="Win32\Memory.cs" />
     <Compile Include="Win32\Serializer.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Net\TCP2\Client\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
