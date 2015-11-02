@@ -342,6 +342,3 @@ namespace RK.Common.Net.TCP2.Client
 
     }
 }
- 
-
-

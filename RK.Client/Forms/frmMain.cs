@@ -374,7 +374,7 @@ namespace RK.Client.Forms
             mapCtrl.Enabled = false;
             lock (_bots)
             {
-                for (int i = 0; i < 3000; i++)
+                for (int i = 0; i < 50; i++)
                 {
                     _bots.Add(new WorldBot());
                 }
