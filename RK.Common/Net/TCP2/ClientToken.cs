@@ -30,6 +30,8 @@ namespace RK.Common.Net.TCP2
 
         public volatile bool Closed;
 
+        public ClientToken() { }
+
         public ClientToken(SocketAsyncEventArgs receiveEvent, SocketAsyncEventArgs sendEvent)
         {
             Id = _idCounter++;

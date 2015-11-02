@@ -68,8 +68,8 @@ namespace RK.Common.Net.TCP2.Server
 
             _clients = new ClientToken[_settings.MaxConnections];
             _bufferManager = new BufferManager(_settings.BufferSize, _settings.MaxConnections*2);
-            _poolOfDataEventArgs = new Pool<ClientToken>(_settings.MaxConnections);
-            _poolOfAcceptEventArgs = new Pool<SocketAsyncEventArgs>(_settings.MaxAcceptOps);
+            _poolOfDataEventArgs = new Pool<ClientToken>(_settings.MaxConnections, false);
+            _poolOfAcceptEventArgs = new Pool<SocketAsyncEventArgs>(_settings.MaxAcceptOps, false);
             _maxConnectionsEnforcer = new Semaphore(_settings.MaxConnections, _settings.MaxConnections);
         }
 
