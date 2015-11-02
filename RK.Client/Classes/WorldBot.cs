@@ -15,10 +15,7 @@ namespace RK.Client.Classes
         private int _sessionToken;
         private Random _rnd = new Random(Environment.TickCount);
 
-        public bool Connected
-        {
-            get { return _tcpClient.IsConnected; }
-        }
+        public bool Connected { get; private set; }
 
         public WorldBot()
         {
@@ -27,17 +24,22 @@ namespace RK.Client.Classes
                     ushort.MaxValue, "192.168.1.32", 15051, true
                 );
             _tcpClient = new TCPClient2(settings);
+            _tcpClient.Connected += TCPConnected;
             _tcpClient.DataReceived += TCPClientDataReceived;
         }
 
-        public void Connect()
+        private void TCPConnected()
         {
-            _tcpClient.Connect();
             TCPClientDataSend(new PUserLogin
             {
                 UserName = "PsychoTeras",
                 Password = "password"
             });
+        }
+
+        public void Connect()
+        {
+            _tcpClient.Connect();
         }
 
         private void TCPClientDataSend(BasePacket packet)
@@ -60,6 +62,9 @@ namespace RK.Client.Classes
         {
             switch (e.Type)
             {
+                case PacketType.UserEnter:
+                    Connected = true;
+                    break;
                 case PacketType.UserLogin:
                     RUserLogin userLogin = (RUserLogin) e;
                     _sessionToken = userLogin.SessionToken;

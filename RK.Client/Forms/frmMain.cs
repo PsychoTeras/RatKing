@@ -65,27 +65,7 @@ namespace RK.Client.Forms
                 BringWindowToTop(_server.MainWindowHandle);
             }
 
-            _bots = new List<WorldBot>();
-            ThreadPool.QueueUserWorkItem(o =>
-            {
-                Random rnd = new Random(Environment.TickCount);
-                while (true)
-                {
-                    lock (_bots)
-                    {
-                        foreach (WorldBot bot in _bots)
-                        {
-                            if (!bot.Connected)
-                            {
-                                bot.Connect();
-                            }
-                            bot.DoSimulate();
-                            Thread.Sleep(3);
-                        }
-                    }
-                    Thread.Sleep(rnd.Next(10, 100));
-                }
-            });
+            InitializeBots();
         }
 
         private bool KeyPressed(Keys keys)
@@ -360,13 +340,41 @@ namespace RK.Client.Forms
             mapCtrl.Show();
         }
 
+        private void InitializeBots()
+        {
+            _bots = new List<WorldBot>();
+            ThreadPool.QueueUserWorkItem(o =>
+            {
+                Random rnd = new Random(Environment.TickCount);
+                while (true)
+                {
+                    lock (_bots)
+                    {
+                        foreach (WorldBot bot in _bots)
+                        {
+                            if (!bot.Connected)
+                            {
+                                bot.Connect();
+                            }
+                            else
+                            {
+                                bot.DoSimulate();
+                            }
+                            Thread.Sleep(5);
+                        }
+                    }
+                    Thread.Sleep(rnd.Next(10, 100));
+                }
+            });
+        }
+
         private void BtnDoWorldStressTestClick(object sender, EventArgs e)
         {
             mapCtrl.Hide();
             mapCtrl.Enabled = false;
             lock (_bots)
             {
-                for (int i = 0; i < 500; i++)
+                for (int i = 0; i < 3000; i++)
                 {
                     _bots.Add(new WorldBot());
                 }
