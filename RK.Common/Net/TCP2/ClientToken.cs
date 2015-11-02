@@ -22,8 +22,8 @@ namespace RK.Common.Net.TCP2
         public MemoryStream ReceivedData;
         public int ReceivedDataLength;
 
-        public int SendBytesRemainingCount;
-        public int BytesSentAlreadyCount;
+        public int SendBytesRemaining;
+        public int BytesSentAlready;
         public byte[] DataToSend;
         public object ObjectToSend;
         public HybridLock SendSync;
@@ -52,10 +52,10 @@ namespace RK.Common.Net.TCP2
             Closed = false;
         }
 
-        public void AcceptData(SocketAsyncEventArgs e)
+        public void AcceptData(SocketAsyncEventArgs e, int bytesTransferred)
         {
-            ReceivedDataLength += e.BytesTransferred;
-            ReceivedData.Write(e.Buffer, BufferOffsetReceive, ReceivedDataLength);
+            ReceivedDataLength += bytesTransferred;
+            ReceivedData.Write(e.Buffer, BufferOffsetReceive, bytesTransferred);
         }
 
         public List<BasePacket> ProcessReceivedDataReq()
@@ -93,11 +93,10 @@ namespace RK.Common.Net.TCP2
         {
             List<BaseResponse> packets = new List<BaseResponse>();
 
-            //Parse packets
-            int rSize;
-            int pos = 0;
-
             byte[] buf = ReceivedData.GetBuffer();
+
+            //Parse packets
+            int rSize, pos = 0;
             BaseResponse packet;
             do
             {
@@ -116,7 +115,7 @@ namespace RK.Common.Net.TCP2
                 Buffer.BlockCopy(buf, pos, buf, 0, ReceivedDataLength);
                 ReceivedData.SetLength(ReceivedDataLength);
             }
-
+        
             return packets;
         }
 
@@ -129,7 +128,7 @@ namespace RK.Common.Net.TCP2
         {
             DataToSend = null;
             ObjectToSend = null;
-            SendBytesRemainingCount = BytesSentAlreadyCount = 0;
+            SendBytesRemaining = BytesSentAlready = 0;
             SendSync.Set();
         }
 

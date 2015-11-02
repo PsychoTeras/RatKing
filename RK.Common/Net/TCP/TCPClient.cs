@@ -160,7 +160,7 @@ namespace RK.Common.Net.TCP
         
         #region Data
 
-        public bool SendData(ITransferable packet, object userData = null)
+        public bool Send(ITransferable packet, object userData = null)
         {
             if (_connected == 0)
             {

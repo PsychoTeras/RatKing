@@ -300,7 +300,7 @@ namespace RK.Common.Net.TCP
 
         #region Data
 
-        public bool SendData(long clientId, ITransferable packet)
+        public bool Send(long clientId, ITransferable packet)
         {
             TCPClientEx tcpClient = GetConnectedClient(clientId);
             if (tcpClient == null)
@@ -308,19 +308,19 @@ namespace RK.Common.Net.TCP
                 OutLogMessage(string.Format("SRV DATA SEND ERROR, client ID is invalid: {0}", clientId));
                 return false;
             }
-            return SendData(tcpClient, packet);
+            return Send(tcpClient, packet);
         }
 
         public bool SendAll(ITransferable packet, object userData = null)
         {
             lock (_clientsData)
             {
-                Parallel.ForEach(_connectedClients.Values, c => SendData(c, packet, userData));
+                Parallel.ForEach(_connectedClients.Values, c => Send(c, packet, userData));
                 return true;
             }
         }
 
-        public bool SendData(TCPClientEx tcpClient, ITransferable packet, object userData = null)
+        public bool Send(TCPClientEx tcpClient, ITransferable packet, object userData = null)
         {
             if (!tcpClient.Connected)
             {
@@ -352,7 +352,7 @@ namespace RK.Common.Net.TCP
             return false;
         }
 
-        public bool SendData(TCPClientEx tcpClient, IEnumerable<ITransferable> packets, object userData = null)
+        public bool Send(TCPClientEx tcpClient, IEnumerable<ITransferable> packets, object userData = null)
         {
             if (!tcpClient.Connected)
             {

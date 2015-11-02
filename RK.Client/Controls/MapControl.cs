@@ -396,7 +396,7 @@ namespace RK.Client.Controls
                 Point pos = new Point(m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16);
                 if (WindowFromPoint(pos) == Handle)
                 {
-                    OnMouseWheel(m.WParam.ToInt32() > 0 ? 1 : -1);
+                    OnMouseWheel(m.WParam.ToInt64() > 0 ? 1 : -1);
                     return true;
                 }
             }

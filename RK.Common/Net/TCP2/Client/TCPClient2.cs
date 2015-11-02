@@ -166,7 +166,7 @@ namespace RK.Common.Net.TCP2.Client
 
             //Prepare data to send
             _clientToken.DataToSend = dataToSend;
-            _clientToken.SendBytesRemainingCount = dataToSend.Length;
+            _clientToken.SendBytesRemaining = dataToSend.Length;
             _clientToken.ObjectToSend = dataToSend;
 
             //Send data
@@ -178,19 +178,19 @@ namespace RK.Common.Net.TCP2.Client
 #if DEBUG
             if (_disposed) return;
 #endif
-            if (_clientToken.SendBytesRemainingCount == 0) return;
+            if (_clientToken.SendBytesRemaining == 0) return;
 
-            if (_clientToken.SendBytesRemainingCount <= _settings.BufferSize)
+            if (_clientToken.SendBytesRemaining <= _settings.BufferSize)
             {
-                _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _clientToken.SendBytesRemainingCount);
-                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlreadyCount,
+                _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _clientToken.SendBytesRemaining);
+                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
                     _sendEvent.Buffer, _clientToken.BufferOffsetSend,
-                    _clientToken.SendBytesRemainingCount);
+                    _clientToken.SendBytesRemaining);
             }
             else
             {
                 _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _settings.BufferSize);
-                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlreadyCount,
+                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
                     _sendEvent.Buffer, _clientToken.BufferOffsetSend, _settings.BufferSize);
             }
 
@@ -204,8 +204,8 @@ namespace RK.Common.Net.TCP2.Client
         {
             if (e.SocketError == SocketError.Success)
             {
-                _clientToken.SendBytesRemainingCount = _clientToken.SendBytesRemainingCount - e.BytesTransferred;
-                if (_clientToken.SendBytesRemainingCount == 0)
+                _clientToken.SendBytesRemaining = _clientToken.SendBytesRemaining - e.BytesTransferred;
+                if (_clientToken.SendBytesRemaining == 0)
                 {
                     _clientToken.ResetSend();
 
@@ -217,7 +217,7 @@ namespace RK.Common.Net.TCP2.Client
                 }
                 else
                 {
-                    _clientToken.BytesSentAlreadyCount += e.BytesTransferred;
+                    _clientToken.BytesSentAlready += e.BytesTransferred;
                     StartSend(false);
                 }
             }
@@ -258,9 +258,10 @@ namespace RK.Common.Net.TCP2.Client
                 return;
             }
 
-            if (e.BytesTransferred != 0)
+            int bytesTransferred = e.BytesTransferred;
+            if (bytesTransferred != 0)
             {
-                _clientToken.AcceptData(e);
+                _clientToken.AcceptData(e, bytesTransferred);
 
                 if (_clientToken.ReceivedDataLength != 0)
                 {
