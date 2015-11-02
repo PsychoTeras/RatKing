@@ -30,7 +30,6 @@ namespace RK.Common.Net.TCP2.Client
         public event Action Disconnected;
 
 #endregion
-
 #region Private fields
 
         private BufferManager _bufferManager;
@@ -77,6 +76,10 @@ namespace RK.Common.Net.TCP2.Client
         {
             switch (e.LastOperation)
             {
+                case SocketAsyncOperation.Connect:
+                    ProcessConnect(e);
+                    break;
+
                 case SocketAsyncOperation.Receive:
                     ProcessReceive(e);
                     break;
@@ -97,23 +100,25 @@ namespace RK.Common.Net.TCP2.Client
         public void Connect()
         {
             _connectEvent = new SocketAsyncEventArgs();
-            _connectEvent.Completed += ProcessConnect;
+            _connectEvent.Completed += IOCompleted;
             _connectEvent.RemoteEndPoint = _settings.EndPoint;
-            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, 
-                ProtocolType.Tcp);
+            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork, 
+                SocketType.Stream, ProtocolType.Tcp);
 
             if (!_connectEvent.AcceptSocket.ConnectAsync(_connectEvent))
             {
-                ProcessConnect(this, _connectEvent);
+                ProcessConnect(_connectEvent);
             }
         }
 
-        private void ProcessConnect(object sender, SocketAsyncEventArgs e)
+        private void ProcessConnect(SocketAsyncEventArgs e)
         {
             if (e.SocketError == SocketError.Success)
             {
-                _clientToken.Prepare(e);
+                _clientToken.AcceptConnection(e);
                 DisposeEventObject(ref _connectEvent);
+
+                StartReceive();
 
                 IsConnected = true;
 
@@ -275,6 +280,15 @@ namespace RK.Common.Net.TCP2.Client
 
         private void StartDisconnect(SocketAsyncEventArgs e)
         {
+            if (e.SocketError == SocketError.ConnectionReset)
+            {
+                return;
+            }
+
+#if DEBUG
+            if (_disposed) return;
+#endif
+
             e.AcceptSocket.Shutdown(SocketShutdown.Both);
             if (!e.AcceptSocket.DisconnectAsync(e))
             {
@@ -287,14 +301,14 @@ namespace RK.Common.Net.TCP2.Client
             e.AcceptSocket.Close();
         }
 
-        private void CloseSocket(Socket theSocket)
+        private void CloseSocket(Socket socker)
         {
             try
             {
-                theSocket.Shutdown(SocketShutdown.Both);
+                socker.Shutdown(SocketShutdown.Both);
             }
             catch { }
-            theSocket.Close();
+            socker.Close();
 
             IsConnected = false;
 
@@ -317,6 +331,7 @@ namespace RK.Common.Net.TCP2.Client
         public override void Dispose()
         {
             _disposed = true;
+            IsConnected = false;
             DisposeEventObject(ref _connectEvent);
             DisposeEventObject(ref _receiveEvent);
             DisposeEventObject(ref _sendEvent);

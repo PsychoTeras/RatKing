@@ -44,7 +44,7 @@ namespace RK.Common.Net.TCP2
             SendSync = new HybridLock();
         }
 
-        public void Prepare(SocketAsyncEventArgs e)
+        public void AcceptConnection(SocketAsyncEventArgs e)
         {
             ReceiveEvent.AcceptSocket = e.AcceptSocket;
             SendEvent.AcceptSocket = e.AcceptSocket;
@@ -54,7 +54,7 @@ namespace RK.Common.Net.TCP2
 
         public void AcceptData(SocketAsyncEventArgs e)
         {
-            ReceivedDataLength = e.BytesTransferred;
+            ReceivedDataLength += e.BytesTransferred;
             ReceivedData.Write(e.Buffer, BufferOffsetReceive, ReceivedDataLength);
         }
 

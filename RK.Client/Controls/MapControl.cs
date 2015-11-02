@@ -317,14 +317,9 @@ namespace RK.Client.Controls
                         ushort.MaxValue, "192.168.1.32", 15051, true
                     );
                 _tcpClient = new TCPClient2(settings);
+                _tcpClient.Connected += TCPConnected;
                 _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
-
-                TCPClientDataSend(new PUserLogin
-                {
-                    UserName = "PsychoTeras",
-                    Password = "password"
-                });
             }
             catch (Exception ex)
             {
@@ -1070,6 +1065,15 @@ namespace RK.Client.Controls
 #endregion
 
 #region TCP
+
+        private void TCPConnected()
+        {
+            TCPClientDataSend(new PUserLogin
+            {
+                UserName = "PsychoTeras",
+                Password = "password"
+            });
+        }
 
         private void TCPClientDataSend(BasePacket packet)
         {

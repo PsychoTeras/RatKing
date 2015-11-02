@@ -151,7 +151,7 @@ namespace RK.Common.Net.TCP2.Server
 #endif
 
             ClientToken clientToken = _poolOfDataEventArgs.Pop();
-            clientToken.Prepare(e);
+            clientToken.AcceptConnection(e);
 
             _poolOfAcceptEventArgs.Push(e);
 

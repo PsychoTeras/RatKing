@@ -23,6 +23,12 @@ namespace RK.Common.Net.TCP2
             _bufferBlock = new byte[_totalBytesInBuffer];
         }
 
+        public void Reset()
+        {
+            _freeIndexPool.Clear();
+            _currentIndex = 0;
+        }
+
         public bool SetBuffer(SocketAsyncEventArgs e)
         {
             if (_freeIndexPool.Count > 0)
