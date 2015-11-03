@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using RK.Common.Classes.Common;
-using RK.Common.Net.TCP2.Client;
+using RK.Common.Net.Client;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
@@ -11,7 +11,7 @@ namespace RK.Client.Classes
 {
     public sealed class WorldBot : IDisposable
     {
-        private TCPClient2 _tcpClient;
+        private TCPClient _tcpClient;
         private int _sessionToken;
         private Random _rnd = new Random(Environment.TickCount);
 
@@ -23,7 +23,7 @@ namespace RK.Client.Classes
                 (   
                     ushort.MaxValue, "192.168.1.32", 15051, true
                 );
-            _tcpClient = new TCPClient2(settings);
+            _tcpClient = new TCPClient(settings);
             _tcpClient.Connected += TCPConnected;
             _tcpClient.DataReceived += TCPClientDataReceived;
         }

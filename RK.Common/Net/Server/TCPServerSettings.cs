@@ -1,4 +1,4 @@
-﻿namespace RK.Common.Net.TCP2.Server
+﻿namespace RK.Common.Net.Server
 {
     internal class TCPServerSettings
     {

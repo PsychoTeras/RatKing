@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using RK.Common.Classes.Common;
-using RK.Common.Net.TCP;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2.Client
+namespace RK.Common.Net.Client
 {
-    public sealed class TCPClient2 : TCPBase
+    public sealed class TCPClient : IDisposable
     {
 
 #region Delegates
@@ -42,6 +41,8 @@ namespace RK.Common.Net.TCP2.Client
 
         private volatile bool _disposed;
 
+        private object _syncObjDisconnect = new object();
+
 #endregion
 
 #region Properties
@@ -52,7 +53,7 @@ namespace RK.Common.Net.TCP2.Client
 
 #region Ctor
 
-        public TCPClient2(TCPClientSettings settings)
+        public TCPClient(TCPClientSettings settings)
         {
             _settings = settings;
             _bufferManager = new BufferManager(_settings.BufferSize, 2);
@@ -89,7 +90,7 @@ namespace RK.Common.Net.TCP2.Client
                     break;
 
                 case SocketAsyncOperation.Disconnect:
-                    ProcessDisconnectAndCloseSocket(e);
+                    ProcessDisconnect(e);
                     break;
 
                 default:
@@ -102,7 +103,7 @@ namespace RK.Common.Net.TCP2.Client
             _connectEvent = new SocketAsyncEventArgs();
             _connectEvent.Completed += IOCompleted;
             _connectEvent.RemoteEndPoint = _settings.EndPoint;
-            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork, 
+            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
             if (!_connectEvent.AcceptSocket.ConnectAsync(_connectEvent))
@@ -115,17 +116,16 @@ namespace RK.Common.Net.TCP2.Client
         {
             if (e.SocketError == SocketError.Success)
             {
-                _clientToken.AcceptConnection(e);
-                DisposeEventObject(ref _connectEvent);
-
-                StartReceive();
+                _clientToken.AcceptConnection(e, false);
 
                 IsConnected = true;
+
+                StartReceive();
 
                 //Fire Connected event
                 if (Connected != null)
                 {
-                    Connected();
+                    Connected.BeginInvoke(null, null);
                 }
             }
             else
@@ -136,18 +136,64 @@ namespace RK.Common.Net.TCP2.Client
 
         private void ProcessConnectionError(SocketAsyncEventArgs e)
         {
-            if (e.SocketError != SocketError.ConnectionRefused &&
-                e.SocketError != SocketError.TimedOut &&
-                e.SocketError != SocketError.HostUnreachable)
-            {
-                CloseSocket(e.AcceptSocket);
-            }
-
             //Fire ConnectionError event
             if (ConnectionError != null)
             {
-                ConnectionError(e.SocketError);
+                ConnectionError.BeginInvoke(e.SocketError, null, null);
             }
+
+            StartDisconnect(e);
+        }
+
+        private void StartReceive()
+        {
+#if DEBUG
+            if (_disposed) return;
+#endif
+
+            _clientToken.ReceiveSync.WaitOne();
+            if (!_receiveEvent.AcceptSocket.ReceiveAsync(_receiveEvent))
+            {
+                ProcessReceive(_receiveEvent);
+            }
+        }
+        
+        private void ProcessReceive(SocketAsyncEventArgs e)
+        {
+            if (e.SocketError != SocketError.Success)
+            {
+                //Fire ClientDataReceiveError event
+                if (DataReceiveError != null)
+                {
+                    DataReceiveError.BeginInvoke(null, null);
+                }
+
+                StartDisconnect(e);
+                return;
+            }
+
+            int bytesTransferred = e.BytesTransferred;
+            if (bytesTransferred != 0)
+            {
+                _clientToken.AcceptData(e, bytesTransferred);
+
+                if (_clientToken.ReceivedDataLength != 0)
+                {
+                    //Parse received data for packets
+                    List<BaseResponse> packets = _clientToken.ProcessReceivedDataRsp();
+
+                    //Fire ClientDataReceived event
+                    if (packets.Count > 0 && DataReceived != null)
+                    {
+                        DataReceived.BeginInvoke(packets, null, null);
+                    }
+                }
+                _clientToken.ReceiveSync.Set();
+                StartReceive();
+                return;
+            }
+
+            _clientToken.ReceiveSync.Set();
         }
 
         public void Send(ITransferable packet)
@@ -170,10 +216,10 @@ namespace RK.Common.Net.TCP2.Client
             _clientToken.ObjectToSend = dataToSend;
 
             //Send data
-            StartSend(true);
+            StartSend();
         }
 
-        private void StartSend(bool newSend)
+        private void StartSend()
         {
 #if DEBUG
             if (_disposed) return;
@@ -212,13 +258,14 @@ namespace RK.Common.Net.TCP2.Client
                     //Fire DataSent event
                     if (DataSent != null)
                     {
-                        DataSent((ITransferable) _clientToken.ObjectToSend);
+                        ITransferable obj = (ITransferable) _clientToken.ObjectToSend;
+                        DataSent.BeginInvoke(obj, null, null);
                     }
                 }
                 else
                 {
                     _clientToken.BytesSentAlready += e.BytesTransferred;
-                    StartSend(false);
+                    StartSend();
                 }
             }
             else
@@ -226,116 +273,71 @@ namespace RK.Common.Net.TCP2.Client
                 //Fire DataSentError event
                 if (DataSendError != null)
                 {
-                    DataSendError((ITransferable) _clientToken.ObjectToSend);
+                    ITransferable obj = (ITransferable) _clientToken.ObjectToSend;
+                    DataSendError.BeginInvoke(obj, null, null);
                 }
+
                 StartDisconnect(e);
             }
         }
 
-        private void StartReceive()
+        public void Disconnect()
         {
-#if DEBUG
-            if (_disposed) return;
-#endif
-
-            if (!_receiveEvent.AcceptSocket.ReceiveAsync(_receiveEvent))
-            {
-                ProcessReceive(_receiveEvent);
-            }
-        }
-        
-        private void ProcessReceive(SocketAsyncEventArgs e)
-        {
-            if (e.SocketError != SocketError.Success)
-            {
-                //Fire ClientDataReceiveError event
-                if (DataReceiveError != null)
-                {
-                    DataReceiveError();
-                }
-
-                StartDisconnect(e);
-                return;
-            }
-
-            int bytesTransferred = e.BytesTransferred;
-            if (bytesTransferred != 0)
-            {
-                _clientToken.AcceptData(e, bytesTransferred);
-
-                if (_clientToken.ReceivedDataLength != 0)
-                {
-                    //Parse received data for packets
-                    List<BaseResponse> packets = _clientToken.ProcessReceivedDataRsp();
-
-                    //Fire ClientDataReceived event
-                    if (packets.Count > 0 && DataReceived != null)
-                    {
-                        DataReceived(packets);
-                    }
-                }
-            }
-
-            StartReceive();
+            StartDisconnect(_connectEvent);
         }
 
         private void StartDisconnect(SocketAsyncEventArgs e)
         {
-            if (e.SocketError == SocketError.ConnectionReset)
-            {
-                return;
-            }
-
 #if DEBUG
             if (_disposed) return;
 #endif
 
-            e.AcceptSocket.Shutdown(SocketShutdown.Both);
-            if (!e.AcceptSocket.DisconnectAsync(e))
+            if (IsConnected && !e.AcceptSocket.DisconnectAsync(e))
             {
-                ProcessDisconnectAndCloseSocket(e);
+                ProcessDisconnect(e);
             }
         }
-        
-        private void ProcessDisconnectAndCloseSocket(SocketAsyncEventArgs e)
+
+        private void ProcessDisconnect(SocketAsyncEventArgs e)
         {
-            e.AcceptSocket.Close();
+            lock (_syncObjDisconnect)
+            {
+                if (!IsConnected) return;
+                IsConnected = false;
+
+                e.AcceptSocket.Shutdown(SocketShutdown.Both);
+                e.AcceptSocket.Close();
+
+                _clientToken.ResetForClose();
+
+                DisposeObject(ref _connectEvent);
+
+                //Fire Disconnected event
+                if (Disconnected != null)
+                {
+                    Disconnected.BeginInvoke(null, null);
+                }
+            }
         }
 
-        private void CloseSocket(Socket socker)
+        private void DisposeObject<T>(ref T o) 
+            where T: class, IDisposable
         {
-            try
+            if (o != null)
             {
-                socker.Shutdown(SocketShutdown.Both);
-            }
-            catch { }
-            socker.Close();
-
-            IsConnected = false;
-
-            //Fire Disconnected event
-            if (Disconnected != null)
-            {
-                Disconnected();
+                o.Dispose();
+                o = null;
             }
         }
 
-        private void DisposeEventObject(ref SocketAsyncEventArgs e)
-        {
-            if (e != null)
-            {
-                e.Dispose();
-                e = null;
-            }
-        }
-
-        public override void Dispose()
+        public void Dispose()
         {
             _disposed = true;
-            IsConnected = false;
-            DisposeEventObject(ref _connectEvent);
-            DisposeEventObject(ref _receiveEvent);
-            DisposeEventObject(ref _sendEvent);
+            Disconnect();
+            DisposeObject(ref _connectEvent);
+            DisposeObject(ref _receiveEvent);
+            DisposeObject(ref _sendEvent);
+            DisposeObject(ref _clientToken);
         }
 
 #endregion

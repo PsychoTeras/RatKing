@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 
-namespace RK.Common.Net.TCP2
+namespace RK.Common.Net
 {
     internal class BufferManager
     {

@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-namespace RK.Common.Net.TCP2.Client
+namespace RK.Common.Net.Client
 {
     public class TCPClientSettings
     {

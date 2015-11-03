@@ -4,12 +4,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using RK.Common.Classes.Common;
-using RK.Common.Net.TCP;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2.Server
+namespace RK.Common.Net.Server
 {
-    internal class TCPServer2 : TCPBase
+    internal class TCPServer : IDisposable
     {
 
 #region Delegates
@@ -62,7 +61,7 @@ namespace RK.Common.Net.TCP2.Server
 
 #region Ctor
 
-        public TCPServer2(TCPServerSettings settings)
+        public TCPServer(TCPServerSettings settings)
         {
             _settings = settings;
 
@@ -90,11 +89,11 @@ namespace RK.Common.Net.TCP2.Server
             {
                 SocketAsyncEventArgs receiveEvent = new SocketAsyncEventArgs();
                 _bufferManager.SetBuffer(receiveEvent);
-                receiveEvent.Completed += ProcessReceive;
+                receiveEvent.Completed += IOCompleted;
 
                 SocketAsyncEventArgs sendEvent = new SocketAsyncEventArgs();
                 _bufferManager.SetBuffer(sendEvent);
-                sendEvent.Completed += ProcessSend;
+                sendEvent.Completed += IOCompleted;
 
                 ClientToken clientToken = new ClientToken(receiveEvent, sendEvent);
                 receiveEvent.UserToken = sendEvent.UserToken = clientToken;
@@ -104,6 +103,23 @@ namespace RK.Common.Net.TCP2.Server
             }
 
             StartListen();
+        }
+
+        private void IOCompleted(object sender, SocketAsyncEventArgs e)
+        {
+            switch (e.LastOperation)
+            {
+                case SocketAsyncOperation.Receive:
+                    ProcessReceive(e);
+                    break;
+
+                case SocketAsyncOperation.Send:
+                    ProcessSend(e);
+                    break;
+
+                default:
+                    break;
+            }
         }
 
         private void StartListen()
@@ -151,14 +167,14 @@ namespace RK.Common.Net.TCP2.Server
 #endif
 
             ClientToken clientToken = _poolOfDataEventArgs.Pop();
-            clientToken.AcceptConnection(e);
+            clientToken.AcceptConnection(e, true);
 
             _poolOfAcceptEventArgs.Push(e);
 
             //Fire ClientConnected event
             if (ClientConnected != null)
             {
-                ClientConnected(clientToken.Id);
+                ClientConnected.BeginInvoke(clientToken.Id, null, null);
             }
 
             StartReceive(clientToken);
@@ -170,13 +186,14 @@ namespace RK.Common.Net.TCP2.Server
             if (_disposed) return;
 #endif
 
+//            clientToken.ReceiveSync.WaitOne();
             if (!clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
-                ProcessReceive(this, clientToken.ReceiveEvent);
+                ProcessReceive(clientToken.ReceiveEvent);
             }
         }
 
-        private void ProcessReceive(object sender, SocketAsyncEventArgs e)
+        private void ProcessReceive(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken) e.UserToken;
 
@@ -185,7 +202,7 @@ namespace RK.Common.Net.TCP2.Server
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
-                    ClientDataReceiveError(clientToken.Id, e.SocketError);
+                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
                 }
 
                 CloseClientSocket(e);
@@ -205,12 +222,15 @@ namespace RK.Common.Net.TCP2.Server
                     //Fire ClientDataReceived event
                     if (packets.Count > 0 && ClientDataReceived != null)
                     {
-                        ClientDataReceived(clientToken.Id, packets);
+                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
                     }
                 }
+//                clientToken.ReceiveSync.Set();
+                StartReceive(clientToken);
+                return;
             }
 
-            StartReceive(clientToken);
+//            clientToken.ReceiveSync.Set();
         }
 
         public void Send(int clientId, ITransferable[] packets)
@@ -302,11 +322,11 @@ namespace RK.Common.Net.TCP2.Server
 
             if (!clientToken.SendEvent.AcceptSocket.SendAsync(clientToken.SendEvent))
             {
-                ProcessSend(this, clientToken.SendEvent);
+                ProcessSend(clientToken.SendEvent);
             }
         }
 
-        private void ProcessSend(object sender, SocketAsyncEventArgs e)
+        private void ProcessSend(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken) e.UserToken;
             if (e.SocketError == SocketError.Success)
@@ -319,7 +339,8 @@ namespace RK.Common.Net.TCP2.Server
                     //Fire DataSent event
                     if (ClientDataSent != null)
                     {
-                        ClientDataSent(clientToken.Id, clientToken.ObjectToSend);
+                        ClientDataSent.BeginInvoke(clientToken.Id, clientToken.ObjectToSend, 
+                            null, null);
                     }
                 }
                 else
@@ -333,7 +354,8 @@ namespace RK.Common.Net.TCP2.Server
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
-                    ClientDataSendError(clientToken.Id, clientToken.ObjectToSend, e.SocketError);
+                    ClientDataSendError.BeginInvoke(clientToken.Id, clientToken.ObjectToSend, 
+                        e.SocketError, null, null);
                 }
                 CloseClientSocket(e);
             }
@@ -355,35 +377,33 @@ namespace RK.Common.Net.TCP2.Server
             Interlocked.Decrement(ref _numberOfAcceptedSockets);
 
             ClientToken clientToken = (ClientToken) e.UserToken;
-
-            //Fire ClientDisonnected event
-            if (ClientDisonnected != null)
-            {
-                ClientDisonnected(clientToken.Id);
-            }
-
             clientToken.ResetForClose();
             _poolOfDataEventArgs.Push(clientToken);
 
             _maxConnectionsEnforcer.Release();
+
+            //Fire ClientDisonnected event
+            if (ClientDisonnected != null)
+            {
+                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+            }
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             _disposed = true;
             _listenSocket.Dispose();
             while (_poolOfAcceptEventArgs.Count > 0)
             {
                 SocketAsyncEventArgs e = _poolOfAcceptEventArgs.Pop();
-                e.Dispose();
+                if (e != null) e.Dispose();
             }
             while (_poolOfDataEventArgs.Count > 0)
             {
                 ClientToken clientToken = _poolOfDataEventArgs.Pop();
-                _bufferManager.FreeBuffer(clientToken.ReceiveEvent);
                 clientToken.ReceiveEvent.Dispose();
-                _bufferManager.FreeBuffer(clientToken.SendEvent);
                 clientToken.SendEvent.Dispose();
+                clientToken.Dispose();
             }
         }
 

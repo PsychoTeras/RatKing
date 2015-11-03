@@ -5,9 +5,9 @@ using System.Net.Sockets;
 using RK.Common.Classes.Common;
 using RK.Common.Proto;
 
-namespace RK.Common.Net.TCP2
+namespace RK.Common.Net
 {
-    internal class ClientToken
+    internal class ClientToken : IDisposable
     {
         private static int _idCounter;
 
@@ -26,6 +26,8 @@ namespace RK.Common.Net.TCP2
         public int BytesSentAlready;
         public byte[] DataToSend;
         public object ObjectToSend;
+
+        public HybridLock ReceiveSync;
         public HybridLock SendSync;
 
         public volatile bool Closed;
@@ -43,14 +45,15 @@ namespace RK.Common.Net.TCP2
             BufferOffsetSend = sendEvent.Offset;
 
             ReceivedData = new MemoryStream();
+            ReceiveSync = new HybridLock();
             SendSync = new HybridLock();
         }
 
-        public void AcceptConnection(SocketAsyncEventArgs e)
+        public void AcceptConnection(SocketAsyncEventArgs e, bool cleanAcceptSocket)
         {
             ReceiveEvent.AcceptSocket = e.AcceptSocket;
             SendEvent.AcceptSocket = e.AcceptSocket;
-            e.AcceptSocket = null;
+            if (cleanAcceptSocket) e.AcceptSocket = null;
             Closed = false;
         }
 
@@ -124,6 +127,7 @@ namespace RK.Common.Net.TCP2
         public void ResetReceive()
         {
             ReceivedData.SetLength(ReceivedDataLength = 0);
+            ReceiveSync.Set();
         }
 
         public void ResetSend()
@@ -139,6 +143,14 @@ namespace RK.Common.Net.TCP2
             Closed = true;
             ResetSend();
             ResetReceive();
+        }
+
+        public void Dispose()
+        {
+            ResetForClose();
+            ReceivedData.Dispose();
+            ReceiveSync.Dispose();
+            SendSync.Dispose();
         }
     }
 }

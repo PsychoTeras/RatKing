@@ -166,8 +166,10 @@ namespace RK.Common.World
             lock (_players)
             {
                 List<Player> players = new List<Player>();
-                foreach (PlayerDataEx p in _players)
+                int playersCnt = _players.Count;
+                for (int i = 0; i < playersCnt; i++)
                 {
+                    PlayerDataEx p = _players[i];
                     if (p.Player.MapId == player.MapId &&
                         p.Player.Position.CloseTo(player.Position, NEAREST_AREA_HALF_SIZE))
                     {

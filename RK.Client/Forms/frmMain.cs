@@ -355,12 +355,13 @@ namespace RK.Client.Forms
                             if (!bot.Connected)
                             {
                                 bot.Connect();
+                                Thread.Sleep(3);
                             }
                             else
                             {
                                 bot.DoSimulate();
+                                Thread.Sleep(5);
                             }
-                            Thread.Sleep(5);
                         }
                     }
                     Thread.Sleep(rnd.Next(10, 100));
@@ -374,7 +375,7 @@ namespace RK.Client.Forms
             mapCtrl.Enabled = false;
             lock (_bots)
             {
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 3000; i++)
                 {
                     _bots.Add(new WorldBot());
                 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -194,7 +193,7 @@ namespace RK.Common.Map
             int smallSimilarsCnt = 0;
             const int smallSimilarsCntLim = byte.MaxValue/2;
 
-            ArrayList miniMapInfo = new ArrayList();
+            var miniMapInfo = new List<Pair<byte, ushort>>();
             int mimiMapSize = MiniMapWidth*MiniMapHeight/2;
 
             for (int i = 0; i < mimiMapSize; i++)
@@ -227,19 +226,20 @@ namespace RK.Common.Map
             byte[] miniMapData = new byte[dataSize];
             fixed (byte* bData = miniMapData)
             {
-                int pos = 0;
+                int pos = 0, cnt = miniMapInfo.Count;
                 Serializer.Write(bData, count, ref pos);
-                foreach (Pair<byte, ushort> info in miniMapInfo)
+                for (int i = 0; i < cnt; i++)
                 {
+                    Pair<byte, ushort> info = miniMapInfo[i];
                     if (info.Value <= smallSimilarsCntLim)
                     {
                         Serializer.Write(bData, (byte) info.Value, ref pos);
                     }
                     else
                     {
-                        ushort hi = (ushort)(info.Value & 0x00FF);
-                        byte lo = (byte)(info.Value >> 8 | 0x80);
-                        ushort value = (ushort)(hi << 8 | lo);
+                        ushort hi = (ushort) (info.Value & 0x00FF);
+                        byte lo = (byte) (info.Value >> 8 | 0x80);
+                        ushort value = (ushort) (hi << 8 | lo);
                         Serializer.Write(bData, value, ref pos);
                     }
                     Serializer.Write(bData, info.Key, ref pos);
@@ -260,7 +260,7 @@ namespace RK.Common.Map
             ushort tilesSetCount = 0;
             Dictionary<Tile, ushort> tilesSet = new Dictionary<Tile, ushort>();
 
-            ArrayList tilesInfo = new ArrayList();
+            var tilesInfo = new List<Pair<ushort, ushort>>();
             for (int y = startY; y < endY; y++)
             {
                 for (int x = startX; x < endX; x++)
@@ -322,9 +322,11 @@ namespace RK.Common.Map
                 }
 
                 //Tiles list
-                Serializer.Write(bData, tilesInfo.Count, ref pos);
-                foreach (Pair<ushort, ushort> info in tilesInfo)
+                int cnt = tilesInfo.Count;
+                Serializer.Write(bData, cnt, ref pos);
+                for (int i = 0; i < cnt; i++)
                 {
+                    Pair<ushort, ushort> info = tilesInfo[i];
                     if (info.Value <= smallSimilarsCntLim)
                     {
                         Serializer.Write(bData, (byte) info.Value, ref pos);

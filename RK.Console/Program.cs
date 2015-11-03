@@ -2,12 +2,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Map;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
+using RK.Common.Proto.Responses;
 using RK.Common.Win32;
 
 #if UNSAFE_ARRAY
@@ -402,9 +405,30 @@ namespace RK.Console
             }
         }
 
+        internal static void TestToArrayToListPerf()
+        {
+            List<Pair<int, BaseResponse>> list = new List<Pair<int, BaseResponse>>();
+            for (int i = 0; i < ITERATIONS_COUNT; i++)
+            {
+                list.Add(new Pair<int, BaseResponse>(i, new RUserLogin()));
+            }
+
+            var converted = list.ToList();
+            HRTimer timer = HRTimer.CreateAndStart();
+//            for (int i = 0; i < ITERATIONS_COUNT; i++)
+//            {
+//                converted[i].Value.Id = 0;
+//            }
+            foreach (Pair<int, BaseResponse> pair in converted)
+            {
+                pair.Value.Id = 0;
+            }
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
         static void Main(string[] args)
         {
-            TestDataCopyPerf();
+            TestMapWindowGetPerf();
             System.Console.ReadKey();
         }
     }
