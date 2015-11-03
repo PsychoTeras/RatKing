@@ -5,13 +5,13 @@ namespace RK.Common.Classes.Common
 {
     internal sealed class HybridLock : IDisposable
     {
-        private Int32 _waiters;
+        private int _waiters;
         private AutoResetEvent _waiterLock = new AutoResetEvent(false);
 
-        public void WaitOne()
+        public void WaitOne(int timeout = Timeout.Infinite)
         {
             if (Interlocked.Increment(ref _waiters) == 1) return;
-            _waiterLock.WaitOne();
+            _waiterLock.WaitOne(timeout);
         }
 
         public void Set()

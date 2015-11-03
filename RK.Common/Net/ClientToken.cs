@@ -25,7 +25,6 @@ namespace RK.Common.Net
         public int SendBytesRemaining;
         public int BytesSentAlready;
         public byte[] DataToSend;
-        public object ObjectToSend;
 
         public HybridLock ReceiveSync;
         public HybridLock SendSync;
@@ -133,23 +132,29 @@ namespace RK.Common.Net
         public void ResetSend()
         {
             DataToSend = null;
-            ObjectToSend = null;
             SendBytesRemaining = BytesSentAlready = 0;
             SendSync.Set();
         }
 
-        public void ResetForClose()
+        public Socket PrepareForClose()
         {
+            Socket socket = ReceiveEvent.AcceptSocket ?? SendEvent.AcceptSocket;
+
             Closed = true;
+            ReceiveSync.WaitOne(1000);
+            SendSync.WaitOne(1000);
+
             ReceiveEvent.AcceptSocket = null;
-            ResetReceive();
             SendEvent.AcceptSocket = null;
+            ResetReceive();
             ResetSend();
+
+            return socket;
         }
 
         public void Dispose()
         {
-            ResetForClose();
+            PrepareForClose();
             ReceivedData.Dispose();
             ReceiveSync.Dispose();
             SendSync.Dispose();

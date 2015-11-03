@@ -320,7 +320,7 @@ namespace RK.Client.Forms
             if (mapCtrl.Enabled)
             {
                 Cursor = Cursors.WaitCursor;
-                mapCtrl.ConnectToHost();
+                mapCtrl.ReconnectToHost();
                 Cursor = DefaultCursor;
             }
         }
@@ -352,7 +352,7 @@ namespace RK.Client.Forms
                             if (!bot.Connected)
                             {
                                 bot.Connect();
-                                Thread.Sleep(3);
+                                Thread.Sleep(1);
                             }
                             else
                             {
@@ -369,7 +369,7 @@ namespace RK.Client.Forms
         {
             lock (_bots)
             {
-                for (int i = 0; i < 500; i++)
+                for (int i = 0; i < 3000; i++)
                 {
                     _bots.Add(new WorldBot());
                 }

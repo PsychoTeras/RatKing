@@ -47,6 +47,8 @@ namespace RK.Client.Controls
 #region Private fields
 
         private TCPClient _tcpClient;
+        private bool _connecting;
+        private bool _reconnecting;
         private ClientMap _map;
 
         private Graphics _buffer;
@@ -271,7 +273,8 @@ namespace RK.Client.Controls
                     );
                 _tcpClient = new TCPClient(settings);
                 _tcpClient.Connected += TCPConnected;
-                _tcpClient.DataReceived += TCPClientDataReceived;
+                _tcpClient.DataReceived += TCPDataReceived;
+                _tcpClient.Disconnected += TCPDisconnected;
             }
 
             InitializeComponent();
@@ -295,19 +298,20 @@ namespace RK.Client.Controls
                 {
                     SessionToken = _sessionToken
                 });
-                Thread.Sleep(100);
+                IsMapLoaded = false;
+                _sessionToken = 0;
+                _myPlayerData = null;
                 if (_tcpClient != null)
                 {
                     _tcpClient.Disconnect();
                 }
-                IsMapLoaded = false;
-                _sessionToken = 0;
-                _myPlayerData = null;
             }
         }
 
         public void ConnectToHost()
         {
+            if (_connecting) return;
+            _connecting = true;
             try
             {
                 lock (_playersData)
@@ -323,6 +327,20 @@ namespace RK.Client.Controls
             {
                 string msg = string.Format("ConnectToHost:\r\n{0}", ex);
                 MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _connecting = false;
+            }
+        }
+
+        public void ReconnectToHost()
+        {
+            if (_sessionToken != 0)
+            {
+                _reconnecting = true;
+                DisconnectFromHost();
+            }
+            else
+            {
+                ConnectToHost();
             }
         }
 
@@ -1063,6 +1081,7 @@ namespace RK.Client.Controls
 
         private void TCPConnected()
         {
+            _connecting = false;
             TCPClientDataSend(new PUserLogin
             {
                 UserName = "PsychoTeras",
@@ -1078,11 +1097,20 @@ namespace RK.Client.Controls
             }
         }
 
-        private void TCPClientDataReceived(IList<BaseResponse> packets)
+        private void TCPDataReceived(IList<BaseResponse> packets)
         {
             foreach (BaseResponse packet in packets)
             {
                 GameHostResponse(packet);
+            }
+        }
+
+        private void TCPDisconnected()
+        {
+            if (_reconnecting)
+            {
+                _reconnecting = false;
+                ConnectToHost();
             }
         }
 

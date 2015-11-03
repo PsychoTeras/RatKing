@@ -7,16 +7,16 @@ namespace RK.Common.Classes.Common
         private int _maxItemsCount;
         private const float GROW_FACTOR = 1.5f;
 
-        private readonly Stack<T> _pool;
+        private readonly Queue<T> _pool;
 
         public Pool(int capacity, bool fillItemsPool)
         {
-            _pool = new Stack<T>(capacity);
+            _pool = new Queue<T>(capacity);
             if (fillItemsPool)
             {
                 for (int i = 0; i < capacity; i++)
                 {
-                    _pool.Push(new T());
+                    _pool.Enqueue(new T());
                 }
             }
             _maxItemsCount = _pool.Count;
@@ -31,7 +31,7 @@ namespace RK.Common.Classes.Common
         {
             lock (this)
             {
-                return _pool.Pop();
+                return _pool.Dequeue();
             }
         }
 
@@ -40,7 +40,7 @@ namespace RK.Common.Classes.Common
             lock (this)
             {
                 if (_pool.Count == 0) Expand();
-                return _pool.Pop();
+                return _pool.Dequeue();
             }
         }
 
@@ -48,24 +48,24 @@ namespace RK.Common.Classes.Common
         {
             lock (this)
             {
-                _pool.Push(item);
+                _pool.Enqueue(item);
             }
         }
 
         public T PopAsync()
         {
-            return _pool.Pop();
+            return _pool.Dequeue();
         }
 
         public T PopExpandAsync()
         {
             if (_pool.Count == 0) Expand();
-            return _pool.Pop();
+            return _pool.Dequeue();
         }
 
         public void PushAsync(T item)
         {
-            _pool.Push(item);
+            _pool.Enqueue(item);
         }
 
         private void Expand()
@@ -73,7 +73,7 @@ namespace RK.Common.Classes.Common
             int expandOnCount = (int) (_maxItemsCount*GROW_FACTOR) - _maxItemsCount;
             for (int i = 0; i < expandOnCount; i++)
             {
-                _pool.Push(new T());
+                _pool.Enqueue(new T());
             }
             _maxItemsCount += expandOnCount;
         }

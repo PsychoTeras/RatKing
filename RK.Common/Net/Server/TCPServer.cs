@@ -16,8 +16,8 @@ namespace RK.Common.Net.Server
         public delegate void OnClientConnection(int clientId);
         public delegate void OnClientDataReceived(int clientId, List<BasePacket> packets);
         public delegate void OnClientDataReceiveError(int clientId, SocketError error);
-        public delegate void OnClientDataSent(int clientId, object packet);
-        public delegate void OnClientDataSendError(int clientId, object packet, SocketError error);
+        public delegate void OnClientDataSent(int clientId);
+        public delegate void OnClientDataSendError(int clientId, SocketError error);
 
 #endregion
 
@@ -154,21 +154,22 @@ namespace RK.Common.Net.Server
                 return;
             }
 
-            Interlocked.Increment(ref _numberOfAcceptedSockets);
-
-            StartAccept();
-
             ClientToken clientToken = _poolOfDataEventArgs.Pop();
             clientToken.AcceptConnection(e, true);
             _poolOfAcceptEventArgs.Push(e);
 
+            Interlocked.Increment(ref _numberOfAcceptedSockets);
+
             //Fire ClientConnected event
             if (ClientConnected != null)
             {
-                ClientConnected.BeginInvoke(clientToken.Id, null, null);
+//                ClientConnected.BeginInvoke(clientToken.Id, null, null);
+                ClientConnected(clientToken.Id);
             }
 
             StartReceive(clientToken);
+
+            StartAccept();
         }
 
         private void StartReceive(ClientToken clientToken)
@@ -177,8 +178,7 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
 
-//            clientToken.ReceiveSync.WaitOne();
-            if (!clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
+            if (!clientToken.Closed && !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
                 ProcessReceive(clientToken.ReceiveEvent);
             }
@@ -192,7 +192,8 @@ namespace RK.Common.Net.Server
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
-                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+//                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+                    ClientDataReceiveError(clientToken.Id, e.SocketError);
                 }
 
                 CloseClientSocket(e);
@@ -200,7 +201,7 @@ namespace RK.Common.Net.Server
             }
 
             int bytesTransferred = e.BytesTransferred;
-            if (bytesTransferred != 0)
+            if (!clientToken.Closed && bytesTransferred != 0)
             {
                 clientToken.AcceptData(e, bytesTransferred);
 
@@ -212,15 +213,12 @@ namespace RK.Common.Net.Server
                     //Fire ClientDataReceived event
                     if (packets.Count > 0 && ClientDataReceived != null)
                     {
-                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
+//                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
+                        ClientDataReceived(clientToken.Id, packets);
                     }
                 }
-//                clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
-//                return;
             }
-
-//            clientToken.ReceiveSync.Set();
         }
 
         public void Send(int clientId, ITransferable[] packets)
@@ -278,23 +276,21 @@ namespace RK.Common.Net.Server
             //Prepare data to send
             clientToken.DataToSend = dataToSend;
             clientToken.SendBytesRemaining = dataToSend.Length;
-            clientToken.ObjectToSend = dataToSend;
 
             //Send data
-            StartSend(clientToken, true);
+            StartSend(clientToken);
         }
 
         public void SendAll(BaseResponse response)
         {
         }
 
-        private void StartSend(ClientToken clientToken, bool newSend)
+        private void StartSend(ClientToken clientToken)
         {
 #if DEBUG
             if (_disposed) return;
 #endif
-            if (clientToken.SendBytesRemaining == 0) return;
-
+        
             if (clientToken.SendBytesRemaining <= _settings.BufferSize)
             {
                 clientToken.SendEvent.SetBuffer(clientToken.BufferOffsetSend, clientToken.SendBytesRemaining);
@@ -319,24 +315,25 @@ namespace RK.Common.Net.Server
         private void ProcessSend(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken) e.UserToken;
+
             if (e.SocketError == SocketError.Success)
             {
                 clientToken.SendBytesRemaining = clientToken.SendBytesRemaining - e.BytesTransferred;
                 if (clientToken.SendBytesRemaining == 0)
                 {
-                    clientToken.ResetSend();
-
                     //Fire DataSent event
                     if (ClientDataSent != null)
                     {
-                        ClientDataSent.BeginInvoke(clientToken.Id, clientToken.ObjectToSend, 
-                            null, null);
+//                        ClientDataSent.BeginInvoke(clientToken.Id, null, null);
+                        ClientDataSent(clientToken.Id);
                     }
+
+                    clientToken.ResetSend();
                 }
                 else
                 {
                     clientToken.BytesSentAlready += e.BytesTransferred;
-                    StartSend(clientToken, false);
+                    StartSend(clientToken);
                 }
             }
             else
@@ -344,9 +341,11 @@ namespace RK.Common.Net.Server
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
-                    ClientDataSendError.BeginInvoke(clientToken.Id, clientToken.ObjectToSend, 
-                        e.SocketError, null, null);
+//                    ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+                    ClientDataSendError(clientToken.Id, e.SocketError);
                 }
+
+                clientToken.ResetSend();
                 CloseClientSocket(e);
             }
         }
@@ -356,21 +355,20 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
+            ClientToken clientToken = (ClientToken)e.UserToken;
+            clientToken.PrepareForClose().Close();
 
-            e.AcceptSocket.Close();
-
-            Interlocked.Decrement(ref _numberOfAcceptedSockets);
-
-            ClientToken clientToken = (ClientToken) e.UserToken;
-            clientToken.ResetForClose();
             _poolOfDataEventArgs.Push(clientToken);
 
             _maxConnectionsEnforcer.Release();
 
+            Interlocked.Decrement(ref _numberOfAcceptedSockets);
+
             //Fire ClientDisonnected event
             if (ClientDisonnected != null)
             {
-                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+//                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+                ClientDisonnected(clientToken.Id);
             }
         }
 
