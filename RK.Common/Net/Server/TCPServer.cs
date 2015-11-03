@@ -116,9 +116,6 @@ namespace RK.Common.Net.Server
                 case SocketAsyncOperation.Send:
                     ProcessSend(e);
                     break;
-
-                default:
-                    break;
             }
         }
 
@@ -128,7 +125,6 @@ namespace RK.Common.Net.Server
             _listenSocket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _listenSocket.Bind(endPoint);
             _listenSocket.Listen(_settings.Backlog);
-            _listenSocket.Blocking = false;
 
             StartAccept();
         }
@@ -190,8 +186,7 @@ namespace RK.Common.Net.Server
 
         private void ProcessReceive(SocketAsyncEventArgs e)
         {
-            ClientToken clientToken = (ClientToken) e.UserToken;
-
+            ClientToken clientToken = (ClientToken)e.UserToken;
             if (e.SocketError != SocketError.Success)
             {
                 //Fire ClientDataReceiveError event
@@ -222,7 +217,7 @@ namespace RK.Common.Net.Server
                 }
 //                clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
-                return;
+//                return;
             }
 
 //            clientToken.ReceiveSync.Set();
@@ -362,11 +357,6 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
 
-            try
-            {
-                e.AcceptSocket.Shutdown(SocketShutdown.Both);
-            }
-            catch { }
             e.AcceptSocket.Close();
 
             Interlocked.Decrement(ref _numberOfAcceptedSockets);
@@ -388,11 +378,13 @@ namespace RK.Common.Net.Server
         {
             _disposed = true;
             _listenSocket.Dispose();
+
             while (_poolOfAcceptEventArgs.Count > 0)
             {
                 SocketAsyncEventArgs e = _poolOfAcceptEventArgs.Pop();
                 if (e != null) e.Dispose();
             }
+
             while (_poolOfDataEventArgs.Count > 0)
             {
                 ClientToken clientToken = _poolOfDataEventArgs.Pop();

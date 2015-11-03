@@ -64,6 +64,7 @@ namespace RK.Server
                 {
                     tbOutput.Text += logMessage;
                 }
+                tbOutput.SelectionStart = tbOutput.Text.Length;
             }));
         }
         

@@ -251,7 +251,7 @@ namespace RK.Client.Forms
         {
             if (_server != null && !_server.HasExited)
             {
-                _server.Kill();
+//                _server.Kill();
             }
             mapCtrl.Dispose();
             miniMapCtrl.Dispose();

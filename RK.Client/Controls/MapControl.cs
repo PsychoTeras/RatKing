@@ -298,7 +298,7 @@ namespace RK.Client.Controls
                 Thread.Sleep(100);
                 if (_tcpClient != null)
                 {
-                    _tcpClient.DisconnectSync();
+                    _tcpClient.Disconnect();
                 }
                 IsMapLoaded = false;
                 _sessionToken = 0;
