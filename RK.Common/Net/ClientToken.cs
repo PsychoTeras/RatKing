@@ -141,8 +141,10 @@ namespace RK.Common.Net
         public void ResetForClose()
         {
             Closed = true;
-            ResetSend();
+            ReceiveEvent.AcceptSocket = null;
             ResetReceive();
+            SendEvent.AcceptSocket = null;
+            ResetSend();
         }
 
         public void Dispose()

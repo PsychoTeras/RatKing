@@ -67,9 +67,8 @@ namespace RK.Client.Controls
         private object _syncScroll;
 
         private int _sessionToken;
-        private Dictionary<int, Player> _players;
         private Dictionary<int, PlayerDataEx> _playersData;
-        private ReadOnlyCollection<Player> _playersRo;
+        private ReadOnlyCollection<PlayerDataEx> _playersRo;
 
         private PlayerDataEx _myPlayerData;
 
@@ -192,7 +191,7 @@ namespace RK.Client.Controls
         public bool ShowTileNumber { get; set; }
 
         [Browsable(false)]
-        public ReadOnlyCollection<Player> Players
+        public ReadOnlyCollection<PlayerDataEx> Players
         {
             get { return _sessionToken != 0 ? _playersRo : null; }
         }
@@ -257,14 +256,22 @@ namespace RK.Client.Controls
             {
                 SetStyle(ControlStyles.Opaque, true);
                 SetStyle(ControlStyles.Selectable, false);
-                
+
                 MouseMove += MapControlMouseMove;
                 MouseWheel += MapControlMouseWheel;
 
                 Application.AddMessageFilter(this);
-                
+
                 InitializeEnvironment();
                 InitializeRenderers();
+
+                TCPClientSettings settings = new TCPClientSettings
+                    (
+                    ushort.MaxValue, "192.168.1.32", 15051, true
+                    );
+                _tcpClient = new TCPClient(settings);
+                _tcpClient.Connected += TCPConnected;
+                _tcpClient.DataReceived += TCPClientDataReceived;
             }
 
             InitializeComponent();
@@ -288,10 +295,10 @@ namespace RK.Client.Controls
                 {
                     SessionToken = _sessionToken
                 });
+                Thread.Sleep(100);
                 if (_tcpClient != null)
                 {
-                    _tcpClient.Dispose();
-                    _tcpClient = null;
+                    _tcpClient.DisconnectSync();
                 }
                 IsMapLoaded = false;
                 _sessionToken = 0;
@@ -303,22 +310,13 @@ namespace RK.Client.Controls
         {
             try
             {
-                lock (_players)
+                lock (_playersData)
                 {
-                    _players.Clear();
                     _playersData.Clear();
-                    _playersRo = new ReadOnlyCollection<Player>(new Player[] {});
+                    _playersRo = new ReadOnlyCollection<PlayerDataEx>(new PlayerDataEx[] {});
                 }
 
                 DisconnectFromHost();
-
-                TCPClientSettings settings = new TCPClientSettings
-                    (
-                        ushort.MaxValue, "192.168.1.32", 15051, true
-                    );
-                _tcpClient = new TCPClient(settings);
-                _tcpClient.Connected += TCPConnected;
-                _tcpClient.DataReceived += TCPClientDataReceived;
                 _tcpClient.Connect();
             }
             catch (Exception ex)
@@ -337,7 +335,6 @@ namespace RK.Client.Controls
             _fpsCounterData = new byte[10];
             _fpsFontBrush = new SolidBrush(Color.White);
 
-            _players = new Dictionary<int, Player>();
             _playersData = new Dictionary<int, PlayerDataEx>();
 
             _threadWorld = new Thread(WorldProcessingProc);
@@ -473,9 +470,9 @@ namespace RK.Client.Controls
 
         private void UpdatePlayersPosition()
         {
-            lock (_players)
+            lock (_playersData)
             {
-                foreach (int playerId in _players.Keys)
+                foreach (int playerId in _playersData.Keys)
                 {
                     PlayerDataEx playerData = _playersData[playerId];
                     if (Engine.ValidateNewPlayerPosition(playerData, _map))
@@ -671,11 +668,11 @@ namespace RK.Client.Controls
 
         private void PlayersPaint()
         {
-            lock (_players)
+            lock (_playersData)
             {
-                foreach (int playerId in _players.Keys)
+                foreach (int playerId in _playersData.Keys)
                 {
-                    Player player = _players[playerId];
+                    Player player = _playersData[playerId];
                     float pSizeW = player.Size.Width*_scaleFactor,
                         pSizeHw = (float) player.Size.Width/2;
                     float pSizeH = player.Size.Height*_scaleFactor,
@@ -975,7 +972,7 @@ namespace RK.Client.Controls
                     break;
 
                 case PacketType.UserEnter:
-                    lock (_players)
+                    lock (_playersData)
                     {
                         RUserEnter userEnter = (RUserEnter) e;
 
@@ -986,14 +983,13 @@ namespace RK.Client.Controls
 
                         foreach (Player p in userEnter.PlayersOnLocation)
                         {
-                            if (!_players.ContainsKey(p.Id))
+                            if (!_playersData.ContainsKey(p.Id))
                             {
-                                _players.Add(p.Id, p);
                                 _playersData.Add(p.Id, new PlayerDataEx(p));
                             }
                         }
                         _myPlayerData = _playersData[userEnter.MyPlayerId];
-                        _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
+                        _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
                     }
                     CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor),
                              (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
@@ -1001,55 +997,54 @@ namespace RK.Client.Controls
                     break;
 
                 case PacketType.PlayerEnter:
-                    lock (_players)
+                    lock (_playersData)
                     {
                         RPlayerEnter playerEnter = (RPlayerEnter) e;
-                        if (!_players.ContainsKey(playerEnter.Player.Id) && _myPlayerData != null &&
+                        if (!_playersData.ContainsKey(playerEnter.Player.Id) && _myPlayerData != null &&
                             playerEnter.Player.Id != _myPlayerData.Player.Id)
                         {
-                            _players.Add(playerEnter.Player.Id, playerEnter.Player);
                             _playersData.Add(playerEnter.Player.Id, new PlayerDataEx(playerEnter.Player));
-                            _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
+                            _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
                             _somethingChanged = true;
                         }
                     }
                     break;
 
                 case PacketType.PlayerExit:
-                    lock (_players)
+                    lock (_playersData)
                     {
                         RPlayerExit playerExit = (RPlayerExit) e;
-                        if (_players.ContainsKey(playerExit.PlayerId) && _myPlayerData != null &&
+                        if (_playersData.ContainsKey(playerExit.PlayerId) && _myPlayerData != null &&
                             playerExit.PlayerId != _myPlayerData.Player.Id)
                         {
-                            _players.Remove(playerExit.PlayerId);
                             _playersData.Remove(playerExit.PlayerId);
-                            _playersRo = new ReadOnlyCollection<Player>(_players.Values.ToArray());
+                            _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
                             _somethingChanged = true;
                         }
                     }
                     break;
 
                 case PacketType.PlayerRotate:
-                    lock (_players)
+                    lock (_playersData)
                     {
+                        PlayerDataEx playerData;
                         RPlayerRotate playerRotate = (RPlayerRotate) e;
-                        _players[playerRotate.PlayerId].Angle = playerRotate.Angle;
+                        if (_playersData.TryGetValue(playerRotate.PlayerId, out playerData))
+                            playerData.Player.Angle = playerRotate.Angle;
                     }
                     break;
 
                 case PacketType.PlayerMove:
-                    lock (_players)
+                    lock (_playersData)
                     {
+                        PlayerDataEx playerData;
                         RPlayerMove playerMove = (RPlayerMove) e;
-                        PlayerDataEx playerData = _playersData[playerMove.PlayerId];
-                        if (playerMove.Direction == Direction.None)
+                        if (_playersData.TryGetValue(playerMove.PlayerId, out playerData))
                         {
-                            playerData.StopMoving(playerMove.Position);
-                        }
-                        else
-                        {
-                            playerData.StartMoving(playerMove.Position, playerMove.Direction);
+                            if (playerMove.Direction == Direction.None)
+                                playerData.StopMoving(playerMove.Position);
+                            else
+                                playerData.StartMoving(playerMove.Position, playerMove.Direction);
                         }
                     }
                     break;
@@ -1085,8 +1080,8 @@ namespace RK.Client.Controls
 
         private void TCPClientDataReceived(IList<BaseResponse> packets)
         {
-            _tcpClient.Disconnect();
-            return;
+//            _tcpClient.Disconnect();
+//            return;
             foreach (BaseResponse packet in packets)
             {
                 GameHostResponse(packet);

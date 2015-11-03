@@ -29,19 +29,17 @@ namespace RK.Common.Net.Client
         public event Action Disconnected;
 
 #endregion
+
 #region Private fields
 
         private BufferManager _bufferManager;
         private TCPClientSettings _settings;
 
+        private Socket _socket;
         private ClientToken _clientToken;
         private SocketAsyncEventArgs _connectEvent;
         private SocketAsyncEventArgs _receiveEvent;
         private SocketAsyncEventArgs _sendEvent;
-
-        private volatile bool _disposed;
-
-        private object _syncObjDisconnect = new object();
 
 #endregion
 
@@ -100,10 +98,12 @@ namespace RK.Common.Net.Client
 
         public void Connect()
         {
+            if (IsConnected) return;
+
             _connectEvent = new SocketAsyncEventArgs();
             _connectEvent.Completed += IOCompleted;
             _connectEvent.RemoteEndPoint = _settings.EndPoint;
-            _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork,
+            _socket = _connectEvent.AcceptSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
 
             if (!_connectEvent.AcceptSocket.ConnectAsync(_connectEvent))
@@ -116,8 +116,6 @@ namespace RK.Common.Net.Client
         {
             if (e.SocketError == SocketError.Success)
             {
-                _clientToken.AcceptConnection(e, false);
-
                 IsConnected = true;
 
                 StartReceive();
@@ -147,12 +145,8 @@ namespace RK.Common.Net.Client
 
         private void StartReceive()
         {
-#if DEBUG
-            if (_disposed) return;
-#endif
-
             _clientToken.ReceiveSync.WaitOne();
-            if (!_receiveEvent.AcceptSocket.ReceiveAsync(_receiveEvent))
+            if (IsConnected && !_socket.ReceiveAsync(_receiveEvent))
             {
                 ProcessReceive(_receiveEvent);
             }
@@ -160,6 +154,8 @@ namespace RK.Common.Net.Client
         
         private void ProcessReceive(SocketAsyncEventArgs e)
         {
+            if (!IsConnected) return;
+
             if (e.SocketError != SocketError.Success)
             {
                 //Fire ClientDataReceiveError event
@@ -221,9 +217,6 @@ namespace RK.Common.Net.Client
 
         private void StartSend()
         {
-#if DEBUG
-            if (_disposed) return;
-#endif
             if (_clientToken.SendBytesRemaining == 0) return;
 
             if (_clientToken.SendBytesRemaining <= _settings.BufferSize)
@@ -240,7 +233,7 @@ namespace RK.Common.Net.Client
                     _sendEvent.Buffer, _clientToken.BufferOffsetSend, _settings.BufferSize);
             }
 
-            if (!_sendEvent.AcceptSocket.SendAsync(_sendEvent))
+            if (IsConnected && !_socket.SendAsync(_sendEvent))
             {
                 ProcessSend(_sendEvent);
             }
@@ -248,7 +241,7 @@ namespace RK.Common.Net.Client
 
         private void ProcessSend(SocketAsyncEventArgs e)
         {
-            if (e.SocketError == SocketError.Success)
+            if (IsConnected && e.SocketError == SocketError.Success)
             {
                 _clientToken.SendBytesRemaining = _clientToken.SendBytesRemaining - e.BytesTransferred;
                 if (_clientToken.SendBytesRemaining == 0)
@@ -281,6 +274,11 @@ namespace RK.Common.Net.Client
             }
         }
 
+        public void DisconnectSync()
+        {
+            ProcessDisconnect(_connectEvent);
+        }
+
         public void Disconnect()
         {
             StartDisconnect(_connectEvent);
@@ -288,11 +286,7 @@ namespace RK.Common.Net.Client
 
         private void StartDisconnect(SocketAsyncEventArgs e)
         {
-#if DEBUG
-            if (_disposed) return;
-#endif
-
-            if (IsConnected && !e.AcceptSocket.DisconnectAsync(e))
+            lock (_socket) if (IsConnected && !_socket.DisconnectAsync(e))
             {
                 ProcessDisconnect(e);
             }
@@ -300,17 +294,22 @@ namespace RK.Common.Net.Client
 
         private void ProcessDisconnect(SocketAsyncEventArgs e)
         {
-            lock (_syncObjDisconnect)
+            if (IsConnected) lock (_socket)
             {
                 if (!IsConnected) return;
                 IsConnected = false;
 
-                e.AcceptSocket.Shutdown(SocketShutdown.Both);
-                e.AcceptSocket.Close();
+                try
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                }
+                catch {}
+                _socket.Close();
 
                 _clientToken.ResetForClose();
 
                 DisposeObject(ref _connectEvent);
+                _socket = null;
 
                 //Fire Disconnected event
                 if (Disconnected != null)
@@ -332,8 +331,8 @@ namespace RK.Common.Net.Client
 
         public void Dispose()
         {
-            _disposed = true;
             Disconnect();
+            _socket = null;
             DisposeObject(ref _connectEvent);
             DisposeObject(ref _receiveEvent);
             DisposeObject(ref _sendEvent);

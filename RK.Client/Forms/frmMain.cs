@@ -320,7 +320,6 @@ namespace RK.Client.Forms
             if (mapCtrl.Enabled)
             {
                 Cursor = Cursors.WaitCursor;
-                mapCtrl.DisconnectFromHost();
                 mapCtrl.ConnectToHost();
                 Cursor = DefaultCursor;
             }
@@ -336,8 +335,6 @@ namespace RK.Client.Forms
                 }
                 _bots.Clear();
             }
-            mapCtrl.Enabled = true;
-            mapCtrl.Show();
         }
 
         private void InitializeBots()
@@ -371,11 +368,9 @@ namespace RK.Client.Forms
 
         private void BtnDoWorldStressTestClick(object sender, EventArgs e)
         {
-            mapCtrl.Hide();
-            mapCtrl.Enabled = false;
             lock (_bots)
             {
-                for (int i = 0; i < 3000; i++)
+                for (int i = 0; i < 500; i++)
                 {
                     _bots.Add(new WorldBot());
                 }

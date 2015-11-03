@@ -162,13 +162,8 @@ namespace RK.Common.Net.Server
 
             StartAccept();
 
-#if DEBUG
-            if (_disposed) return;
-#endif
-
             ClientToken clientToken = _poolOfDataEventArgs.Pop();
             clientToken.AcceptConnection(e, true);
-
             _poolOfAcceptEventArgs.Push(e);
 
             //Fire ClientConnected event
