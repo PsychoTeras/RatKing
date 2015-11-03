@@ -1080,8 +1080,6 @@ namespace RK.Client.Controls
 
         private void TCPClientDataReceived(IList<BaseResponse> packets)
         {
-//            _tcpClient.Disconnect();
-//            return;
             foreach (BaseResponse packet in packets)
             {
                 GameHostResponse(packet);

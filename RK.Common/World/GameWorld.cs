@@ -195,7 +195,7 @@ namespace RK.Common.World
         {
             ServerMap map;
             return _maps.TryGetValue(player.MapId, out map)
-                ? Geometry.FindPlayerStartPoint(map, player, MIN_FREE_AREA_SIZE)
+                ? Game.FindPlayerStartPoint(map, player, MIN_FREE_AREA_SIZE)
                 : null;
         }
 

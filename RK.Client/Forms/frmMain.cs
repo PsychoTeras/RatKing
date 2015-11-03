@@ -357,11 +357,10 @@ namespace RK.Client.Forms
                             else
                             {
                                 bot.DoSimulate();
-                                Thread.Sleep(5);
+                                Thread.Sleep(rnd.Next(5, 10));
                             }
                         }
                     }
-                    Thread.Sleep(rnd.Next(10, 100));
                 }
             });
         }

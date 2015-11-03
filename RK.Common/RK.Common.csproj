@@ -68,6 +68,7 @@
     <Compile Include="Algo\Engine.cs" />
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
+    <Compile Include="Algo\Game.cs" />
     <Compile Include="Classes\Common\HybridLock.cs" />
     <Compile Include="Host\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />

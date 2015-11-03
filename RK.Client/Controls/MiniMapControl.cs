@@ -31,6 +31,7 @@ namespace RK.Client.Controls
         private Pen _mapWindowPen;
         private Brush _mapWallsBrush;
         private Brush _mapPlayersBrush;
+        private Brush _mapMyPlayerBrush;
 
         private Point? _mousePos;
         private bool _dragScroll;
@@ -134,7 +135,8 @@ namespace RK.Client.Controls
                 SetStyle(ControlStyles.Selectable, false);
 
                 _mapWallsBrush = new SolidBrush(Color.Black);
-                _mapPlayersBrush = new SolidBrush(Color.Orange);
+                _mapMyPlayerBrush = new SolidBrush(Color.Orange);
+                _mapPlayersBrush = new SolidBrush(Color.LimeGreen);
                 _mapWindowPen = new Pen(Color.LightSteelBlue);
 
                 MouseDown += MiniMapControlMouseDown;
@@ -276,13 +278,16 @@ namespace RK.Client.Controls
                 _buffer.DrawImage(_miniMapBitmap, 0, 0);
                 _buffer.DrawRectangle(_mapWindowPen, x1, y1, w1, h1);
 
+                int myPlayerId = _map.PlayerData.Player.Id;
                 if (_map.Width > 0 && _map.Height > 0 && _map.Players != null)
                 {
-                    foreach (Player player in _map.Players)
+                    for (int i = 0; i < _map.Players.Count; i++)
                     {
+                        Player player = _map.Players[i];
                         int px = (int) (Width*((float) player.Position.X/(_map.Map.Width*ConstMap.PIXEL_SIZE)));
                         int py = (int) (Height*((float) player.Position.Y/(_map.Map.Height*ConstMap.PIXEL_SIZE)));
-                        _buffer.FillRectangle(_mapPlayersBrush, px, py, 1, 1);
+                        Brush brush = player.Id == myPlayerId ? _mapMyPlayerBrush : _mapPlayersBrush;
+                        _buffer.FillRectangle(brush, px, py, 1, 1);
                     }
                 }
             }

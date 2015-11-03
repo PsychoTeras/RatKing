@@ -145,10 +145,12 @@ namespace RK.Common.Net.Client
 
         private void StartReceive()
         {
-            _clientToken.ReceiveSync.WaitOne();
-            if (IsConnected && !_socket.ReceiveAsync(_receiveEvent))
+            if (IsConnected) lock (_socket)
             {
-                ProcessReceive(_receiveEvent);
+                if (IsConnected && !_socket.ReceiveAsync(_receiveEvent))
+                {
+                    ProcessReceive(_receiveEvent);
+                }
             }
         }
         
@@ -219,18 +221,21 @@ namespace RK.Common.Net.Client
         {
             if (_clientToken.SendBytesRemaining == 0) return;
 
-            if (_clientToken.SendBytesRemaining <= _settings.BufferSize)
+            if (IsConnected) lock (_socket)
             {
-                _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _clientToken.SendBytesRemaining);
-                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
-                    _sendEvent.Buffer, _clientToken.BufferOffsetSend,
-                    _clientToken.SendBytesRemaining);
-            }
-            else
-            {
-                _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _settings.BufferSize);
-                Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
-                    _sendEvent.Buffer, _clientToken.BufferOffsetSend, _settings.BufferSize);
+                if (_clientToken.SendBytesRemaining <= _settings.BufferSize)
+                {
+                    _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _clientToken.SendBytesRemaining);
+                    Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
+                        _sendEvent.Buffer, _clientToken.BufferOffsetSend,
+                        _clientToken.SendBytesRemaining);
+                }
+                else
+                {
+                    _sendEvent.SetBuffer(_clientToken.BufferOffsetSend, _settings.BufferSize);
+                    Buffer.BlockCopy(_clientToken.DataToSend, _clientToken.BytesSentAlready,
+                        _sendEvent.Buffer, _clientToken.BufferOffsetSend, _settings.BufferSize);
+                }
             }
 
             if (IsConnected && !_socket.SendAsync(_sendEvent))

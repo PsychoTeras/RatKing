@@ -51,11 +51,10 @@ namespace RK.Common.Map
             return oddNodes;
         }
 
-        public ShortPoint? FindFreeCell(ServerMap map, int margin)
+        public ShortPoint? FindFreeCell(ServerMap map, int margin, Random rnd)
         {
-            margin += 2;
+            margin += 3;
 
-            Random rnd = new Random(Environment.TickCount);
             int iStart = rnd.Next(Count), iEnd = Count;
 
             bool secondIter = false;
