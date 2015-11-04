@@ -93,7 +93,7 @@ namespace RK.Common.Proto
 
 #region Class static methods
 
-        public static Exception Throw(string message, int errorCode)
+        public static Exception Throw(string message, short errorCode)
         {
             Exception ex = new Exception(message);
             ex.Data.Add("ErrorCode", errorCode);

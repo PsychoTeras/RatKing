@@ -163,8 +163,8 @@ namespace RK.Common.Net.Server
             //Fire ClientConnected event
             if (ClientConnected != null)
             {
-//                ClientConnected.BeginInvoke(clientToken.Id, null, null);
-                ClientConnected(clientToken.Id);
+                ClientConnected.BeginInvoke(clientToken.Id, null, null);
+//                ClientConnected(clientToken.Id);
             }
 
             StartReceive(clientToken);
@@ -192,8 +192,8 @@ namespace RK.Common.Net.Server
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
-//                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
-                    ClientDataReceiveError(clientToken.Id, e.SocketError);
+                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+//                    ClientDataReceiveError(clientToken.Id, e.SocketError);
                 }
 
                 CloseClientSocket(e);
@@ -213,8 +213,8 @@ namespace RK.Common.Net.Server
                     //Fire ClientDataReceived event
                     if (packets.Count > 0 && ClientDataReceived != null)
                     {
-//                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
-                        ClientDataReceived(clientToken.Id, packets);
+                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
+//                        ClientDataReceived(clientToken.Id, packets);
                     }
                 }
                 StartReceive(clientToken);
@@ -324,8 +324,8 @@ namespace RK.Common.Net.Server
                     //Fire DataSent event
                     if (ClientDataSent != null)
                     {
-//                        ClientDataSent.BeginInvoke(clientToken.Id, null, null);
-                        ClientDataSent(clientToken.Id);
+                        ClientDataSent.BeginInvoke(clientToken.Id, null, null);
+//                        ClientDataSent(clientToken.Id);
                     }
 
                     clientToken.ResetSend();
@@ -341,8 +341,8 @@ namespace RK.Common.Net.Server
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
-//                    ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
-                    ClientDataSendError(clientToken.Id, e.SocketError);
+                    ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+//                    ClientDataSendError(clientToken.Id, e.SocketError);
                 }
 
                 clientToken.ResetSend();
@@ -356,7 +356,11 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
             ClientToken clientToken = (ClientToken)e.UserToken;
-            clientToken.PrepareForClose().Close();
+            Socket socket = clientToken.PrepareForClose();
+            if (socket != null)
+            {
+                socket.Close();
+            }
 
             _poolOfDataEventArgs.Push(clientToken);
 
@@ -367,8 +371,8 @@ namespace RK.Common.Net.Server
             //Fire ClientDisonnected event
             if (ClientDisonnected != null)
             {
-//                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
-                ClientDisonnected(clientToken.Id);
+                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+//                ClientDisonnected(clientToken.Id);
             }
         }
 

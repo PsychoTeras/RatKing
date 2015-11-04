@@ -33,10 +33,12 @@
             this.panel7 = new System.Windows.Forms.Panel();
             this.hTCPConnections = new System.Windows.Forms.Label();
             this.panel8 = new System.Windows.Forms.Panel();
+            this.gTCPConnections = new RK.Server.Controls.Graphing.PerfGraph();
             this.pTCPResponsesProc = new System.Windows.Forms.Panel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.hTCPResponsesProc = new System.Windows.Forms.Label();
             this.panel6 = new System.Windows.Forms.Panel();
+            this.gTCPResponsesProc = new RK.Server.Controls.Graphing.PerfGraph();
             this.pOutput = new System.Windows.Forms.Panel();
             this.tbOutput = new System.Windows.Forms.TextBox();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -46,8 +48,6 @@
             this.pNavigationControlsHeader = new System.Windows.Forms.Panel();
             this.hTCPResponsesSend = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
-            this.gTCPConnections = new RK.Server.Controls.Graphing.PerfGraph();
-            this.gTCPResponsesProc = new RK.Server.Controls.Graphing.PerfGraph();
             this.gTCPResponsesSend = new RK.Server.Controls.Graphing.PerfGraph();
             this.pMain.SuspendLayout();
             this.pTCPConnections.SuspendLayout();
@@ -111,7 +111,7 @@
             this.hTCPConnections.Name = "hTCPConnections";
             this.hTCPConnections.Size = new System.Drawing.Size(175, 17);
             this.hTCPConnections.TabIndex = 1;
-            this.hTCPConnections.Text = "TCP Connections";
+            this.hTCPConnections.Text = "TCP Connections - 0";
             this.hTCPConnections.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // panel8
@@ -122,6 +122,32 @@
             this.panel8.Name = "panel8";
             this.panel8.Size = new System.Drawing.Size(175, 1);
             this.panel8.TabIndex = 0;
+            // 
+            // gTCPConnections
+            // 
+            this.gTCPConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.gTCPConnections.AutoAdjustPeek = true;
+            this.gTCPConnections.DisabledColor = System.Drawing.SystemColors.ButtonFace;
+            this.gTCPConnections.ForeColor = System.Drawing.Color.SaddleBrown;
+            this.gTCPConnections.GridColor = System.Drawing.Color.GhostWhite;
+            this.gTCPConnections.GridSize = ((ushort)(10));
+            this.gTCPConnections.HighQuality = true;
+            this.gTCPConnections.LineInterval = ((ushort)(3));
+            this.gTCPConnections.Location = new System.Drawing.Point(0, 18);
+            this.gTCPConnections.MaxLabel = "";
+            this.gTCPConnections.MaxPeekMagnitude = 0F;
+            this.gTCPConnections.MinLabel = " ";
+            this.gTCPConnections.MinPeekMagnitude = 0F;
+            this.gTCPConnections.Name = "gTCPConnections";
+            this.gTCPConnections.ShowGrid = true;
+            this.gTCPConnections.ShowInfoAvg = false;
+            this.gTCPConnections.ShowLabels = true;
+            this.gTCPConnections.Size = new System.Drawing.Size(175, 143);
+            this.gTCPConnections.TabIndex = 1;
+            this.gTCPConnections.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
+            this.gTCPConnections.Units = "";
             // 
             // pTCPResponsesProc
             // 
@@ -165,6 +191,33 @@
             this.panel6.Name = "panel6";
             this.panel6.Size = new System.Drawing.Size(183, 1);
             this.panel6.TabIndex = 0;
+            // 
+            // gTCPResponsesProc
+            // 
+            this.gTCPResponsesProc.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.gTCPResponsesProc.AutoAdjustPeek = true;
+            this.gTCPResponsesProc.DisabledColor = System.Drawing.SystemColors.ButtonFace;
+            this.gTCPResponsesProc.ForeColor = System.Drawing.Color.SaddleBrown;
+            this.gTCPResponsesProc.GridColor = System.Drawing.Color.GhostWhite;
+            this.gTCPResponsesProc.GridSize = ((ushort)(10));
+            this.gTCPResponsesProc.HighQuality = true;
+            this.gTCPResponsesProc.LineInterval = ((ushort)(3));
+            this.gTCPResponsesProc.Location = new System.Drawing.Point(0, 18);
+            this.gTCPResponsesProc.MaxLabel = "";
+            this.gTCPResponsesProc.MaxPeekMagnitude = 50F;
+            this.gTCPResponsesProc.MinLabel = " ";
+            this.gTCPResponsesProc.MinPeekMagnitude = 0F;
+            this.gTCPResponsesProc.Name = "gTCPResponsesProc";
+            this.gTCPResponsesProc.ShowGrid = true;
+            this.gTCPResponsesProc.ShowInfoAvg = true;
+            this.gTCPResponsesProc.ShowLabels = true;
+            this.gTCPResponsesProc.Size = new System.Drawing.Size(183, 143);
+            this.gTCPResponsesProc.TabIndex = 1;
+            this.gTCPResponsesProc.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
+            this.gTCPResponsesProc.Units = "msec";
+            this.gTCPResponsesProc.MouseDown += new System.Windows.Forms.MouseEventHandler(this.GraphMouseDown);
             // 
             // pOutput
             // 
@@ -266,59 +319,6 @@
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(180, 1);
             this.panel3.TabIndex = 0;
-            // 
-            // gTCPConnections
-            // 
-            this.gTCPConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.gTCPConnections.AutoAdjustPeek = true;
-            this.gTCPConnections.DisabledColor = System.Drawing.SystemColors.ButtonFace;
-            this.gTCPConnections.ForeColor = System.Drawing.Color.SaddleBrown;
-            this.gTCPConnections.GridColor = System.Drawing.Color.GhostWhite;
-            this.gTCPConnections.GridSize = ((ushort)(10));
-            this.gTCPConnections.HighQuality = true;
-            this.gTCPConnections.LineInterval = ((ushort)(3));
-            this.gTCPConnections.Location = new System.Drawing.Point(0, 18);
-            this.gTCPConnections.MaxLabel = "";
-            this.gTCPConnections.MaxPeekMagnitude = 0F;
-            this.gTCPConnections.MinLabel = " ";
-            this.gTCPConnections.MinPeekMagnitude = 0F;
-            this.gTCPConnections.Name = "gTCPConnections";
-            this.gTCPConnections.ShowGrid = true;
-            this.gTCPConnections.ShowInfoAvg = false;
-            this.gTCPConnections.ShowLabels = true;
-            this.gTCPConnections.Size = new System.Drawing.Size(175, 143);
-            this.gTCPConnections.TabIndex = 1;
-            this.gTCPConnections.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
-            this.gTCPConnections.Units = "";
-            // 
-            // gTCPResponsesProc
-            // 
-            this.gTCPResponsesProc.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.gTCPResponsesProc.AutoAdjustPeek = true;
-            this.gTCPResponsesProc.DisabledColor = System.Drawing.SystemColors.ButtonFace;
-            this.gTCPResponsesProc.ForeColor = System.Drawing.Color.SaddleBrown;
-            this.gTCPResponsesProc.GridColor = System.Drawing.Color.GhostWhite;
-            this.gTCPResponsesProc.GridSize = ((ushort)(10));
-            this.gTCPResponsesProc.HighQuality = true;
-            this.gTCPResponsesProc.LineInterval = ((ushort)(3));
-            this.gTCPResponsesProc.Location = new System.Drawing.Point(0, 18);
-            this.gTCPResponsesProc.MaxLabel = "";
-            this.gTCPResponsesProc.MaxPeekMagnitude = 50F;
-            this.gTCPResponsesProc.MinLabel = " ";
-            this.gTCPResponsesProc.MinPeekMagnitude = 0F;
-            this.gTCPResponsesProc.Name = "gTCPResponsesProc";
-            this.gTCPResponsesProc.ShowGrid = true;
-            this.gTCPResponsesProc.ShowInfoAvg = true;
-            this.gTCPResponsesProc.ShowLabels = true;
-            this.gTCPResponsesProc.Size = new System.Drawing.Size(183, 143);
-            this.gTCPResponsesProc.TabIndex = 1;
-            this.gTCPResponsesProc.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
-            this.gTCPResponsesProc.Units = "msec";
-            this.gTCPResponsesProc.MouseDown += new System.Windows.Forms.MouseEventHandler(this.GraphMouseDown);
             // 
             // gTCPResponsesSend
             // 

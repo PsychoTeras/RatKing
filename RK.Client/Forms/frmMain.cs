@@ -357,7 +357,7 @@ namespace RK.Client.Forms
                             else
                             {
                                 bot.DoSimulate();
-                                Thread.Sleep(rnd.Next(5, 10));
+                                Thread.Sleep(rnd.Next(1, 5));
                             }
                         }
                     }
@@ -369,7 +369,7 @@ namespace RK.Client.Forms
         {
             lock (_bots)
             {
-                for (int i = 0; i < 3000; i++)
+                for (int i = 0; i < 500; i++)
                 {
                     _bots.Add(new WorldBot());
                 }

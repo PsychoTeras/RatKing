@@ -84,6 +84,7 @@ namespace RK.Server
                             int iData = int.Parse(ev.Message);
                             gTCPConnections.Push(iData, 0);
                             gTCPConnections.UpdateGraph();
+                            hTCPConnections.Text = string.Format("TCP Connections - {0}", iData);
                             break;
                         }
                     case LogEventType.TCPResponsesProc:

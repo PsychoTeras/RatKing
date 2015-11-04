@@ -13,7 +13,7 @@ namespace RK.Client.Classes
     {
         private TCPClient _tcpClient;
         private int _sessionToken;
-        private Random _rnd = new Random(Environment.TickCount);
+        private volatile bool _changingConnection;
 
         public bool Connected { get; private set; }
 
@@ -26,6 +26,12 @@ namespace RK.Client.Classes
             _tcpClient = new TCPClient(settings);
             _tcpClient.Connected += TCPConnected;
             _tcpClient.DataReceived += TCPClientDataReceived;
+            _tcpClient.Disconnected += TCPClientDisconnected;
+        }
+
+        private void TCPClientDisconnected()
+        {
+            _changingConnection = Connected = false;
         }
 
         private void TCPConnected()
@@ -39,6 +45,8 @@ namespace RK.Client.Classes
 
         public void Connect()
         {
+            if (_changingConnection || Connected) return;
+            _changingConnection = true;
             _tcpClient.Connect();
         }
 
@@ -64,6 +72,7 @@ namespace RK.Client.Classes
             {
                 case PacketType.UserEnter:
                     Connected = true;
+                    _changingConnection = false;
                     break;
                 case PacketType.UserLogin:
                     RUserLogin userLogin = (RUserLogin) e;
@@ -84,16 +93,29 @@ namespace RK.Client.Classes
 
         public void DoSimulate()
         {
-            switch (_rnd.Next(0, 3))
+            if (_changingConnection || !Connected) return;
+            Random rnd = new Random(Environment.TickCount);
+            switch (rnd.Next(0, 5))
             {
                 default:
                 {
                     TCPClientDataSend(new PPlayerRotate
                     {
                         SessionToken = _sessionToken,
-                        Angle = _rnd.Next(0, 360)
+                        Angle = rnd.Next(0, 360)
                     });
                     break;
+                }
+                case 0:
+                {
+                    _changingConnection = true;
+                    TCPClientDataSend(new PUserLogout
+                    {
+                        SessionToken = _sessionToken
+                    });
+                    _sessionToken = 0;
+                    _tcpClient.Disconnect();
+                    return;
                 }
             }
         }
