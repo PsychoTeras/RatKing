@@ -177,11 +177,15 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
-            if (!clientToken.Closed &&
-                !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
+            try
             {
-                ProcessReceive(clientToken.ReceiveEvent);
+                if (!clientToken.Closed &&
+                    !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
+                {
+                    ProcessReceive(clientToken.ReceiveEvent);
+                }
             }
+            catch { }
         }
 
         private void ProcessReceive(SocketAsyncEventArgs e)
