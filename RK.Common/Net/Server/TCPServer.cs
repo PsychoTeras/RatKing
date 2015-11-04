@@ -177,11 +177,8 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
-            //if (clientToken.Closed) return;
-            //clientToken.ReceiveSync.WaitOne();
-            //clientToken.ReceiveSync.Set();
-
-            if (!clientToken.Closed && !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
+            if (!clientToken.Closed &&
+                !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
                 ProcessReceive(clientToken.ReceiveEvent);
             }
