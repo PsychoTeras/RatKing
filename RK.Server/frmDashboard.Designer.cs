@@ -143,7 +143,7 @@
             this.gTCPConnections.Name = "gTCPConnections";
             this.gTCPConnections.ShowGrid = true;
             this.gTCPConnections.ShowInfoAvg = false;
-            this.gTCPConnections.ShowLabels = true;
+            this.gTCPConnections.ShowLabels = false;
             this.gTCPConnections.Size = new System.Drawing.Size(175, 143);
             this.gTCPConnections.TabIndex = 1;
             this.gTCPConnections.TextColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));

@@ -251,7 +251,7 @@ namespace RK.Client.Forms
         {
             if (_server != null && !_server.HasExited)
             {
-//                _server.Kill();
+                _server.Kill();
             }
             mapCtrl.Dispose();
             miniMapCtrl.Dispose();
@@ -369,7 +369,7 @@ namespace RK.Client.Forms
         {
             lock (_bots)
             {
-                for (int i = 0; i < 500; i++)
+                for (int i = 0; i < 1000; i++)
                 {
                     _bots.Add(new WorldBot());
                 }

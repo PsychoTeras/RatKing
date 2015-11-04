@@ -177,6 +177,9 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
+            //if (clientToken.Closed) return;
+            //clientToken.ReceiveSync.WaitOne();
+            //clientToken.ReceiveSync.Set();
 
             if (!clientToken.Closed && !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
@@ -187,6 +190,13 @@ namespace RK.Common.Net.Server
         private void ProcessReceive(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken)e.UserToken;
+            clientToken.ReceiveSync.WaitOne();
+            if (clientToken.Closed)
+            {
+                clientToken.ReceiveSync.Set();
+                return;
+            }
+
             if (e.SocketError != SocketError.Success)
             {
                 //Fire ClientDataReceiveError event
@@ -217,8 +227,12 @@ namespace RK.Common.Net.Server
 //                        ClientDataReceived(clientToken.Id, packets);
                     }
                 }
+                clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
+                return;
             }
+
+            clientToken.ReceiveSync.Set();
         }
 
         public void Send(int clientId, ITransferable[] packets)

@@ -92,6 +92,7 @@
     <Compile Include="Net\Server\TCPServer.cs" />
     <Compile Include="Net\Server\TCPServerSettings.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
+    <Compile Include="Proto\Responses\RUserLogout.cs" />
     <Compile Include="Win32\Compression.cs" />
     <Compile Include="Const\ConstMap.cs" />
     <Compile Include="Host\GameHost.cs" />

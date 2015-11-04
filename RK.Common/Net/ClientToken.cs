@@ -141,8 +141,8 @@ namespace RK.Common.Net
             Socket socket = ReceiveEvent.AcceptSocket ?? SendEvent.AcceptSocket;
 
             Closed = true;
-            ReceiveSync.WaitOne(1000);
-            SendSync.WaitOne(1000);
+            ReceiveSync.WaitOne(100);
+            SendSync.WaitOne(100);
 
             ReceiveEvent.AcceptSocket = null;
             SendEvent.AcceptSocket = null;

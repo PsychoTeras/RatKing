@@ -109,7 +109,7 @@ namespace RK.Server
                     }
                     default:
                     {
-                        WriteLog(ev.Message);
+//                        WriteLog(ev.Message);
                         break;
                     }
                 }

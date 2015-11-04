@@ -172,6 +172,8 @@ namespace RK.Common.Proto
                     //User
                 case PacketType.UserLogin:
                     return new RUserLogin();
+                case PacketType.UserLogout:
+                    return new RUserLogout();
                 case PacketType.UserEnter:
                     return new RUserEnter();
 
