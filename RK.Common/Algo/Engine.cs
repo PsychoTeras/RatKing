@@ -10,11 +10,12 @@ namespace RK.Common.Algo
 {
     public unsafe static class Engine
     {
-        public static bool ValidateNewPlayerPosition(PlayerData playerData, IBaseMap map)
+        public static bool ValidateNewPlayerPosition(PlayerData playerData, IBaseMap map, bool emulateCheat = false)
         {
             if (playerData.IsMoving)
             {
                 int traveled = CalculatePlayerTraveledDistance(playerData);
+                if (emulateCheat) traveled += 5;
                 Point newPos = CalculateNewPlayerPos(playerData.Player, traveled);
                 PlayerPosProcessCollision(playerData.Player, map, ref newPos);
                 if (playerData.Player.Position != newPos)
@@ -28,8 +29,7 @@ namespace RK.Common.Algo
 
         private static int CalculatePlayerTraveledDistance(PlayerData playerData)
         {
-            double moveTimeElapsed = DateTime.Now.Subtract(playerData.MovingStartTime).
-                TotalMilliseconds;
+            double moveTimeElapsed = DateTime.Now.Subtract(playerData.MovingStartTime).TotalMilliseconds;
             float fDistance = ((float)moveTimeElapsed / playerData.Player.Speed) + 
                               playerData.MovingDistanceRest;
             int traveled = (int)Math.Floor(fDistance);

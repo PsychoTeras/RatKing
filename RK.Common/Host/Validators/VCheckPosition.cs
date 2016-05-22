@@ -85,16 +85,16 @@ namespace RK.Common.Host.Validators
             }
         }
 
-        public override bool Validate(BasePacket packet)
+        public override void Validate(BasePacket packet)
         {
             ValidationInfo info;
             _info.TryGetValue(packet.SessionToken, out info);
             if (info == null)
             {
-                return false;
+                BaseResponse.Throw(packet.ToString(), ECGeneral.SessionError);
+                return;
             }
             info.AssertAction(packet);
-            return true;
         }
     }
 }

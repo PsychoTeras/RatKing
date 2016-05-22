@@ -222,6 +222,8 @@ namespace RK.Common.Proto
                 PacketType responseType = (PacketType)(*(short*)&bData[4]);
                 response = AllocNew(responseType);
 
+                if (response == null) return null;
+
                 response.Id = *(long*)&bData[6];
                 response.ErrorCode = *(short*)&bData[14];
 

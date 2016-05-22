@@ -73,6 +73,8 @@
     <Compile Include="Host\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />
     <Compile Include="Classes\Units\PlayerDataEx.cs" />
+    <Compile Include="Host\Validators\IValidator.cs" />
+    <Compile Include="Host\Validators\ValidatorList.cs" />
     <Compile Include="Map\ClientMap.cs" />
     <Compile Include="Classes\Common\Pair.cs" />
     <Compile Include="Classes\Common\DbObject.cs" />

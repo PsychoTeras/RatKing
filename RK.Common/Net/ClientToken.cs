@@ -16,6 +16,7 @@ namespace RK.Common.Net
 
         public int Id;
 
+        public Socket Socket;
         public SocketAsyncEventArgs ReceiveEvent;
         public SocketAsyncEventArgs SendEvent;
 
@@ -33,9 +34,12 @@ namespace RK.Common.Net
 
         public ClientToken() { }
 
-        public ClientToken(SocketAsyncEventArgs receiveEvent, SocketAsyncEventArgs sendEvent)
+        public ClientToken(Socket socket, SocketAsyncEventArgs receiveEvent, 
+            SocketAsyncEventArgs sendEvent)
         {
             Id = _idCounter++;
+
+            Socket = socket;
 
             ReceiveEvent = receiveEvent;
             BufferOffsetReceive = receiveEvent.Offset;
@@ -113,7 +117,7 @@ namespace RK.Common.Net
             } while (rSize > 0 && packet != null);
 
             //Shrink stream
-            if (pos > 0)
+            if (pos > 0 && ReceivedDataLength > 0)
             {
                 ReceivedDataLength -= pos;
                 Buffer.BlockCopy(buf, pos, buf, 0, ReceivedDataLength);
@@ -136,7 +140,7 @@ namespace RK.Common.Net
             SendSync.Set();
         }
 
-        public Socket PrepareForClose()
+        public Socket Close()
         {
             Socket socket = ReceiveEvent.AcceptSocket ?? SendEvent.AcceptSocket;
 
@@ -149,12 +153,17 @@ namespace RK.Common.Net
             ResetReceive();
             ResetSend();
 
+            if (Socket != null)
+            {
+                Socket.Close();
+            }
+
             return socket;
         }
 
         public void Dispose()
         {
-            PrepareForClose();
+            Close();
             ReceivedData.Dispose();
             ReceiveSync.Dispose();
             SendSync.Dispose();

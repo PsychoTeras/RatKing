@@ -95,7 +95,7 @@ namespace RK.Common.Net.Server
                 _bufferManager.SetBuffer(sendEvent);
                 sendEvent.Completed += IOCompleted;
 
-                ClientToken clientToken = new ClientToken(receiveEvent, sendEvent);
+                ClientToken clientToken = new ClientToken(null, receiveEvent, sendEvent);
                 receiveEvent.UserToken = sendEvent.UserToken = clientToken;
                 _clients[clientToken.Id] = clientToken;
 
@@ -177,15 +177,11 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
-            try
+            if (!clientToken.Closed && clientToken.ReceiveEvent.AcceptSocket != null &&
+                !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
             {
-                if (!clientToken.Closed &&
-                    !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
-                {
-                    ProcessReceive(clientToken.ReceiveEvent);
-                }
+                ProcessReceive(clientToken.ReceiveEvent);
             }
-            catch { }
         }
 
         private void ProcessReceive(SocketAsyncEventArgs e)
@@ -305,6 +301,8 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
+
+            if (clientToken.SendEvent.AcceptSocket == null) return;
         
             if (clientToken.SendBytesRemaining <= _settings.BufferSize)
             {
@@ -371,7 +369,7 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
             ClientToken clientToken = (ClientToken)e.UserToken;
-            Socket socket = clientToken.PrepareForClose();
+            Socket socket = clientToken.Close();
             if (socket != null)
             {
                 socket.Close();

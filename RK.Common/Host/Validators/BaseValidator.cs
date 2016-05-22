@@ -2,7 +2,7 @@
 
 namespace RK.Common.Host.Validators
 {
-    internal abstract class BaseValidator
+    internal abstract class BaseValidator : IValidator
     {
 
 #region Protected fields
@@ -24,7 +24,7 @@ namespace RK.Common.Host.Validators
 
         public abstract void RegisterSession(long sessionToken);
         public abstract void UnregisterSession(long sessionToken);
-        public abstract bool Validate(BasePacket packet);
+        public abstract void Validate(BasePacket packet);
 
 #endregion
 

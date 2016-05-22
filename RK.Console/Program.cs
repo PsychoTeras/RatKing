@@ -426,8 +426,26 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
-        static void Main(string[] args)
+        private delegate ConsoleKeyInfo C();
+
+        private static C _cc = new C(System.Console.ReadKey);
+        private static C CC { get { return _cc; } }
+        private static event C EC ;
+
+        struct A { }
+        class B
         {
+            public int i;
+        }
+        static void Main(string[] args){
+
+        A a;
+            EC = null;
+            if (EC == null)
+            {
+                EC += _cc;
+            }
+            EC = null;
             TestMapWindowGetPerf();
             System.Console.ReadKey();
         }

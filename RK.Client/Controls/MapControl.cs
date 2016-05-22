@@ -49,6 +49,7 @@ namespace RK.Client.Controls
         private TCPClient _tcpClient;
         private bool _connecting;
         private bool _reconnecting;
+        
         private ClientMap _map;
 
         private Graphics _buffer;
@@ -269,7 +270,7 @@ namespace RK.Client.Controls
 
                 TCPClientSettings settings = new TCPClientSettings
                     (
-                    ushort.MaxValue, "192.168.1.32", 15051, true
+                    ushort.MaxValue, "127.0.0.1", 15051, true
                     );
                 _tcpClient = new TCPClient(settings);
                 _tcpClient.Connected += TCPConnected;
@@ -972,6 +973,11 @@ namespace RK.Client.Controls
 
         private void GameHostResponse(BaseResponse e)
         {
+            if (e.HasError)
+            {
+                ReconnectToHost();
+                return;
+            }
             switch (e.Type)
             {
                 case PacketType.UserLogin:

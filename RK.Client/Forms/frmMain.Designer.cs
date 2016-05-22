@@ -109,6 +109,7 @@ namespace RK.Client.Forms
             this.tcMain.SelectedIndex = 0;
             this.tcMain.Size = new System.Drawing.Size(735, 625);
             this.tcMain.TabIndex = 0;
+            this.tcMain.TabStop = false;
             // 
             // tpMap
             // 
