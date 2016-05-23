@@ -188,6 +188,13 @@ namespace RK.Common.Net.Client
                 }
 
                 StartReceive(e);
+                return;
+            }
+
+            //Return of zero bytes transferred means that the server is no longer connected
+            if (!clientToken.Closed && clientToken.Socket != null)
+            {
+                ProcessDisconnect(e);
             }
         }
 

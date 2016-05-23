@@ -178,8 +178,8 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
-            if (!clientToken.Closed && clientToken.ReceiveEvent.AcceptSocket != null &&
-                !clientToken.ReceiveEvent.AcceptSocket.ReceiveAsync(clientToken.ReceiveEvent))
+            if (clientToken.Socket != null && clientToken.Socket.Connected &&
+                !clientToken.Socket.ReceiveAsync(clientToken.ReceiveEvent))
             {
                 ProcessReceive(clientToken.ReceiveEvent);
             }
@@ -189,14 +189,7 @@ namespace RK.Common.Net.Server
         {
             ClientToken clientToken = (ClientToken)e.UserToken;
 
-//            clientToken.ReceiveSync.WaitOne();
-//            if (clientToken.Closed)
-//            {
-//                clientToken.ReceiveSync.Set();
-//                return;
-//            }
-
-            if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
+            if (e.SocketError != SocketError.Success)
             {
                 if (e.SocketError == SocketError.OperationAborted) return;
 
@@ -231,17 +224,15 @@ namespace RK.Common.Net.Server
                     }
                 }
 
-//                clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
                 return;
             }
 
             //Return of zero bytes transferred means that the client is no longer connected
-            if (!clientToken.Closed && e.AcceptSocket != null)
+            if (!clientToken.Closed)
             {
                 CloseClientSocket(e);
             }
-//            clientToken.ReceiveSync.Set();
         }
 
         public void Send(int clientId, ITransferable[] packets)
@@ -314,7 +305,7 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
 
-            if (clientToken.SendEvent.AcceptSocket == null) return;
+            if (clientToken.Socket == null) return;
         
             if (clientToken.SendBytesRemaining <= _settings.BufferSize)
             {
@@ -331,7 +322,8 @@ namespace RK.Common.Net.Server
                     clientToken.SendEvent.Buffer, clientToken.BufferOffsetSend, _settings.BufferSize);
             }
 
-            if (!clientToken.SendEvent.AcceptSocket.SendAsync(clientToken.SendEvent))
+            if (clientToken.Socket != null && clientToken.Socket.Connected &&
+                !clientToken.Socket.SendAsync(clientToken.SendEvent))
             {
                 ProcessSend(clientToken.SendEvent);
             }
@@ -341,7 +333,7 @@ namespace RK.Common.Net.Server
         {
             ClientToken clientToken = (ClientToken) e.UserToken;
 
-            if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
+            if (e.SocketError != SocketError.Success)
             {
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
@@ -349,7 +341,7 @@ namespace RK.Common.Net.Server
                     ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
                 }
 
-                if (!clientToken.Closed && e.AcceptSocket != null)
+                if (!clientToken.Closed)
                 {
                     CloseClientSocket(e);
                 }
@@ -381,18 +373,21 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
             ClientToken clientToken = (ClientToken)e.UserToken;
-            clientToken.Close();
-
-            _poolOfDataEventArgs.Push(clientToken);
-
-            _maxConnectionsEnforcer.Release();
-
-            Interlocked.Decrement(ref _numberOfAcceptedSockets);
-
-            //Fire ClientDisonnected event
-            if (ClientDisonnected != null)
+            if (!clientToken.Closed)
             {
-                ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+                clientToken.Close();
+
+                _poolOfDataEventArgs.Push(clientToken);
+
+                _maxConnectionsEnforcer.Release();
+
+                Interlocked.Decrement(ref _numberOfAcceptedSockets);
+
+                //Fire ClientDisonnected event
+                if (ClientDisonnected != null)
+                {
+                    ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+                }
             }
         }
 

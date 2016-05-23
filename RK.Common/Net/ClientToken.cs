@@ -27,7 +27,6 @@ namespace RK.Common.Net
         public int BytesSentAlready;
         public byte[] DataToSend;
 
-//        public HybridLock ReceiveSync;
         public HybridLock SendSync;
 
         public volatile bool Closed;
@@ -38,7 +37,7 @@ namespace RK.Common.Net
             : this(null, receiveEvent, sendEvent) { }
 
         public ClientToken(Socket socket, SocketAsyncEventArgs receiveEvent, 
-            SocketAsyncEventArgs sendEvent)
+                           SocketAsyncEventArgs sendEvent)
         {
             Id = _idCounter++;
 
@@ -51,14 +50,12 @@ namespace RK.Common.Net
             BufferOffsetSend = sendEvent.Offset;
 
             ReceivedData = new MemoryStream();
-//            ReceiveSync = new HybridLock();
             SendSync = new HybridLock();
         }
 
         public void AcceptConnection(SocketAsyncEventArgs e, bool cleanAcceptSocket)
         {
             ReceiveEvent.AcceptSocket = e.AcceptSocket;
-            SendEvent.AcceptSocket = e.AcceptSocket;
             Socket = e.AcceptSocket;
             if (cleanAcceptSocket) e.AcceptSocket = null;
             Closed = false;
@@ -134,7 +131,6 @@ namespace RK.Common.Net
         public void ResetReceive()
         {
             ReceivedData.SetLength(ReceivedDataLength = 0);
-//            ReceiveSync.Set();
         }
 
         public void ResetSend()
@@ -148,7 +144,6 @@ namespace RK.Common.Net
         {
             Closed = true;
 
-//            ReceiveSync.WaitOne(100);
             SendSync.WaitOne(100);
 
             if (Socket != null)
@@ -156,8 +151,6 @@ namespace RK.Common.Net
                 Socket.Close();
                 Socket = null;
             }
-            ReceiveEvent.AcceptSocket = null;
-            SendEvent.AcceptSocket = null;
 
             ResetReceive();
             ResetSend();
@@ -167,7 +160,6 @@ namespace RK.Common.Net
         {
             Close();
             ReceivedData.Dispose();
-//            ReceiveSync.Dispose();
             SendSync.Dispose();
         }
     }
