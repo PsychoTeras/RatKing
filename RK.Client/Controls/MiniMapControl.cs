@@ -264,7 +264,7 @@ namespace RK.Client.Controls
 
         private void GeneralPaint()
         {
-            if (IsMapLoaded)
+            if (IsMapLoaded && _map.PlayerData != null)
             {
                 float w = _map.Map.Width*ConstMap.PIXEL_SIZE*_map.ScaleFactor;
                 float h = _map.Map.Height*ConstMap.PIXEL_SIZE*_map.ScaleFactor;

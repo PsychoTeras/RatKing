@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using IPCLogger.Core.Loggers;
 using RK.Client.Classes;
 using RK.Client.Classes.Map.Renderers;
 using RK.Common.Algo;
@@ -47,8 +48,8 @@ namespace RK.Client.Controls
 #region Private fields
 
         private TCPClient _tcpClient;
-        private bool _connecting;
-        private bool _reconnecting;
+        private volatile bool _connecting;
+        private volatile bool _reconnecting;
         
         private ClientMap _map;
 
@@ -257,6 +258,8 @@ namespace RK.Client.Controls
 
             if (!DesignMode)
             {
+                LFactory.Instance.Setup("RK.Client.config");
+
                 SetStyle(ControlStyles.Opaque, true);
                 SetStyle(ControlStyles.Selectable, false);
 
@@ -267,15 +270,6 @@ namespace RK.Client.Controls
 
                 InitializeEnvironment();
                 InitializeRenderers();
-
-                TCPClientSettings settings = new TCPClientSettings
-                    (
-                    ushort.MaxValue, "127.0.0.1", 15051, true
-                    );
-                _tcpClient = new TCPClient(settings);
-                _tcpClient.Connected += TCPConnected;
-                _tcpClient.DataReceived += TCPDataReceived;
-                _tcpClient.Disconnected += TCPDisconnected;
             }
 
             InitializeComponent();
@@ -291,28 +285,45 @@ namespace RK.Client.Controls
 
 #region Class methods
 
+        private void WriteLog(string msg)
+        {
+            LFactory.Instance.WriteLine(msg + Environment.NewLine);
+        }
+
         public void DisconnectFromHost()
         {
-            if (_sessionToken != 0)
+            if (_tcpClient.IsConnected)
             {
+                WriteLog("DisconnectFromHost");
                 TCPClientDataSend(new PUserLogout
                 {
                     SessionToken = _sessionToken
                 });
-                IsMapLoaded = false;
                 _sessionToken = 0;
+                IsMapLoaded = false;
                 _myPlayerData = null;
                 if (_tcpClient != null)
                 {
                     _tcpClient.Disconnect();
                 }
             }
+            else
+            {
+                WriteLog("!DisconnectFromHost");
+            }
         }
 
         public void ConnectToHost()
         {
-            if (_connecting) return;
+            if (_connecting)
+            {
+                WriteLog("!ConnectToHost");
+                return;
+            }
             _connecting = true;
+
+            WriteLog("ConnectToHost");
+
             try
             {
                 lock (_playersData)
@@ -334,13 +345,21 @@ namespace RK.Client.Controls
 
         public void ReconnectToHost()
         {
-            if (_sessionToken != 0)
+            if (_connecting)
             {
+                WriteLog("!ReconnectToHost");
+                return;
+            }
+
+            if (_tcpClient.IsConnected)
+            {
+                WriteLog("ReconnectToHost");
                 _reconnecting = true;
                 DisconnectFromHost();
             }
             else
             {
+                WriteLog("ReconnectToHost:ConnectToHost");
                 ConnectToHost();
             }
         }
@@ -363,6 +382,15 @@ namespace RK.Client.Controls
             _threadObjectChanged = new Thread(ObjectChangedProc);
             _threadObjectChanged.IsBackground = true;
             _threadObjectChanged.Start();
+
+            TCPClientSettings settings = new TCPClientSettings
+                (
+                ushort.MaxValue, "127.0.0.1", 15051, true
+                );
+            _tcpClient = new TCPClient(settings);
+            _tcpClient.Connected += TCPConnected;
+            _tcpClient.DataReceived += TCPDataReceived;
+            _tcpClient.Disconnected += TCPDisconnected;
         }
 
         private void OnScaleFactorChanged()
@@ -447,6 +475,8 @@ namespace RK.Client.Controls
                 _map.Dispose();
 
                 Application.RemoveMessageFilter(this);
+
+                LFactory.Instance.Deinitialize();
             }
             base.Dispose();
         }
@@ -489,6 +519,8 @@ namespace RK.Client.Controls
 
         private void UpdatePlayersPosition()
         {
+            if (PlayerData == null) return;
+
             lock (_playersData)
             {
                 foreach (int playerId in _playersData.Keys)
@@ -978,6 +1010,7 @@ namespace RK.Client.Controls
                 ReconnectToHost();
                 return;
             }
+
             switch (e.Type)
             {
                 case PacketType.UserLogin:
@@ -999,11 +1032,10 @@ namespace RK.Client.Controls
                     lock (_playersData)
                     {
                         RUserEnter userEnter = (RUserEnter) e;
-
                         _map.Setup(userEnter.MapSize);
                         _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
                         _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
-                        OnMapChanged();
+//                        OnMapChanged();
 
                         foreach (Player p in userEnter.PlayersOnLocation)
                         {
@@ -1015,9 +1047,9 @@ namespace RK.Client.Controls
                         _myPlayerData = _playersData[userEnter.MyPlayerId];
                         _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
                     }
-                    CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor),
-                             (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
-                             true);
+//                    CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor),
+//                             (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
+//                             true);
                     break;
 
                 case PacketType.PlayerEnter:
@@ -1029,7 +1061,7 @@ namespace RK.Client.Controls
                         {
                             _playersData.Add(playerEnter.Player.Id, new PlayerDataEx(playerEnter.Player));
                             _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
-                            _somethingChanged = true;
+//                            _somethingChanged = true;
                         }
                     }
                     break;
@@ -1043,7 +1075,7 @@ namespace RK.Client.Controls
                         {
                             _playersData.Remove(playerExit.PlayerId);
                             _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
-                            _somethingChanged = true;
+//                            _somethingChanged = true;
                         }
                     }
                     break;
@@ -1075,7 +1107,7 @@ namespace RK.Client.Controls
 
                 case PacketType.MapData:
                     RMapData mapData = (RMapData) e;
-                    _map.AppendMapData(mapData.MapData, mapData.MapWindow);
+//                    _map.AppendMapData(mapData.MapData, mapData.MapWindow);
                     _myPlayerData.GettingMapWindow = false;
                     break;
             }
@@ -1087,6 +1119,7 @@ namespace RK.Client.Controls
 
         private void TCPConnected()
         {
+            WriteLog("TCPConnected" + Environment.NewLine);
             _connecting = false;
             TCPClientDataSend(new PUserLogin
             {
@@ -1115,8 +1148,13 @@ namespace RK.Client.Controls
         {
             if (_reconnecting)
             {
+                WriteLog("TCPDisconnected");
                 _reconnecting = false;
                 ConnectToHost();
+            }
+            else
+            {
+                WriteLog("!TCPDisconnected");
             }
         }
 

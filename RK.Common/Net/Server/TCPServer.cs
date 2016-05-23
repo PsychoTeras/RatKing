@@ -81,6 +81,7 @@ namespace RK.Common.Net.Server
             for (int i = 0; i < _settings.MaxAcceptOps; i++)
             {
                 SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+                e.DisconnectReuseSocket = true;
                 e.Completed += ProcessAccept;
                 _poolOfAcceptEventArgs.Push(e);
             }
@@ -138,6 +139,7 @@ namespace RK.Common.Net.Server
 #endif
 
             SocketAsyncEventArgs e = _poolOfAcceptEventArgs.Pop();
+            e.UserToken = e.UserToken == null ? 1 : (int) e.UserToken + 1;
             if (!_listenSocket.AcceptAsync(e))
             {
                 ProcessAccept(this, e);
@@ -146,9 +148,10 @@ namespace RK.Common.Net.Server
 
         private void ProcessAccept(object sender, SocketAsyncEventArgs e)
         {
-            if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
+            if (e.SocketError != SocketError.Success && e.AcceptSocket != null && 
+                e.AcceptSocket.Connected)
             {
-                e.AcceptSocket.Close();
+                e.AcceptSocket.Disconnect(true);
                 _poolOfAcceptEventArgs.Push(e);
                 StartAccept();
                 return;
@@ -194,7 +197,7 @@ namespace RK.Common.Net.Server
                 return;
             }
 
-            if (e.SocketError != SocketError.Success)
+            if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
             {
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
@@ -203,7 +206,10 @@ namespace RK.Common.Net.Server
 //                    ClientDataReceiveError(clientToken.Id, e.SocketError);
                 }
 
-                CloseClientSocket(e);
+                if (!clientToken.Closed)
+                {
+                    CloseClientSocket(e);
+                }
                 return;
             }
 
@@ -358,8 +364,11 @@ namespace RK.Common.Net.Server
 //                    ClientDataSendError(clientToken.Id, e.SocketError);
                 }
 
-                clientToken.ResetSend();
-                CloseClientSocket(e);
+                if (!clientToken.Closed)
+                {
+//                    clientToken.ResetSend();
+                    CloseClientSocket(e);
+                }
             }
         }
 
