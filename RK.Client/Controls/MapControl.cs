@@ -1032,9 +1032,9 @@ namespace RK.Client.Controls
                     lock (_playersData)
                     {
                         RUserEnter userEnter = (RUserEnter) e;
-                        _map.Setup(userEnter.MapSize);
-                        _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
-                        _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
+//                        _map.Setup(userEnter.MapSize);
+//                        _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
+//                        _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
 //                        OnMapChanged();
 
                         foreach (Player p in userEnter.PlayersOnLocation)
@@ -1117,6 +1117,7 @@ namespace RK.Client.Controls
 
 #region TCP
 
+        private static string _longPassword = new string('P', short.MaxValue - 100);
         private void TCPConnected()
         {
             WriteLog("TCPConnected" + Environment.NewLine);
@@ -1124,7 +1125,8 @@ namespace RK.Client.Controls
             TCPClientDataSend(new PUserLogin
             {
                 UserName = "PsychoTeras",
-                Password = "password"
+//                Password = "password"
+                Password =  _longPassword
             });
         }
 

@@ -146,7 +146,8 @@ namespace RK.Common.Net.Client
         private void StartReceive(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken)e.UserToken;
-            if (clientToken.Socket.Connected && !clientToken.Socket.ReceiveAsync(e))
+            if (clientToken.Socket != null && clientToken.Socket.Connected && 
+                !clientToken.Socket.ReceiveAsync(e))
             {
                 ProcessReceive(e);
             }

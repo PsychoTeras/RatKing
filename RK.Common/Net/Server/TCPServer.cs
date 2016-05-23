@@ -81,7 +81,6 @@ namespace RK.Common.Net.Server
             for (int i = 0; i < _settings.MaxAcceptOps; i++)
             {
                 SocketAsyncEventArgs e = new SocketAsyncEventArgs();
-                e.DisconnectReuseSocket = true;
                 e.Completed += ProcessAccept;
                 _poolOfAcceptEventArgs.Push(e);
             }
@@ -96,7 +95,7 @@ namespace RK.Common.Net.Server
                 _bufferManager.SetBuffer(sendEvent);
                 sendEvent.Completed += IOCompleted;
 
-                ClientToken clientToken = new ClientToken(null, receiveEvent, sendEvent);
+                ClientToken clientToken = new ClientToken(receiveEvent, sendEvent);
                 receiveEvent.UserToken = sendEvent.UserToken = clientToken;
                 _clients[clientToken.Id] = clientToken;
 
@@ -151,7 +150,7 @@ namespace RK.Common.Net.Server
             if (e.SocketError != SocketError.Success && e.AcceptSocket != null && 
                 e.AcceptSocket.Connected)
             {
-                e.AcceptSocket.Disconnect(true);
+                e.AcceptSocket.Disconnect(false);
                 _poolOfAcceptEventArgs.Push(e);
                 StartAccept();
                 return;
@@ -189,15 +188,18 @@ namespace RK.Common.Net.Server
         private void ProcessReceive(SocketAsyncEventArgs e)
         {
             ClientToken clientToken = (ClientToken)e.UserToken;
-            clientToken.ReceiveSync.WaitOne();
-            if (clientToken.Closed)
-            {
-                clientToken.ReceiveSync.Set();
-                return;
-            }
+
+//            clientToken.ReceiveSync.WaitOne();
+//            if (clientToken.Closed)
+//            {
+//                clientToken.ReceiveSync.Set();
+//                return;
+//            }
 
             if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
             {
+                if (e.SocketError == SocketError.OperationAborted) return;
+
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
@@ -212,8 +214,9 @@ namespace RK.Common.Net.Server
                 return;
             }
 
+            //Read client bytes transferred
             int bytesTransferred = e.BytesTransferred;
-            if (!clientToken.Closed && bytesTransferred != 0)
+            if (bytesTransferred != 0)
             {
                 clientToken.AcceptData(e, bytesTransferred);
                 if (clientToken.ReceivedDataLength != 0)
@@ -228,12 +231,17 @@ namespace RK.Common.Net.Server
                     }
                 }
 
-                clientToken.ReceiveSync.Set();
+//                clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
                 return;
             }
 
-            clientToken.ReceiveSync.Set();
+            //Return of zero bytes transferred means that the client is no longer connected
+            if (!clientToken.Closed && e.AcceptSocket != null)
+            {
+                CloseClientSocket(e);
+            }
+//            clientToken.ReceiveSync.Set();
         }
 
         public void Send(int clientId, ITransferable[] packets)
@@ -373,11 +381,7 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
             ClientToken clientToken = (ClientToken)e.UserToken;
-            Socket socket = clientToken.Close();
-            if (socket != null)
-            {
-                socket.Close();
-            }
+            clientToken.Close();
 
             _poolOfDataEventArgs.Push(clientToken);
 

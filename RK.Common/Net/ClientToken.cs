@@ -27,12 +27,15 @@ namespace RK.Common.Net
         public int BytesSentAlready;
         public byte[] DataToSend;
 
-        public HybridLock ReceiveSync;
+//        public HybridLock ReceiveSync;
         public HybridLock SendSync;
 
         public volatile bool Closed;
 
         public ClientToken() { }
+
+        public ClientToken(SocketAsyncEventArgs receiveEvent, SocketAsyncEventArgs sendEvent)
+            : this(null, receiveEvent, sendEvent) { }
 
         public ClientToken(Socket socket, SocketAsyncEventArgs receiveEvent, 
             SocketAsyncEventArgs sendEvent)
@@ -48,7 +51,7 @@ namespace RK.Common.Net
             BufferOffsetSend = sendEvent.Offset;
 
             ReceivedData = new MemoryStream();
-            ReceiveSync = new HybridLock();
+//            ReceiveSync = new HybridLock();
             SendSync = new HybridLock();
         }
 
@@ -56,6 +59,7 @@ namespace RK.Common.Net
         {
             ReceiveEvent.AcceptSocket = e.AcceptSocket;
             SendEvent.AcceptSocket = e.AcceptSocket;
+            Socket = e.AcceptSocket;
             if (cleanAcceptSocket) e.AcceptSocket = null;
             Closed = false;
         }
@@ -130,7 +134,7 @@ namespace RK.Common.Net
         public void ResetReceive()
         {
             ReceivedData.SetLength(ReceivedDataLength = 0);
-            ReceiveSync.Set();
+//            ReceiveSync.Set();
         }
 
         public void ResetSend()
@@ -140,32 +144,30 @@ namespace RK.Common.Net
             SendSync.Set();
         }
 
-        public Socket Close()
+        public void Close()
         {
-            Socket socket = ReceiveEvent.AcceptSocket ?? SendEvent.AcceptSocket;
-
             Closed = true;
-            ReceiveSync.WaitOne(100);
-            SendSync.WaitOne(100);
 
-            ReceiveEvent.AcceptSocket = null;
-            SendEvent.AcceptSocket = null;
-            ResetReceive();
-            ResetSend();
+//            ReceiveSync.WaitOne(100);
+            SendSync.WaitOne(100);
 
             if (Socket != null)
             {
                 Socket.Close();
+                Socket = null;
             }
+            ReceiveEvent.AcceptSocket = null;
+            SendEvent.AcceptSocket = null;
 
-            return socket;
+            ResetReceive();
+            ResetSend();
         }
 
         public void Dispose()
         {
             Close();
             ReceivedData.Dispose();
-            ReceiveSync.Dispose();
+//            ReceiveSync.Dispose();
             SendSync.Dispose();
         }
     }
