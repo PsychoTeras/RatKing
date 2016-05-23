@@ -1031,11 +1031,11 @@ namespace RK.Client.Controls
                 case PacketType.UserEnter:
                     lock (_playersData)
                     {
-                        RUserEnter userEnter = (RUserEnter) e;
-//                        _map.Setup(userEnter.MapSize);
-//                        _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
-//                        _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
-//                        OnMapChanged();
+                        RUserEnter userEnter = (RUserEnter) e; //!!!
+                        _map.Setup(userEnter.MapSize);
+                        _map.AppendMapData(userEnter.MapData, userEnter.MapWindow);
+                        _map.AppendMiniMapData(userEnter.MiniMapData, userEnter.MiniMapSize);
+                        OnMapChanged();
 
                         foreach (Player p in userEnter.PlayersOnLocation)
                         {
@@ -1047,9 +1047,9 @@ namespace RK.Client.Controls
                         _myPlayerData = _playersData[userEnter.MyPlayerId];
                         _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
                     }
-//                    CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor),
-//                             (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
-//                             true);
+                    CenterTo((int) (_myPlayerData.Player.Position.X*_scaleFactor), //!!!
+                             (int) (_myPlayerData.Player.Position.Y*_scaleFactor),
+                             true);
                     break;
 
                 case PacketType.PlayerEnter:
@@ -1061,7 +1061,7 @@ namespace RK.Client.Controls
                         {
                             _playersData.Add(playerEnter.Player.Id, new PlayerDataEx(playerEnter.Player));
                             _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
-//                            _somethingChanged = true;
+                            _somethingChanged = true; //!!!
                         }
                     }
                     break;
@@ -1075,7 +1075,7 @@ namespace RK.Client.Controls
                         {
                             _playersData.Remove(playerExit.PlayerId);
                             _playersRo = new ReadOnlyCollection<PlayerDataEx>(_playersData.Values.ToArray());
-//                            _somethingChanged = true;
+                            _somethingChanged = true; //!!!
                         }
                     }
                     break;
@@ -1107,7 +1107,7 @@ namespace RK.Client.Controls
 
                 case PacketType.MapData:
                     RMapData mapData = (RMapData) e;
-//                    _map.AppendMapData(mapData.MapData, mapData.MapWindow);
+                    _map.AppendMapData(mapData.MapData, mapData.MapWindow); //!!!
                     _myPlayerData.GettingMapWindow = false;
                     break;
             }
@@ -1125,8 +1125,8 @@ namespace RK.Client.Controls
             TCPClientDataSend(new PUserLogin
             {
                 UserName = "PsychoTeras",
-//                Password = "password"
-                Password =  _longPassword
+                Password = "password"
+//                Password =  _longPassword
             });
         }
 
