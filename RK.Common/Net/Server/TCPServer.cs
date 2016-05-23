@@ -167,7 +167,6 @@ namespace RK.Common.Net.Server
             if (ClientConnected != null)
             {
                 ClientConnected.BeginInvoke(clientToken.Id, null, null);
-//                ClientConnected(clientToken.Id);
             }
 
             StartReceive(clientToken);
@@ -203,13 +202,13 @@ namespace RK.Common.Net.Server
                 if (ClientDataReceiveError != null)
                 {
                     ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
-//                    ClientDataReceiveError(clientToken.Id, e.SocketError);
                 }
 
                 if (!clientToken.Closed)
                 {
                     CloseClientSocket(e);
                 }
+
                 return;
             }
 
@@ -217,7 +216,6 @@ namespace RK.Common.Net.Server
             if (!clientToken.Closed && bytesTransferred != 0)
             {
                 clientToken.AcceptData(e, bytesTransferred);
-
                 if (clientToken.ReceivedDataLength != 0)
                 {
                     //Parse received data for packets
@@ -227,9 +225,9 @@ namespace RK.Common.Net.Server
                     if (packets.Count > 0 && ClientDataReceived != null)
                     {
                         ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
-//                        ClientDataReceived(clientToken.Id, packets);
                     }
                 }
+
                 clientToken.ReceiveSync.Set();
                 StartReceive(clientToken);
                 return;
@@ -335,40 +333,37 @@ namespace RK.Common.Net.Server
         {
             ClientToken clientToken = (ClientToken) e.UserToken;
 
-            if (e.SocketError == SocketError.Success)
-            {
-                clientToken.SendBytesRemaining = clientToken.SendBytesRemaining - e.BytesTransferred;
-                if (clientToken.SendBytesRemaining == 0)
-                {
-                    //Fire DataSent event
-                    if (ClientDataSent != null)
-                    {
-                        ClientDataSent.BeginInvoke(clientToken.Id, null, null);
-//                        ClientDataSent(clientToken.Id);
-                    }
-
-                    clientToken.ResetSend();
-                }
-                else
-                {
-                    clientToken.BytesSentAlready += e.BytesTransferred;
-                    StartSend(clientToken);
-                }
-            }
-            else
+            if (e.SocketError != SocketError.Success && e.AcceptSocket != null)
             {
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
                     ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
-//                    ClientDataSendError(clientToken.Id, e.SocketError);
                 }
 
-                if (!clientToken.Closed)
+                if (!clientToken.Closed && e.AcceptSocket != null)
                 {
-//                    clientToken.ResetSend();
                     CloseClientSocket(e);
                 }
+
+                return;
+            }
+
+            clientToken.SendBytesRemaining = clientToken.SendBytesRemaining - e.BytesTransferred;
+            if (clientToken.SendBytesRemaining == 0)
+            {
+                //Fire DataSent event
+                if (ClientDataSent != null)
+                {
+                    ClientDataSent.BeginInvoke(clientToken.Id, null, null);
+                }
+
+                clientToken.ResetSend();
+            }
+            else
+            {
+                clientToken.BytesSentAlready += e.BytesTransferred;
+                StartSend(clientToken);
             }
         }
 
@@ -394,7 +389,6 @@ namespace RK.Common.Net.Server
             if (ClientDisonnected != null)
             {
                 ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
-//                ClientDisonnected(clientToken.Id);
             }
         }
 
