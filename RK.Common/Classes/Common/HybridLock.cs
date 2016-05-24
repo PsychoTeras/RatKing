@@ -16,7 +16,7 @@ namespace RK.Common.Classes.Common
 
         public void Set()
         {
-            if (Interlocked.Decrement(ref _waiters) == 0) return;
+            if (_waiters == 0 || Interlocked.Decrement(ref _waiters) == 0) return;
             _waiterLock.Set();
         }
 

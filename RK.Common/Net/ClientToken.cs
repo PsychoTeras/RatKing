@@ -148,6 +148,7 @@ namespace RK.Common.Net
 
             if (Socket != null)
             {
+                Socket.Disconnect(false);
                 Socket.Close();
                 Socket = null;
             }

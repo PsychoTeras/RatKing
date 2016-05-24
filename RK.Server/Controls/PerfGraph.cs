@@ -536,7 +536,9 @@ namespace RK.Server.Controls
             {
                 if (_maxPeekPosition != null && _maxPeekPosition < 0)
                 {
-                    float maxVal = _lines.Max(l => l.MagnitudeList.Max()) * 1.5f;
+                    float maxVal = _lines.
+                        Where(l => l.MagnitudeList.Any()).
+                        Max(l => l.MagnitudeList.Max())*1.5f;
                     float partMaxPeak = _maxPeek / 1.5f;
                     if (maxVal < partMaxPeak)
                     {

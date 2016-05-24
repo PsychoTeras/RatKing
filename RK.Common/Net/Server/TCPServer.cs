@@ -150,7 +150,7 @@ namespace RK.Common.Net.Server
             if (e.SocketError != SocketError.Success && e.AcceptSocket != null && 
                 e.AcceptSocket.Connected)
             {
-                e.AcceptSocket.Disconnect(false);
+                e.AcceptSocket.Close();
                 _poolOfAcceptEventArgs.Push(e);
                 StartAccept();
                 return;

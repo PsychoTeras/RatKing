@@ -476,7 +476,8 @@ namespace RK.Common.Host
                         _unsentResponsesAvailable = false;
                     }
                     int cnt = responses.Length;
-                    Parallel.For(0, cnt, i =>
+                    for (int i = 0; i < cnt; i++)
+//                    Parallel.For(0, cnt, i => //!!!
                     {
                         int clientId;
                         Pair<int, BaseResponse> response = responses[i];
@@ -485,7 +486,8 @@ namespace RK.Common.Host
                             _netServer.Send(clientId, response.Value);
                         }
                         _responsesPool.Push(response);
-                    });
+//                    });
+                    }
                     WriteLog(LogEventType.TCPResponsesSend, timer.StopWatch().ToString("F"));
                 }
 
