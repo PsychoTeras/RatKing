@@ -665,16 +665,19 @@ namespace RK.Client.Controls
                 _playerRotatedBitmap = new Bitmap(_playerBitmap.Width, _playerBitmap.Height);
                 
                 _playerRotated = Graphics.FromImage(_playerRotatedBitmap);
+                _playerRotated.CompositingQuality = CompositingQuality.HighSpeed;
                 _playerRotated.InterpolationMode = InterpolationMode.Low;
                 _playerRotated.SmoothingMode = SmoothingMode.HighSpeed;
 
                 _bufferBitmap = new Bitmap(Width, Height);
                 
                 _buffer = Graphics.FromImage(_bufferBitmap);
+                _buffer.CompositingQuality = CompositingQuality.HighSpeed;
                 _buffer.InterpolationMode = InterpolationMode.Low;
                 _buffer.SmoothingMode = SmoothingMode.HighSpeed;
 
                 _controlGraphics = Graphics.FromHwnd(Handle);
+                _controlGraphics.CompositingQuality = CompositingQuality.HighSpeed;
                 _controlGraphics.InterpolationMode = InterpolationMode.Low;
                 _controlGraphics.SmoothingMode = SmoothingMode.HighSpeed;
 
