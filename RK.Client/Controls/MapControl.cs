@@ -8,7 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using IPCLogger.Core.Loggers;
+using IPCLogger.Core.Loggers.LFactory;
 using RK.Client.Classes;
 using RK.Client.Classes.Map.Renderers;
 using RK.Common.Algo;
@@ -258,7 +258,7 @@ namespace RK.Client.Controls
 
             if (!DesignMode)
             {
-                LFactory.Instance.Setup("RK.Client.config");
+                LFactory.Instance.Initialize("RK.Client.config");
 
                 SetStyle(ControlStyles.Opaque, true);
                 SetStyle(ControlStyles.Selectable, false);

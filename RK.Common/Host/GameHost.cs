@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
-using IPCLogger.Core.Loggers;
+using IPCLogger.Core.Loggers.LFactory;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Classes.Users;
@@ -75,7 +74,7 @@ namespace RK.Common.Host
 
         static GameHost()
         {
-            LFactory.Instance.Setup("RK.Server.config");
+            LFactory.Instance.Initialize("RK.Server.config");
         }
 
         public GameHost()

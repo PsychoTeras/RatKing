@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 using IPCLogger.Core.Loggers.LIPC;
+using IPCLogger.Core.Proto;
 using RK.Common.Host;
 using RK.Server.Controls.Graphing;
 
@@ -38,17 +39,7 @@ namespace RK.Server
 
 #region Class methods
 
-        private void WriteLog(string logMessage)
-        {
-            WriteLog(logMessage, true);
-        }
-
-        private void WriteLog(string logMessage, bool writeLine)
-        {
-            WriteLog(logMessage, writeLine, true);
-        }
-
-        private void WriteLog(string logMessage, bool writeLine, bool writeTime)
+        private void WriteLog(string logMessage, bool writeLine = true, bool writeTime = true)
         {
             tbOutput.Invoke(new Action(delegate
             {
@@ -68,7 +59,7 @@ namespace RK.Server
             }));
         }
         
-        private void OnEvent(IPCEvent ev)
+        private void OnEvent(LogRecord ev)
         {
             if (string.IsNullOrEmpty(ev.Message))
             {
