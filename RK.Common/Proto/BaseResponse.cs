@@ -169,7 +169,7 @@ namespace RK.Common.Proto
         {
             switch (packetType)
             {
-                    //User
+                //User
                 case PacketType.UserLogin:
                     return new RUserLogin();
                 case PacketType.UserLogout:
@@ -199,8 +199,7 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BaseResponse Deserialize(byte[] data, int dataSize, int pos, 
-            out int responseSize)
+        public static BaseResponse Deserialize(byte[] data, int dataSize, int pos, out int responseSize)
         {
             dataSize -= pos;
             if (dataSize < BASE_SIZE)

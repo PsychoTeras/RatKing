@@ -5,8 +5,11 @@
         //Error
         Error = -1,
 
-        //0. User
-        UserLogin = 0,
+        //0. Test
+        TestXkb = 0,
+
+        //1. User
+        UserLogin = 1,
         UserEnter,
         UserLogout,
 

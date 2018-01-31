@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using RK.Common.Classes.Common;
 using RK.Common.Classes.Units;
 using RK.Common.Map;
+using RK.Common.Net.Client;
+using RK.Common.Net.Server;
 using RK.Common.Proto;
 using RK.Common.Proto.Packets;
 using RK.Common.Proto.Responses;
@@ -22,7 +24,7 @@ namespace RK.Console
     unsafe class Program
     {
         private const int THREADS_COUNT = 8;
-        private const int ITERATIONS_COUNT = 1000000;
+        private const int ITERATIONS_COUNT = 50;
 
         private static WaitHandle[] _tEvents;
 
@@ -237,9 +239,8 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
 
             timer = HRTimer.CreateAndStart();
-            for (int i = 0; i < list.Count; i++)
+            foreach (Player player in list)
             {
-                Player player = list[i];
                 if (player.Id != -1)
                 {
                     player.Id++;
@@ -426,27 +427,68 @@ namespace RK.Console
             System.Console.WriteLine(timer.StopWatch());
         }
 
-        private delegate ConsoleKeyInfo C();
-
-        private static C _cc = new C(System.Console.ReadKey);
-        private static C CC { get { return _cc; } }
-        private static event C EC ;
-
-        struct A { }
-        class B
+        internal static void TestNetPerf1x1()
         {
-            public int i;
-        }
-        static void Main(string[] args){
+            PTestXkb tcpPacketToSend = new PTestXkb();
+            ManualResetEventSlim tcpSync = new ManualResetEventSlim(false);
 
-        A a;
-            EC = null;
-            if (EC == null)
+            TCPServer tcpServer = new TCPServer(new TCPServerSettings
+            (
+                100, 100, 10, 1024, 10001
+            ));
+            tcpServer.ClientDataReceived += (server, clientId, packets) =>
             {
-                EC += _cc;
+                server.Send(clientId, packets[0]);
+            };
+            tcpServer.ClientDataSent += (server, clientId) =>
+            {
+                server.DropClient(clientId);
+                tcpSync.Set();
+            };
+            tcpServer.Start();
+
+            TCPClient tcpClient = new TCPClient(new TCPClientSettings
+            (
+                1024, "127.0.0.1", 10001, false
+            ));
+            tcpClient.Connected += client =>
+            {
+                client.Send(tcpPacketToSend);
+            };
+
+            HRTimer timer = HRTimer.CreateAndStart();
+
+            for (int i = 0; i < ITERATIONS_COUNT; i++)
+            {
+                tcpClient.Connect();
+                tcpSync.Wait();
+                tcpSync.Reset();
             }
-            EC = null;
-            TestMapWindowGetPerf();
+
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
+        internal static void TestHybridLockPerf()
+        {
+            HRTimer timer = HRTimer.CreateAndStart();
+
+            LightLock hl = new LightLock();
+
+            int y = 0;
+            Parallel.For(0, ITERATIONS_COUNT, i =>
+            {
+                hl.WaitOne();
+                y++;
+                hl.Set();
+            });
+
+            System.Console.WriteLine(y.ToString());
+            System.Console.WriteLine(timer.StopWatch());
+        }
+
+        static void Main(string[] args)
+        {
+            TestNetPerf1x1();
             System.Console.ReadKey();
         }
     }

@@ -29,12 +29,12 @@ namespace RK.Client.Classes
             _tcpClient.Disconnected += TCPClientDisconnected;
         }
 
-        private void TCPClientDisconnected()
+        private void TCPClientDisconnected(TCPClient client)
         {
             _changingConnection = Connected = false;
         }
 
-        private void TCPConnected()
+        private void TCPConnected(TCPClient client)
         {
             TCPClientDataSend(new PUserLogin
             {
@@ -58,7 +58,7 @@ namespace RK.Client.Classes
             }
         }
 
-        private void TCPClientDataReceived(IList<BaseResponse> packets)
+        private void TCPClientDataReceived(TCPClient client, IList<BaseResponse> packets)
         {
             foreach (BaseResponse packet in packets)
             {
@@ -106,17 +106,17 @@ namespace RK.Client.Classes
                     });
                     break;
                 }
-                case 0:
-                {
-                    _changingConnection = true;
-                    TCPClientDataSend(new PUserLogout
-                    {
-                        SessionToken = _sessionToken
-                    });
-                    _sessionToken = 0;
-                    _tcpClient.Disconnect();
-                    return;
-                }
+                //case 0:
+                //{
+                //    _changingConnection = true;
+                //    TCPClientDataSend(new PUserLogout
+                //    {
+                //        SessionToken = _sessionToken
+                //    });
+                //    _sessionToken = 0;
+                //    _tcpClient.Disconnect();
+                //    break;
+                //}
             }
         }
 

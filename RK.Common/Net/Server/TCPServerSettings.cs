@@ -1,6 +1,6 @@
 ﻿namespace RK.Common.Net.Server
 {
-    internal class TCPServerSettings
+    public class TCPServerSettings //!!!
     {
         private int _port;
         private int _backlog;

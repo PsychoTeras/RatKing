@@ -6,7 +6,7 @@ using RK.Common.Win32;
 
 namespace RK.Common.Proto
 {
-    public unsafe abstract class BasePacket : ITransferable
+    public abstract unsafe class BasePacket : ITransferable
     {
 
 #region Constants
@@ -106,6 +106,10 @@ namespace RK.Common.Proto
         {
             switch (packetType)
             {
+                    //Test
+                case PacketType.TestXkb:
+                    return new PTestXkb();
+
                     //User
                 case PacketType.UserLogin:
                     return new PUserLogin();
@@ -132,8 +136,7 @@ namespace RK.Common.Proto
 
         protected virtual void DeserializeFromMemory(byte* bData, int pos) { }
 
-        public static BasePacket Deserialize(byte[] data, int dataSize, int pos,
-            out short packetSize)
+        public static BasePacket Deserialize(byte[] data, int dataSize, int pos, out short packetSize)
         {
             dataSize -= pos;
             if (dataSize < BASE_SIZE)

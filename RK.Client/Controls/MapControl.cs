@@ -1121,7 +1121,7 @@ namespace RK.Client.Controls
 #region TCP
 
         private static string _longPassword = new string('P', short.MaxValue - 100);
-        private void TCPConnected()
+        private void TCPConnected(TCPClient client)
         {
             WriteLog("TCPConnected" + Environment.NewLine);
             _connecting = false;
@@ -1141,7 +1141,7 @@ namespace RK.Client.Controls
             }
         }
 
-        private void TCPDataReceived(IList<BaseResponse> packets)
+        private void TCPDataReceived(TCPClient client, IList<BaseResponse> packets)
         {
             foreach (BaseResponse packet in packets)
             {
@@ -1149,7 +1149,7 @@ namespace RK.Client.Controls
             }
         }
 
-        private void TCPDisconnected()
+        private void TCPDisconnected(TCPClient client)
         {
             if (_reconnecting)
             {

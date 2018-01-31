@@ -10,8 +10,7 @@ namespace RK.Common.Algo
     {
         private static Random _rnd = new Random(Environment.TickCount);
 
-        public static ShortPoint? FindPlayerStartPoint(ServerMap map, Player player,
-            int minAreaSpace)
+        public static ShortPoint? FindPlayerStartPoint(ServerMap map, Player player, int minAreaSpace)
         {
             var areas = map.SpaceAreas;
             int iStart = _rnd.Next(areas.Count), iEnd = areas.Count;

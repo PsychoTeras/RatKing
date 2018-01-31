@@ -61,6 +61,8 @@ namespace RK.Server
         
         private void OnEvent(LogRecord ev)
         {
+            //return;
+
             if (string.IsNullOrEmpty(ev.Message))
             {
                 return;
@@ -79,29 +81,29 @@ namespace RK.Server
                             break;
                         }
                     case LogEventType.TCPResponsesProc:
-                    {
-                        if (gTCPResponsesProc.Enabled)
                         {
-                            float fData = float.Parse(ev.Message);
-                            gTCPResponsesProc.Push(fData, 0);
-                            gTCPResponsesProc.UpdateGraph();
+                            if (gTCPResponsesProc.Enabled)
+                            {
+                                float fData = float.Parse(ev.Message);
+                                gTCPResponsesProc.Push(fData, 0);
+                                gTCPResponsesProc.UpdateGraph();
+                            }
+                            break;
                         }
-                        break;
-                    }
                     case LogEventType.TCPResponsesSend:
-                    {
-                        if (gTCPResponsesSend.Enabled)
                         {
-                            float fData = float.Parse(ev.Message);
-                            gTCPResponsesSend.Push(fData, 0);
-                            gTCPResponsesSend.UpdateGraph();
+                            if (gTCPResponsesSend.Enabled)
+                            {
+                                float fData = float.Parse(ev.Message);
+                                gTCPResponsesSend.Push(fData, 0);
+                                gTCPResponsesSend.UpdateGraph();
+                            }
+                            break;
                         }
-                        break;
-                    }
                     default:
                     {
-//                        WriteLog(ev.Message);
-                        break;
+                            //WriteLog(ev.Message);
+                            break;
                     }
                 }
             }));

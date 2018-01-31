@@ -8,20 +8,22 @@ using RK.Common.Proto;
 
 namespace RK.Common.Net.Server
 {
-    internal class TCPServer : IDisposable
+    public class TCPServer : IDisposable
     {
 
 #region Delegates
 
-        public delegate void OnClientConnection(int clientId);
-        public delegate void OnClientDataReceived(int clientId, List<BasePacket> packets);
-        public delegate void OnClientDataReceiveError(int clientId, SocketError error);
-        public delegate void OnClientDataSent(int clientId);
-        public delegate void OnClientDataSendError(int clientId, SocketError error);
+        public delegate void OnClientConnection(TCPServer server, int clientId);
+        public delegate void OnClientDataReceived(TCPServer server, int clientId, List<BasePacket> packets);
+        public delegate void OnClientDataReceiveError(TCPServer server, int clientId, SocketError error);
+        public delegate void OnClientDataSent(TCPServer server, int clientId);
+        public delegate void OnClientDataSendError(TCPServer server, int clientId, SocketError error);
 
 #endregion
 
 #region Private fields
+
+        private int _idCounter;
 
         private Socket _listenSocket;
 
@@ -47,6 +49,17 @@ namespace RK.Common.Net.Server
         public event OnClientDataReceiveError ClientDataReceiveError;
         public event OnClientDataSent ClientDataSent;
         public event OnClientDataSendError ClientDataSendError;
+
+#endregion
+
+#region Public fields
+
+        public bool CallClientConnectedAsync = false;
+        public bool CallClientDisonnectedAsync = false;
+        public bool CallClientDataReceivedAsync = false;
+        public bool CallClientDataReceiveErrorAsync = false;
+        public bool CallClientDataSentAsync = false;
+        public bool CallClientDataSendErrorAsync = false;
 
 #endregion
 
@@ -95,11 +108,13 @@ namespace RK.Common.Net.Server
                 _bufferManager.SetBuffer(sendEvent);
                 sendEvent.Completed += IOCompleted;
 
-                ClientToken clientToken = new ClientToken(receiveEvent, sendEvent);
-                receiveEvent.UserToken = sendEvent.UserToken = clientToken;
-                _clients[clientToken.Id] = clientToken;
-
-                _poolOfDataEventArgs.Push(clientToken);
+                unchecked
+                {
+                    ClientToken clientToken = new ClientToken(_idCounter++, null, receiveEvent, sendEvent);
+                    receiveEvent.UserToken = sendEvent.UserToken = clientToken;
+                    _clients[clientToken.Id] = clientToken;
+                    _poolOfDataEventArgs.Push(clientToken);
+                }
             }
 
             StartListen();
@@ -115,6 +130,10 @@ namespace RK.Common.Net.Server
 
                 case SocketAsyncOperation.Send:
                     ProcessSend(e);
+                    break;
+
+                case SocketAsyncOperation.Disconnect:
+                    ProcessDisconnect(e);
                     break;
             }
         }
@@ -138,7 +157,6 @@ namespace RK.Common.Net.Server
 #endif
 
             SocketAsyncEventArgs e = _poolOfAcceptEventArgs.Pop();
-            e.UserToken = e.UserToken == null ? 1 : (int) e.UserToken + 1;
             if (!_listenSocket.AcceptAsync(e))
             {
                 ProcessAccept(this, e);
@@ -147,8 +165,7 @@ namespace RK.Common.Net.Server
 
         private void ProcessAccept(object sender, SocketAsyncEventArgs e)
         {
-            if (e.SocketError != SocketError.Success && e.AcceptSocket != null && 
-                e.AcceptSocket.Connected)
+            if (e.SocketError != SocketError.Success && e.AcceptSocket != null && e.AcceptSocket.Connected)
             {
                 e.AcceptSocket.Close();
                 _poolOfAcceptEventArgs.Push(e);
@@ -165,7 +182,14 @@ namespace RK.Common.Net.Server
             //Fire ClientConnected event
             if (ClientConnected != null)
             {
-                ClientConnected.BeginInvoke(clientToken.Id, null, null);
+                if (CallClientConnectedAsync)
+                {
+                    ClientConnected.BeginInvoke(this, clientToken.Id, r => ClientConnected.EndInvoke(r), null);
+                }
+                else
+                {
+                    ClientConnected(this, clientToken.Id);
+                }
             }
 
             StartReceive(clientToken);
@@ -178,8 +202,7 @@ namespace RK.Common.Net.Server
 #if DEBUG
             if (_disposed) return;
 #endif
-            if (clientToken.Socket != null && clientToken.Socket.Connected &&
-                !clientToken.Socket.ReceiveAsync(clientToken.ReceiveEvent))
+            if (!clientToken.Closed && !clientToken.Socket.ReceiveAsync(clientToken.ReceiveEvent))
             {
                 ProcessReceive(clientToken.ReceiveEvent);
             }
@@ -196,12 +219,20 @@ namespace RK.Common.Net.Server
                 //Fire ClientDataReceiveError event
                 if (ClientDataReceiveError != null)
                 {
-                    ClientDataReceiveError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+                    if (CallClientDataReceiveErrorAsync)
+                    {
+                        ClientDataReceiveError.BeginInvoke(this, clientToken.Id, e.SocketError, 
+                            r => ClientDataReceiveError.EndInvoke(r), null);
+                    }
+                    else
+                    {
+                        ClientDataReceiveError(this, clientToken.Id, e.SocketError);
+                    }
                 }
 
-                if (!clientToken.Closed)
+                if (!clientToken.Closed && !clientToken.Socket.DisconnectAsync(e))
                 {
-                    CloseClientSocket(e);
+                    CloseClientSocket(clientToken);
                 }
 
                 return;
@@ -212,26 +243,51 @@ namespace RK.Common.Net.Server
             if (bytesTransferred != 0)
             {
                 clientToken.AcceptData(e, bytesTransferred);
-                if (clientToken.ReceivedDataLength != 0)
-                {
-                    //Parse received data for packets
-                    List<BasePacket> packets = clientToken.ProcessReceivedDataReq();
 
-                    //Fire ClientDataReceived event
-                    if (packets.Count > 0 && ClientDataReceived != null)
+                //Parse received data for packets
+                List<BasePacket> packets = clientToken.ProcessReceivedDataReq();
+
+                //Fire ClientDataReceived event
+                if (packets.Count > 0 && ClientDataReceived != null)
+                {
+                    if (CallClientDataReceivedAsync)
                     {
-                        ClientDataReceived.BeginInvoke(clientToken.Id, packets, null, null);
+                        ClientDataReceived.BeginInvoke(this, clientToken.Id, packets,
+                            r => ClientDataReceived.EndInvoke(r), null);
+                    }
+                    else
+                    {
+                        ClientDataReceived(this, clientToken.Id, packets);
                     }
                 }
 
                 StartReceive(clientToken);
+
+                //clientToken.AcceptDataAsync(e, bytesTransferred).ContinueWith
+                //    (
+                //        a =>
+                //        {
+                //            //Parse received data for packets
+                //            List<BasePacket> packets = clientToken.ProcessReceivedDataReq();
+
+                //            //Fire ClientDataReceived event
+                //            if (packets.Count > 0 && ClientDataReceived != null)
+                //            {
+                //                ClientDataReceived.BeginInvoke(this, clientToken.Id, packets, 
+                //                    r => ClientDataReceived.EndInvoke(r), null);
+                //            }
+
+                //            StartReceive(clientToken);
+                //        }
+                //    );
+
                 return;
             }
 
             //Return of zero bytes transferred means that the client is no longer connected
-            if (!clientToken.Closed)
+            if (!clientToken.Closed && !clientToken.Socket.DisconnectAsync(e))
             {
-                CloseClientSocket(e);
+                CloseClientSocket(clientToken);
             }
         }
 
@@ -280,10 +336,10 @@ namespace RK.Common.Net.Server
         {
             //Get a client
             ClientToken clientToken = _clients[clientId];
-            clientToken.SendSync.WaitOne();
+            clientToken.ActionSendSync.WaitOne();
             if (clientToken.Closed)
             {
-                clientToken.SendSync.Set();
+                clientToken.ActionSendSync.Set();
                 return;
             }
 
@@ -305,7 +361,10 @@ namespace RK.Common.Net.Server
             if (_disposed) return;
 #endif
 
-            if (clientToken.Socket == null) return;
+            if (clientToken.Socket == null || clientToken.Closed)
+            {
+                return;
+            }
         
             if (clientToken.SendBytesRemaining <= _settings.BufferSize)
             {
@@ -317,13 +376,14 @@ namespace RK.Common.Net.Server
             else
             {
                 if (clientToken.SendEvent.Count != _settings.BufferSize)
+                {
                     clientToken.SendEvent.SetBuffer(clientToken.BufferOffsetSend, _settings.BufferSize);
+                }
                 Buffer.BlockCopy(clientToken.DataToSend, clientToken.BytesSentAlready,
                     clientToken.SendEvent.Buffer, clientToken.BufferOffsetSend, _settings.BufferSize);
             }
 
-            if (clientToken.Socket != null && clientToken.Socket.Connected &&
-                !clientToken.Socket.SendAsync(clientToken.SendEvent))
+            if (!clientToken.Closed && !clientToken.Socket.SendAsync(clientToken.SendEvent))
             {
                 ProcessSend(clientToken.SendEvent);
             }
@@ -338,12 +398,20 @@ namespace RK.Common.Net.Server
                 //Fire DataSentError event
                 if (ClientDataSendError != null)
                 {
-                    ClientDataSendError.BeginInvoke(clientToken.Id, e.SocketError, null, null);
+                    if (CallClientDataSendErrorAsync)
+                    {
+                        ClientDataSendError.BeginInvoke(this, clientToken.Id, e.SocketError,
+                            r => ClientDataSendError.EndInvoke(r), null);
+                    }
+                    else
+                    {
+                        ClientDataSendError(this, clientToken.Id, e.SocketError);
+                    }
                 }
 
-                if (!clientToken.Closed)
+                if (!clientToken.Closed && !clientToken.Socket.DisconnectAsync(e))
                 {
-                    CloseClientSocket(e);
+                    CloseClientSocket(clientToken);
                 }
 
                 return;
@@ -355,7 +423,14 @@ namespace RK.Common.Net.Server
                 //Fire DataSent event
                 if (ClientDataSent != null)
                 {
-                    ClientDataSent.BeginInvoke(clientToken.Id, null, null);
+                    if (CallClientDataSentAsync)
+                    {
+                        ClientDataSent.BeginInvoke(this, clientToken.Id, r => ClientDataSent.EndInvoke(r), null);
+                    }
+                    else
+                    {
+                        ClientDataSent(this, clientToken.Id);
+                    }
                 }
 
                 clientToken.ResetSend();
@@ -367,12 +442,19 @@ namespace RK.Common.Net.Server
             }
         }
 
-        private void CloseClientSocket(SocketAsyncEventArgs e)
+        private void ProcessDisconnect(SocketAsyncEventArgs e)
         {
 #if DEBUG
             if (_disposed) return;
 #endif
-            ClientToken clientToken = (ClientToken)e.UserToken;
+            CloseClientSocket((ClientToken)e.UserToken);
+        }
+
+        private void CloseClientSocket(ClientToken clientToken)
+        {
+#if DEBUG
+            if (_disposed) return;
+#endif
             if (!clientToken.Closed)
             {
                 clientToken.Close();
@@ -386,14 +468,34 @@ namespace RK.Common.Net.Server
                 //Fire ClientDisonnected event
                 if (ClientDisonnected != null)
                 {
-                    ClientDisonnected.BeginInvoke(clientToken.Id, null, null);
+                    if (CallClientDisonnectedAsync)
+                    {
+                        ClientDisonnected.BeginInvoke(this, clientToken.Id, r => ClientDisonnected.EndInvoke(r), null);
+                    }
+                    else
+                    {
+                        ClientDisonnected(this, clientToken.Id);
+                    }
                 }
+            }
+        }
+
+        public void DropClient(int clientId)
+        {
+            //Get a client
+            ClientToken clientToken = _clients[clientId];
+
+            //Drop the client
+            if (!clientToken.Closed && !clientToken.Socket.DisconnectAsync(clientToken.ReceiveEvent))
+            {
+                CloseClientSocket(clientToken);
             }
         }
 
         public void Dispose()
         {
             _disposed = true;
+
             _listenSocket.Dispose();
 
             while (_poolOfAcceptEventArgs.Count > 0)

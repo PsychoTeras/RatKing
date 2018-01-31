@@ -70,7 +70,7 @@
     <Compile Include="Algo\Extensions.cs" />
     <Compile Include="Algo\Geometry.cs" />
     <Compile Include="Algo\Game.cs" />
-    <Compile Include="Classes\Common\HybridLock.cs" />
+    <Compile Include="Classes\Common\LightLock.cs" />
     <Compile Include="Host\LogEventType.cs" />
     <Compile Include="Classes\Units\PlayerData.cs" />
     <Compile Include="Classes\Units\PlayerDataEx.cs" />
@@ -95,6 +95,7 @@
     <Compile Include="Net\Server\TCPServer.cs" />
     <Compile Include="Net\Server\TCPServerSettings.cs" />
     <Compile Include="Proto\Packets\PMapData.cs" />
+    <Compile Include="Proto\Packets\PTestXkb.cs" />
     <Compile Include="Proto\Responses\RUserLogout.cs" />
     <Compile Include="Win32\Compression.cs" />
     <Compile Include="Const\ConstMap.cs" />

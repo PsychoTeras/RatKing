@@ -58,7 +58,7 @@ namespace RK.Client.Forms
             _server = Process.GetProcessesByName("RK.Server").FirstOrDefault();
             if (_server != null)
             {
-                while (_server.MainWindowHandle == IntPtr.Zero);
+                while (_server.MainWindowHandle == IntPtr.Zero) { Thread.Sleep(0); }
                 Rectangle va = Screen.GetWorkingArea(this);
                 SetWindowPos(_server.MainWindowHandle, 0, va.Left, va.Top, va.Width/2, va.Height, 0);
                 SetWindowPos(Handle, 0, va.Left + va.Width/2, va.Top, va.Width/2, va.Height, 0);
@@ -139,7 +139,7 @@ namespace RK.Client.Forms
             ShortPoint? tilePos = mapCtrl.CursorToTilePos(e.Location);
             lblLabyrinthTilePos.Text = tilePos.HasValue
                 ? string.Format("Tile: {0} x {1}", tilePos.Value.X, tilePos.Value.Y)
-                : string.Format("No tile under cursor");
+                : "No tile under cursor";
         }
 
         private void MapMouseUp(object sender, MouseEventArgs e)
@@ -347,7 +347,7 @@ namespace RK.Client.Forms
                 {
                     lock (_bots)
                     {
-                        foreach (WorldBot bot in _bots)
+                        Parallel.ForEach(_bots, bot =>
                         {
                             if (!bot.Connected)
                             {
@@ -357,9 +357,9 @@ namespace RK.Client.Forms
                             else
                             {
                                 bot.DoSimulate();
-                                Thread.Sleep(rnd.Next(1, 5));
+                                Thread.Sleep(rnd.Next(1, 50));
                             }
-                        }
+                        });
                     }
                 }
             });

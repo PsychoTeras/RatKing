@@ -412,13 +412,13 @@ namespace RK.Common.Host
 
 #region TCP
 
-        private void TCPClientConnected(int clientId)
+        private void TCPClientConnected(TCPServer server, int clientId)
         {
             WriteLog(string.Format("TCPClientConnected: {0}", clientId));
             WriteLog(LogEventType.TCPConnections, _netServer.NumberOfAcceptedSockets.ToString());
         }
 
-        private void TCPClientDisonnected(int clientId)
+        private void TCPClientDisonnected(TCPServer server, int clientId)
         {
             WriteLog(string.Format("TCPClientDisonnected: {0}", clientId));
 
@@ -442,7 +442,7 @@ namespace RK.Common.Host
             }
         }
 
-        private void TCPClientDataReceived(int clientId, List<BasePacket> packets)
+        private void TCPClientDataReceived(TCPServer server, int clientId, List<BasePacket> packets)
         {
             int cnt = packets.Count;
             for (int i = 0; i < cnt; i++)
@@ -507,16 +507,16 @@ namespace RK.Common.Host
             }
         }
 
-        private void TCPClientDataReceiveError(int clientId, SocketError error)
+        private void TCPClientDataReceiveError(TCPServer server, int clientId, SocketError error)
         {
             WriteLog(string.Format("TCPClientDataReceiveError: {0}, {1}", clientId, error));
         }
 
-        private void TCPClientDataSent(int clientId)
+        private void TCPClientDataSent(TCPServer server, int clientId)
         {
         }
 
-        private void NetServerOnClientDataSendError(int clientId, SocketError error)
+        private void NetServerOnClientDataSendError(TCPServer server, int clientId, SocketError error)
         {
             WriteLog(string.Format("NetServerOnClientDataSendError: {0}, {1}", clientId, error));
         }

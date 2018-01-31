@@ -4,17 +4,16 @@ using System.IO;
 using System.Net.Sockets;
 using RK.Common.Classes.Common;
 using RK.Common.Proto;
+using System.Threading.Tasks;
 
 namespace RK.Common.Net
 {
     internal class ClientToken : IDisposable
     {
-        private static int _idCounter;
+        public readonly int Id;
 
         public readonly int BufferOffsetReceive;
         public readonly int BufferOffsetSend;
-
-        public int Id;
 
         public Socket Socket;
         public SocketAsyncEventArgs ReceiveEvent;
@@ -27,19 +26,15 @@ namespace RK.Common.Net
         public int BytesSentAlready;
         public byte[] DataToSend;
 
-        public HybridLock SendSync;
+        public LightLock ActionSendSync;
 
         public volatile bool Closed;
 
         public ClientToken() { }
 
-        public ClientToken(SocketAsyncEventArgs receiveEvent, SocketAsyncEventArgs sendEvent)
-            : this(null, receiveEvent, sendEvent) { }
-
-        public ClientToken(Socket socket, SocketAsyncEventArgs receiveEvent, 
-                           SocketAsyncEventArgs sendEvent)
+        public ClientToken(int id, Socket socket, SocketAsyncEventArgs receiveEvent, SocketAsyncEventArgs sendEvent)
         {
-            Id = _idCounter++;
+            Id = id;
 
             Socket = socket;
 
@@ -50,7 +45,7 @@ namespace RK.Common.Net
             BufferOffsetSend = sendEvent.Offset;
 
             ReceivedData = new MemoryStream();
-            SendSync = new HybridLock();
+            ActionSendSync = new LightLock();
         }
 
         public void AcceptConnection(SocketAsyncEventArgs e, bool cleanAcceptSocket)
@@ -65,6 +60,12 @@ namespace RK.Common.Net
         {
             ReceivedDataLength += bytesTransferred;
             ReceivedData.Write(e.Buffer, BufferOffsetReceive, bytesTransferred);
+        }
+
+        public async Task AcceptDataAsync(SocketAsyncEventArgs e, int bytesTransferred)
+        {
+            ReceivedDataLength += bytesTransferred;
+            await ReceivedData.WriteAsync(e.Buffer, BufferOffsetReceive, bytesTransferred);
         }
 
         public List<BasePacket> ProcessReceivedDataReq()
@@ -137,31 +138,38 @@ namespace RK.Common.Net
         {
             DataToSend = null;
             SendBytesRemaining = BytesSentAlready = 0;
-            SendSync.Set();
+            ActionSendSync.Set();
         }
 
         public void Close()
         {
-            Closed = true;
-
-            SendSync.WaitOne(100);
-
-            if (Socket != null)
+            lock (this)
             {
-                Socket.Disconnect(false);
-                Socket.Close();
-                Socket = null;
-            }
+                if (Closed)
+                {
+                    return;
+                }
 
-            ResetReceive();
-            ResetSend();
+                Closed = true;
+
+                ActionSendSync.WaitOne();
+
+                if (Socket != null && Socket.Connected)
+                {
+                    Socket.Disconnect(true);
+                    Socket.Close();
+                    Socket = null;
+                }
+
+                ResetReceive();
+                ResetSend();
+            }
         }
 
         public void Dispose()
         {
             Close();
             ReceivedData.Dispose();
-            SendSync.Dispose();
         }
     }
 }
